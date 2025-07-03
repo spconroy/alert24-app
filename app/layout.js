@@ -27,7 +27,7 @@ export default function RootLayout({ children }) {
       >
         <Providers>
           <header style={{ padding: '1rem', borderBottom: '1px solid #eee' }}>
-            <AuthStatus />
+            {/* AuthStatus removed to avoid duplicate login forms */}
           </header>
           {children}
         </Providers>

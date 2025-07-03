@@ -58,6 +58,9 @@ CREATE TABLE users (
     avatar_url TEXT,
     google_oauth_id VARCHAR(255) UNIQUE,
     
+    -- Password for traditional login
+    password TEXT, -- Hashed password, nullable for OAuth-only users
+    
     -- Preferences
     timezone VARCHAR(50) DEFAULT 'UTC',
     language VARCHAR(10) DEFAULT 'en',
