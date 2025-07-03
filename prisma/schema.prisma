@@ -1,12 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client-js"
-  output   = "../app/generated/prisma"
+  provider        = "prisma-client-js"
+  output          = "../app/generated/prisma"
   previewFeatures = ["multiSchema"]
 }
 
@@ -16,224 +10,286 @@ datasource db {
   schemas  = ["alert24_schema"]
 }
 
-// Organizations table
 model Organizations {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique
-  domain      String?  @unique
-  logo_url    String?
-  primary_color String?
-  secondary_color String?
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
+  id                     String                @id @default(dbgenerated("public.uuid_generate_v4()")) @db.Uuid
+  name                   String                @db.VarChar(255)
+  slug                   String                @unique @db.VarChar(100)
+  domain                 String?               @unique @db.VarChar(255)
+  subdomain              String?               @unique @db.VarChar(100)
+  logo_url               String?
+  primary_color          String?               @db.VarChar(7)
+  secondary_color        String?               @db.VarChar(7)
+  custom_css             String?
+  subscription_plan      String?               @default("free") @db.VarChar(50)
+  stripe_customer_id     String?               @db.VarChar(255)
+  stripe_subscription_id String?               @db.VarChar(255)
+  subscription_status    String?               @default("active") @db.VarChar(50)
+  current_period_start   DateTime?             @db.Timestamptz(6)
+  current_period_end     DateTime?             @db.Timestamptz(6)
+  max_team_members       Int?                  @default(3)
+  max_projects           Int?                  @default(5)
+  created_at             DateTime?             @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime?             @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at             DateTime?             @db.Timestamptz(6)
+  activities             ActivityHistory[]
+  billing_history        BillingHistory[]
+  notifications          Notifications[]
+  members                OrganizationMembers[]
+  projects               Projects[]
+  realtime_channels      RealtimeChannels[]
+  user_sessions          UserSessions[]
 
-  // Relations
-  members     OrganizationMembers[]
-  notifications Notifications[]
-  realtime_channels RealtimeChannels[]
-  activities  ActivityHistory[]
-  billing_history BillingHistory[]
-  projects    Projects[]
-
-  @@schema("alert24_schema")
+  @@index([created_at], map: "idx_organizations_created_at")
+  @@index([domain], map: "idx_organizations_domain")
+  @@index([slug], map: "idx_organizations_slug")
+  @@index([stripe_customer_id], map: "idx_organizations_stripe_customer")
+  @@index([subdomain], map: "idx_organizations_subdomain")
+  @@index([subscription_status], map: "idx_organizations_subscription_status")
   @@map("organizations")
-}
-
-// Users table
-model Users {
-  id            String   @id @default(cuid())
-  email         String   @unique
-  name          String?
-  avatar_url    String?
-  google_id     String?  @unique
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
-
-  // Relations
-  memberships   OrganizationMembers[]
-  sessions      UserSessions[]
-  activities    ActivityHistory[]
-
   @@schema("alert24_schema")
-  @@map("users")
 }
 
-// Organization Members table
-model OrganizationMembers {
-  id             String   @id @default(cuid())
-  organization_id String
-  user_id        String
-  role           String   @default("member") // owner, admin, member
-  status         String   @default("active") // active, inactive, pending
-  joined_at      DateTime @default(now())
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
+model Users {
+  id                                                          String                @id @default(dbgenerated("public.uuid_generate_v4()")) @db.Uuid
+  email                                                       String                @unique @db.VarChar(255)
+  name                                                        String                @db.VarChar(255)
+  avatar_url                                                  String?
+  google_oauth_id                                             String?               @unique @db.VarChar(255)
+  google_id                                                 String?               @unique @db.VarChar(255)
+  password                                                  String?               // <-- Added for password login
+  timezone                                                    String?               @default("UTC") @db.VarChar(50)
+  language                                                    String?               @default("en") @db.VarChar(10)
+  email_notifications_enabled                                 Boolean?              @default(true)
+  push_notifications_enabled                                  Boolean?              @default(true)
+  is_active                                                   Boolean?              @default(true)
+  last_login_at                                               DateTime?             @db.Timestamptz(6)
+  created_at                                                  DateTime?             @default(now()) @db.Timestamptz(6)
+  updated_at                                                  DateTime?             @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at                                                  DateTime?             @db.Timestamptz(6)
+  activity_history                                            ActivityHistory[]
+  notifications                                               Notifications[]
+  organization_members_organization_members_invited_byTousers OrganizationMembers[] @relation("organization_members_invited_byTousers")
+  memberships                                                 OrganizationMembers[]
+  project_members                                             ProjectMembers[]
+  projects_projects_assigned_toTousers                        Projects[]            @relation("projects_assigned_toTousers")
+  projects_projects_created_byTousers                         Projects[]            @relation("projects_created_byTousers")
+  realtime_channels                                           RealtimeChannels[]
+  sessions                                                    UserSessions[]
 
-  // Relations
-  organization   Organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  user          Users @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  @@index([email], map: "idx_users_email")
+  @@index([google_oauth_id], map: "idx_users_google_oauth_id")
+  @@index([is_active], map: "idx_users_is_active")
+  @@index([last_login_at], map: "idx_users_last_login")
+  @@map("users")
+  @@schema("alert24_schema")
+}
+
+model OrganizationMembers {
+  id                                           String        @id @default(dbgenerated("public.uuid_generate_v4()")) @db.Uuid
+  organization_id                              String        @db.Uuid
+  user_id                                      String        @db.Uuid
+  role                                         String        @default("member") @db.VarChar(50)
+  invited_by                                   String?       @db.Uuid
+  invited_at                                   DateTime?     @default(now()) @db.Timestamptz(6)
+  accepted_at                                  DateTime?     @db.Timestamptz(6)
+  invitation_token                             String?       @db.VarChar(255)
+  invitation_expires_at                        DateTime?     @db.Timestamptz(6)
+  is_active                                    Boolean?      @default(true)
+  created_at                                   DateTime?     @default(now()) @db.Timestamptz(6)
+  updated_at                                   DateTime?     @default(now()) @updatedAt @db.Timestamptz(6)
+  users_organization_members_invited_byTousers Users?        @relation("organization_members_invited_byTousers", fields: [invited_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organization                                 Organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user                                         Users         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([organization_id, user_id])
-  @@schema("alert24_schema")
+  @@index([accepted_at], map: "idx_org_members_accepted_at")
+  @@index([invitation_token], map: "idx_org_members_invitation_token")
+  @@index([organization_id], map: "idx_org_members_org_id")
+  @@index([role], map: "idx_org_members_role")
+  @@index([user_id], map: "idx_org_members_user_id")
   @@map("organization_members")
+  @@schema("alert24_schema")
 }
 
-// Notifications table
 model Notifications {
-  id             String   @id @default(cuid())
-  organization_id String
-  user_id        String?
-  title          String
-  message        String
-  type           String   // info, warning, error, success
-  read           Boolean  @default(false)
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
+  id              String        @id @default(dbgenerated("public.uuid_generate_v4()")) @db.Uuid
+  organization_id String        @db.Uuid
+  user_id         String        @db.Uuid
+  type            String        @db.VarChar(100)
+  title           String        @db.VarChar(255)
+  message         String
+  data            Json?
+  action_url      String?
+  action_text     String?       @db.VarChar(100)
+  is_read         Boolean?      @default(false)
+  is_email_sent   Boolean?      @default(false)
+  email_sent_at   DateTime?     @db.Timestamptz(6)
+  created_at      DateTime?     @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime?     @default(now()) @updatedAt @db.Timestamptz(6)
+  organization    Organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users           Users         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  // Relations
-  organization   Organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-
-  @@schema("alert24_schema")
+  @@index([created_at], map: "idx_notifications_created_at")
+  @@index([is_read], map: "idx_notifications_is_read")
+  @@index([organization_id], map: "idx_notifications_org_id")
+  @@index([type], map: "idx_notifications_type")
+  @@index([user_id], map: "idx_notifications_user_id")
   @@map("notifications")
+  @@schema("alert24_schema")
 }
 
-// Realtime Channels table
 model RealtimeChannels {
-  id             String   @id @default(cuid())
-  organization_id String
-  channel_name   String
-  channel_type   String   // notifications, activity, collaboration
-  active         Boolean  @default(true)
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
+  id               String        @id @default(dbgenerated("public.uuid_generate_v4()")) @db.Uuid
+  organization_id  String        @db.Uuid
+  channel_name     String        @db.VarChar(255)
+  user_id          String?       @db.Uuid
+  last_activity_at DateTime?     @default(now()) @db.Timestamptz(6)
+  is_active        Boolean?      @default(true)
+  created_at       DateTime?     @default(now()) @db.Timestamptz(6)
+  organization     Organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users            Users?        @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  // Relations
-  organization   Organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-
-  @@unique([organization_id, channel_name])
-  @@schema("alert24_schema")
+  @@unique([organization_id, channel_name, user_id])
+  @@index([is_active], map: "idx_realtime_channels_active")
+  @@index([organization_id], map: "idx_realtime_channels_org_id")
+  @@index([user_id], map: "idx_realtime_channels_user_id")
   @@map("realtime_channels")
+  @@schema("alert24_schema")
 }
 
-// Activity History table
 model ActivityHistory {
-  id             String   @id @default(cuid())
-  organization_id String
-  user_id        String?
-  action         String
-  entity_type    String
-  entity_id      String?
-  details        Json?
-  ip_address     String?
-  user_agent     String?
-  created_at     DateTime @default(now())
+  id              String        @id @default(dbgenerated("public.uuid_generate_v4()")) @db.Uuid
+  organization_id String        @db.Uuid
+  actor_id        String?       @db.Uuid
+  actor_type      String?       @default("user") @db.VarChar(50)
+  action          String        @db.VarChar(100)
+  entity_type     String        @db.VarChar(100)
+  entity_id       String?       @db.Uuid
+  entity_name     String?       @db.VarChar(255)
+  old_values      Json?
+  new_values      Json?
+  changes         Json?
+  ip_address      String?       @db.Inet
+  user_agent      String?
+  created_at      DateTime?     @default(now()) @db.Timestamptz(6)
+  users           Users?        @relation(fields: [actor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organization    Organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  // Relations
-  organization   Organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  user          Users? @relation(fields: [user_id], references: [id], onDelete: SetNull)
-
-  @@schema("alert24_schema")
+  @@index([action], map: "idx_activity_history_action")
+  @@index([actor_id], map: "idx_activity_history_actor_id")
+  @@index([created_at], map: "idx_activity_history_created_at")
+  @@index([entity_type, entity_id], map: "idx_activity_history_entity")
+  @@index([organization_id], map: "idx_activity_history_org_id")
   @@map("activity_history")
+  @@schema("alert24_schema")
 }
 
-// Subscription Plans table
 model SubscriptionPlans {
-  id             String   @id @default(cuid())
-  name           String
-  slug           String   @unique
-  description    String?
-  price_monthly  Decimal
-  price_yearly   Decimal
-  features       Json
-  max_members    Int
-  max_projects   Int
-  active         Boolean  @default(true)
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
+  id                String    @id @default(dbgenerated("public.uuid_generate_v4()")) @db.Uuid
+  name              String    @unique @db.VarChar(100)
+  stripe_product_id String?   @unique @db.VarChar(255)
+  stripe_price_id   String?   @unique @db.VarChar(255)
+  description       String?
+  price_monthly     Decimal?  @db.Decimal(10, 2)
+  price_yearly      Decimal?  @db.Decimal(10, 2)
+  currency          String?   @default("USD") @db.VarChar(3)
+  max_team_members  Int?
+  max_projects      Int?
+  max_storage_gb    Int?
+  features          Json?
+  is_active         Boolean?  @default(true)
+  created_at        DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime? @default(now()) @updatedAt @db.Timestamptz(6)
 
-  // Relations
-  billing_history BillingHistory[]
-
-  @@schema("alert24_schema")
   @@map("subscription_plans")
+  @@schema("alert24_schema")
 }
 
-// Billing History table
 model BillingHistory {
-  id             String   @id @default(cuid())
-  organization_id String
-  plan_id        String?
-  stripe_customer_id String?
-  stripe_subscription_id String?
-  stripe_invoice_id String?
-  amount         Decimal
-  currency       String   @default("usd")
-  status         String   // pending, paid, failed, cancelled
-  billing_period_start DateTime?
-  billing_period_end   DateTime?
-  paid_at        DateTime?
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
+  id                       String        @id @default(dbgenerated("public.uuid_generate_v4()")) @db.Uuid
+  organization_id          String        @db.Uuid
+  stripe_invoice_id        String?       @unique @db.VarChar(255)
+  stripe_payment_intent_id String?       @db.VarChar(255)
+  amount                   Decimal       @db.Decimal(10, 2)
+  currency                 String?       @default("USD") @db.VarChar(3)
+  status                   String        @db.VarChar(50)
+  plan_name                String        @db.VarChar(100)
+  billing_period_start     DateTime?     @db.Timestamptz(6)
+  billing_period_end       DateTime?     @db.Timestamptz(6)
+  created_at               DateTime?     @default(now()) @db.Timestamptz(6)
+  paid_at                  DateTime?     @db.Timestamptz(6)
+  organization             Organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  // Relations
-  organization   Organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  plan          SubscriptionPlans? @relation(fields: [plan_id], references: [id])
-
-  @@schema("alert24_schema")
+  @@index([created_at], map: "idx_billing_history_created_at")
+  @@index([organization_id], map: "idx_billing_history_org_id")
+  @@index([status], map: "idx_billing_history_status")
+  @@index([stripe_invoice_id], map: "idx_billing_history_stripe_invoice")
   @@map("billing_history")
-}
-
-// Projects table
-model Projects {
-  id             String   @id @default(cuid())
-  organization_id String
-  name           String
-  description    String?
-  status         String   @default("active") // active, archived, deleted
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
-
-  // Relations
-  organization   Organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  members        ProjectMembers[]
-
   @@schema("alert24_schema")
-  @@map("projects")
 }
 
-// Project Members table
-model ProjectMembers {
-  id             String   @id @default(cuid())
-  project_id     String
-  user_id        String
-  role           String   @default("member") // owner, admin, member
-  joined_at      DateTime @default(now())
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
+model Projects {
+  id                                String           @id @default(dbgenerated("public.uuid_generate_v4()")) @db.Uuid
+  organization_id                   String           @db.Uuid
+  name                              String           @db.VarChar(255)
+  description                       String?
+  status                            String?          @default("active") @db.VarChar(50)
+  created_by                        String           @db.Uuid
+  assigned_to                       String?          @db.Uuid
+  created_at                        DateTime?        @default(now()) @db.Timestamptz(6)
+  updated_at                        DateTime?        @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at                        DateTime?        @db.Timestamptz(6)
+  members                           ProjectMembers[]
+  users_projects_assigned_toTousers Users?           @relation("projects_assigned_toTousers", fields: [assigned_to], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_projects_created_byTousers  Users            @relation("projects_created_byTousers", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organization                      Organizations    @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  // Relations
-  project        Projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  @@index([assigned_to], map: "idx_projects_assigned_to")
+  @@index([created_at], map: "idx_projects_created_at")
+  @@index([created_by], map: "idx_projects_created_by")
+  @@index([organization_id], map: "idx_projects_org_id")
+  @@index([status], map: "idx_projects_status")
+  @@map("projects")
+  @@schema("alert24_schema")
+}
+
+model ProjectMembers {
+  id         String    @id @default(dbgenerated("public.uuid_generate_v4()")) @db.Uuid
+  project_id String    @db.Uuid
+  user_id    String    @db.Uuid
+  role       String?   @default("member") @db.VarChar(50)
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  project    Projects  @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users      Users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([project_id, user_id])
-  @@schema("alert24_schema")
+  @@index([project_id], map: "idx_project_members_project_id")
+  @@index([role], map: "idx_project_members_role")
+  @@index([user_id], map: "idx_project_members_user_id")
   @@map("project_members")
+  @@schema("alert24_schema")
 }
 
-// User Sessions table
 model UserSessions {
-  id             String   @id @default(cuid())
-  user_id        String
-  session_token  String   @unique
-  expires_at     DateTime
-  ip_address     String?
-  user_agent     String?
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
+  id              String         @id @default(dbgenerated("public.uuid_generate_v4()")) @db.Uuid
+  user_id         String         @db.Uuid
+  organization_id String?        @db.Uuid
+  session_token   String         @unique @db.VarChar(255)
+  refresh_token   String?        @unique @db.VarChar(255)
+  ip_address      String?        @db.Inet
+  user_agent      String?
+  device_type     String?        @db.VarChar(50)
+  is_active       Boolean?       @default(true)
+  expires_at      DateTime       @db.Timestamptz(6)
+  created_at      DateTime?      @default(now()) @db.Timestamptz(6)
+  last_used_at    DateTime?      @default(now()) @db.Timestamptz(6)
+  organizations   Organizations? @relation(fields: [organization_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user            Users          @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  // Relations
-  user          Users @relation(fields: [user_id], references: [id], onDelete: Cascade)
-
-  @@schema("alert24_schema")
+  @@index([is_active], map: "idx_user_sessions_active")
+  @@index([expires_at], map: "idx_user_sessions_expires")
+  @@index([session_token], map: "idx_user_sessions_token")
+  @@index([user_id], map: "idx_user_sessions_user_id")
   @@map("user_sessions")
+  @@schema("alert24_schema")
 }

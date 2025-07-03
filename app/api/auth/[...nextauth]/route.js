@@ -2,11 +2,14 @@
 import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { PrismaAdapter } from '@auth/prisma-adapter';
-import prisma from '@/lib/prisma';
+// import prisma from '@/lib/prisma';
+import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
 
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
 const handler = NextAuth({
-  adapter: PrismaAdapter(prisma),
+  adapter: PrismaAdapter(pool), // Adapter is still required for NextAuth, but not used for login
   providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -18,9 +21,12 @@ const handler = NextAuth({
         if (!credentials?.email || !credentials?.password) {
           throw new Error('Missing email or password');
         }
-        const user = await prisma.users.findUnique({
-          where: { email: credentials.email },
-        });
+        // Use raw SQL to find user
+        const { rows } = await pool.query(
+          'SELECT id, name, email, password FROM public.users WHERE email = $1',
+          [credentials.email]
+        );
+        const user = rows[0];
         if (!user || !user.password) {
           throw new Error('No user found');
         }
