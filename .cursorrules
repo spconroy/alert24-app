@@ -1,0 +1,107 @@
+# Alert24 App - Cursor Rules
+
+## Project Overview
+This is a Next.js SaaS application for multi-tenant organization management with real-time features, billing, and custom branding.
+
+## Technology Stack
+- **Framework**: Next.js 14+ with App Router
+- **Language**: JavaScript (NOT TypeScript)
+- **Styling**: Tailwind CSS + Material UI
+- **Database**: PostgreSQL with Prisma ORM
+- **Authentication**: NextAuth.js with Google OAuth
+- **Real-time**: WebSocket service (Pusher/Ably/Supabase)
+- **Billing**: Stripe integration
+- **Deployment**: Cloudflare Pages
+- **Email**: SendGrid
+
+## Code Style & Standards
+- Use JavaScript (.js/.jsx files), NOT TypeScript
+- Follow Prettier formatting rules (single quotes, 80 char width, semicolons)
+- Use ESLint with Next.js and Prettier integration
+- Prefer functional components with hooks
+- Use relative imports with @/ alias for app directory
+- Follow Next.js 13+ App Router conventions
+
+## Project Structure
+```
+app/                    # Next.js App Router pages
+├── (auth)/            # Authentication routes
+├── (dashboard)/       # Dashboard routes
+├── api/               # API routes
+├── globals.css        # Global styles
+└── layout.js          # Root layout
+components/            # Reusable components
+lib/                   # Utility functions
+hooks/                 # Custom React hooks
+contexts/              # React contexts
+services/              # External service integrations
+docs/                  # Documentation
+```
+
+## Database Schema
+- Uses PostgreSQL with `alert24_schema` schema
+- Multi-tenant architecture with organization-based data isolation
+- Comprehensive audit logging and activity tracking
+- Real-time notification system
+- Subscription and billing management
+
+## Key Features to Implement
+1. Multi-tenant organization management
+2. Google OAuth authentication
+3. Real-time notifications and collaboration
+4. Stripe subscription billing
+5. Custom branding and white-labeling
+6. Role-based access control
+7. Activity history and audit logging
+
+## Development Guidelines
+- Always consider multi-tenant data isolation
+- Implement proper error handling and loading states
+- Use Material UI components for consistent UI
+- Follow security best practices for authentication
+- Implement proper validation and sanitization
+- Use environment variables for configuration
+- Write clean, readable, and maintainable code
+
+## File Naming Conventions
+- Use kebab-case for file names
+- Use PascalCase for component names
+- Use camelCase for functions and variables
+- Use UPPER_SNAKE_CASE for constants
+
+## Import Organization
+1. React and Next.js imports
+2. Third-party library imports
+3. Internal component imports
+4. Utility and hook imports
+5. Type imports (if any)
+
+## Testing Strategy
+- Unit tests for utility functions
+- Component testing for UI components
+- Integration tests for API routes
+- E2E tests for critical user flows
+
+## Performance Considerations
+- Implement proper caching strategies
+- Use Next.js Image component for optimization
+- Lazy load components when appropriate
+- Optimize database queries
+- Implement proper error boundaries
+
+## Security Requirements
+- Validate all user inputs
+- Implement proper authentication checks
+- Use HTTPS in production
+- Sanitize data before database operations
+- Implement rate limiting on API routes
+- Follow OWASP security guidelines
+
+## Deployment Notes
+- Configure environment variables in Cloudflare Pages
+- Set up proper database connections
+- Configure domain and SSL certificates
+- Set up monitoring and error tracking
+- Implement proper logging
+
+Remember: This project uses JavaScript, not TypeScript. All code should be written in .js/.jsx files with proper JSDoc comments for documentation. 

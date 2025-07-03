@@ -1,0 +1,300 @@
+{
+  "name": "Alert24 - Multi-Tenant SaaS Application",
+  "version": "1.0.0",
+  "description": "Real-time collaboration platform with custom branding and subscription management",
+  "project": {
+    "type": "saas",
+    "architecture": "multi-tenant",
+    "framework": "nextjs",
+    "database": "postgresql",
+    "hosting": "cloudflare-pages"
+  },
+  "database": {
+    "host": "34.223.13.196",
+    "database": "alert24",
+    "username": "alert24",
+    "password": "Sg47^kLm9@wPz!rT",
+    "port": 5432,
+    "schema": "alert24_schema",
+    "connectionString": "postgresql://alert24:Sg47^kLm9@wPz!rT@34.223.13.196:5432/alert24?options=-csearch_path%3Dalert24_schema"
+  },
+  "techStack": {
+    "frontend": {
+      "framework": "Next.js 13+",
+      "ui": "Material UI (MUI)",
+      "styling": "Tailwind CSS",
+      "state": "React Context + Hooks"
+    },
+    "backend": {
+      "runtime": "Next.js API Routes",
+      "orm": "Prisma/Drizzle",
+      "authentication": "NextAuth.js (Auth.js)",
+      "email": "SendGrid",
+      "payments": "Stripe",
+      "realtime": "WebSocket (Pusher/Ably/Supabase)"
+    },
+    "infrastructure": {
+      "hosting": "Cloudflare Pages",
+      "database": "PostgreSQL",
+      "storage": "Cloudflare R2",
+      "cdn": "Cloudflare"
+    }
+  },
+  "features": {
+    "core": [
+      "Multi-tenant organization management",
+      "Google OAuth authentication",
+      "Role-based access control",
+      "Real-time notifications",
+      "Activity history and audit logging",
+      "Subscription management with Stripe",
+      "Custom branding and white-labeling",
+      "Team member invitations"
+    ],
+    "realTime": [
+      "WebSocket connections",
+      "Live notifications",
+      "Collaboration updates",
+      "Status indicators"
+    ],
+    "billing": [
+      "Subscription plans (Free, Pro, Enterprise)",
+      "Stripe integration",
+      "Usage tracking",
+      "Billing history"
+    ],
+    "branding": [
+      "Custom logos",
+      "Brand colors",
+      "Custom domains",
+      "White-label emails"
+    ]
+  },
+  "databaseSchema": {
+    "tables": [
+      "organizations",
+      "users",
+      "organization_members",
+      "notifications",
+      "realtime_channels",
+      "activity_history",
+      "subscription_plans",
+      "billing_history",
+      "projects",
+      "project_members",
+      "user_sessions"
+    ],
+    "extensions": ["uuid-ossp", "pgcrypto"],
+    "functions": [
+      "update_updated_at_column",
+      "get_user_organizations",
+      "log_activity",
+      "create_notification"
+    ],
+    "views": ["organization_dashboard", "user_dashboard"]
+  },
+  "development": {
+    "phases": [
+      {
+        "name": "Phase 1: Core Foundation",
+        "duration": "4 weeks",
+        "tasks": [
+          "Next.js project setup with Cloudflare Pages",
+          "PostgreSQL database setup and schema design",
+          "Google OAuth integration with NextAuth.js",
+          "Basic user authentication and session management",
+          "Organization model and multi-tenant architecture"
+        ]
+      },
+      {
+        "name": "Phase 2: Team Management",
+        "duration": "4 weeks",
+        "tasks": [
+          "Organization CRUD operations",
+          "Team member invitation system",
+          "Role-based access control implementation",
+          "Organization switching functionality",
+          "Basic UI with Material UI components"
+        ]
+      },
+      {
+        "name": "Phase 3: Real-Time Features",
+        "duration": "4 weeks",
+        "tasks": [
+          "WebSocket integration setup",
+          "Real-time notification system",
+          "Activity history and audit logging",
+          "Real-time collaboration features",
+          "Performance optimization"
+        ]
+      },
+      {
+        "name": "Phase 4: Subscription & Billing",
+        "duration": "4 weeks",
+        "tasks": [
+          "Stripe integration and subscription management",
+          "Plan-based feature access control",
+          "Billing interface and customer portal",
+          "Payment failure handling",
+          "Subscription analytics"
+        ]
+      },
+      {
+        "name": "Phase 5: Custom Branding",
+        "duration": "4 weeks",
+        "tasks": [
+          "Custom domain support implementation",
+          "Branding customization interface",
+          "Multi-tenant routing and host resolution",
+          "Email branding integration",
+          "White-label feature completion"
+        ]
+      },
+      {
+        "name": "Phase 6: Polish & Launch",
+        "duration": "4 weeks",
+        "tasks": [
+          "UI/UX refinement and testing",
+          "Performance optimization and monitoring",
+          "Security audit and penetration testing",
+          "Documentation and user guides",
+          "Production deployment and launch"
+        ]
+      }
+    ]
+  },
+  "environment": {
+    "development": {
+      "NODE_ENV": "development",
+      "DATABASE_URL": "postgresql://alert24:Sg47^kLm9@wPz!rT@34.223.13.196:5432/alert24?options=-csearch_path%3Dalert24_schema",
+      "NEXTAUTH_URL": "http://localhost:3000",
+      "NEXTAUTH_SECRET": "your-development-secret",
+      "GOOGLE_CLIENT_ID": "your-google-client-id",
+      "GOOGLE_CLIENT_SECRET": "your-google-client-secret",
+      "SENDGRID_API_KEY": "your-sendgrid-api-key",
+      "STRIPE_SECRET_KEY": "your-stripe-secret-key",
+      "STRIPE_PUBLISHABLE_KEY": "your-stripe-publishable-key",
+      "STRIPE_WEBHOOK_SECRET": "your-stripe-webhook-secret"
+    },
+    "production": {
+      "NODE_ENV": "production",
+      "DATABASE_URL": "postgresql://alert24:Sg47^kLm9@wPz!rT@34.223.13.196:5432/alert24?options=-csearch_path%3Dalert24_schema",
+      "NEXTAUTH_URL": "https://your-domain.com",
+      "NEXTAUTH_SECRET": "your-production-secret",
+      "GOOGLE_CLIENT_ID": "your-google-client-id",
+      "GOOGLE_CLIENT_SECRET": "your-google-client-secret",
+      "SENDGRID_API_KEY": "your-sendgrid-api-key",
+      "STRIPE_SECRET_KEY": "your-stripe-secret-key",
+      "STRIPE_PUBLISHABLE_KEY": "your-stripe-publishable-key",
+      "STRIPE_WEBHOOK_SECRET": "your-stripe-webhook-secret"
+    }
+  },
+  "dependencies": {
+    "required": [
+      "next@14.2.30",
+      "react@^18",
+      "react-dom@^18",
+      "@mui/material",
+      "@mui/icons-material",
+      "@emotion/react",
+      "@emotion/styled",
+      "next-auth",
+      "@prisma/client",
+      "prisma",
+      "@sendgrid/mail",
+      "stripe",
+      "uuid",
+      "bcryptjs",
+      "jsonwebtoken"
+    ],
+    "development": [
+      "eslint",
+      "eslint-config-next",
+      "postcss",
+      "tailwindcss",
+      "@types/node",
+      "@types/react",
+      "@types/react-dom"
+    ]
+  },
+  "fileStructure": {
+    "app": {
+      "layout.js": "Root layout with providers",
+      "page.js": "Landing page",
+      "globals.css": "Global styles",
+      "api": {
+        "auth": "Authentication API routes",
+        "organizations": "Organization management",
+        "users": "User management",
+        "notifications": "Notification system",
+        "billing": "Subscription and billing",
+        "webhooks": "External service webhooks"
+      },
+      "dashboard": "Protected dashboard pages",
+      "auth": "Authentication pages",
+      "organizations": "Organization management pages",
+      "components": "Reusable UI components",
+      "lib": "Utility functions and configurations"
+    },
+    "prisma": {
+      "schema.prisma": "Database schema definition",
+      "migrations": "Database migrations"
+    },
+    "docs": {
+      "database_schema.sql": "Complete PostgreSQL schema",
+      "database_config.md": "Database configuration",
+      "verify_schema.sql": "Schema verification script"
+    }
+  },
+  "security": {
+    "authentication": "Google OAuth 2.0",
+    "authorization": "Role-based access control",
+    "dataIsolation": "Multi-tenant with organization scoping",
+    "encryption": "HTTPS, JWT tokens, bcrypt passwords",
+    "validation": "Input sanitization and validation",
+    "rateLimiting": "API rate limiting",
+    "auditLogging": "Comprehensive activity tracking"
+  },
+  "performance": {
+    "targets": {
+      "pageLoadTime": "< 2 seconds",
+      "realTimeUpdates": "< 500ms",
+      "databaseQueries": "Optimized with indexes",
+      "uptime": "99.9%"
+    },
+    "optimizations": [
+      "Server-side rendering (SSR)",
+      "Edge computing with Cloudflare",
+      "Database connection pooling",
+      "Caching strategies",
+      "Code splitting"
+    ]
+  },
+  "monitoring": {
+    "logging": "Comprehensive activity logging",
+    "errorTracking": "Error monitoring and alerting",
+    "performance": "Performance monitoring",
+    "analytics": "User behavior analytics",
+    "healthChecks": "System health monitoring"
+  },
+  "deployment": {
+    "platform": "Cloudflare Pages",
+    "database": "PostgreSQL (managed)",
+    "storage": "Cloudflare R2",
+    "cdn": "Cloudflare CDN",
+    "ssl": "Automatic SSL certificates",
+    "domains": "Custom domain support"
+  },
+  "testing": {
+    "unit": "Jest for unit tests",
+    "integration": "API integration tests",
+    "e2e": "End-to-end testing",
+    "database": "Database migration tests"
+  },
+  "documentation": {
+    "api": "API documentation",
+    "user": "User guides and tutorials",
+    "developer": "Developer documentation",
+    "deployment": "Deployment guides"
+  }
+}

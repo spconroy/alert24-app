@@ -59,7 +59,8 @@ If using Drizzle ORM, update your database configuration:
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 
-const connectionString = "postgresql://alert24:Sg47^kLm9@wPz!rT@34.223.13.196:5432/alert24?options=-csearch_path%3Dalert24_schema";
+const connectionString =
+  'postgresql://alert24:Sg47^kLm9@wPz!rT@34.223.13.196:5432/alert24?options=-csearch_path%3Dalert24_schema';
 const client = postgres(connectionString);
 export const db = drizzle(client);
 
@@ -70,21 +71,25 @@ export const schema = 'alert24_schema';
 ## Schema Setup Commands
 
 ### Create Schema
+
 ```sql
 CREATE SCHEMA IF NOT EXISTS alert24_schema AUTHORIZATION alert24;
 ```
 
 ### Set Search Path
+
 ```sql
 SET search_path TO alert24_schema, public;
 ```
 
 ### Run Schema Creation
+
 ```bash
 psql "postgresql://alert24:Sg47^kLm9@wPz!rT@34.223.13.196:5432/alert24" -f docs/database_schema.sql
 ```
 
 ### Verify Schema
+
 ```bash
 psql "postgresql://alert24:Sg47^kLm9@wPz!rT@34.223.13.196:5432/alert24" -f docs/verify_schema.sql
 ```
@@ -112,4 +117,4 @@ The `alert24_schema` contains:
 
 - `database_schema.sql` - Complete PostgreSQL schema with alert24_schema
 - `verify_schema.sql` - Verification script for schema components
-- This file contains all the database structure for the Alert24 multi-tenant SaaS application 
+- This file contains all the database structure for the Alert24 multi-tenant SaaS application

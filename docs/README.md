@@ -5,6 +5,7 @@ This folder contains all documentation for the Alert24 multi-tenant SaaS applica
 ## Files
 
 ### Database Documentation
+
 - **`database_schema.sql`** - Complete PostgreSQL database schema
   - Multi-tenant architecture with organizations and users
   - Real-time features with notifications and WebSocket channels
@@ -24,24 +25,29 @@ This folder contains all documentation for the Alert24 multi-tenant SaaS applica
 The Alert24 database is designed for a multi-tenant SaaS application with the following key features:
 
 ### Core Tables
+
 - **`organizations`** - Multi-tenant core with branding and subscription data
 - **`users`** - User accounts with Google OAuth integration
 - **`organization_members`** - Many-to-many relationships with roles
 
 ### Real-Time Features
+
 - **`notifications`** - In-app and email notification system
 - **`realtime_channels`** - WebSocket subscription management
 - **`activity_history`** - Comprehensive audit logging
 
 ### Subscription & Billing
+
 - **`subscription_plans`** - Available plans and features
 - **`billing_history`** - Payment transaction tracking
 
 ### Example Domain Entities
+
 - **`projects`** - Collaboration features
 - **`project_members`** - Project team management
 
 ### Authentication & Sessions
+
 - **`user_sessions`** - Session management
 
 ## Key Features
@@ -67,4 +73,4 @@ The Alert24 database is designed for a multi-tenant SaaS application with the fo
 - Soft deletes are implemented with `deleted_at` timestamps
 - Automatic `updated_at` timestamps via triggers
 - Comprehensive indexing for optimal query performance
-- Helper functions for common operations like logging and notifications 
+- Helper functions for common operations like logging and notifications

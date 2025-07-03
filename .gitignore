@@ -1,1 +1,8 @@
 node_modules
+.next
+.env.development.local
+.env.test.local
+.env.production.local
+/app/generated/prisma
+*.log
+.DS_Store
