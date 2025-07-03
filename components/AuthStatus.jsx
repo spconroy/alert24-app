@@ -1,11 +1,10 @@
 'use client';
 import React, { useState } from 'react';
-import { useSession, signIn, signOut } from 'next-auth/react';
+import { useSession, signIn } from 'next-auth/react';
 import Button from '@mui/material/Button';
-import Avatar from '@mui/material/Avatar';
+import TextField from '@mui/material/TextField';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import TextField from '@mui/material/TextField';
 
 export default function AuthStatus() {
   const { data: session, status } = useSession();
@@ -60,13 +59,10 @@ export default function AuthStatus() {
     );
   }
 
+  // If signed in, just show a welcome message
   return (
-    <Box display="flex" alignItems="center" gap={2}>
-      <Avatar src={session.user?.image} alt={session.user?.name} />
-      <Typography>{session.user?.name || session.user?.email}</Typography>
-      <Button variant="outlined" color="secondary" onClick={() => signOut()}>
-        Sign out
-      </Button>
-    </Box>
+    <Typography variant="h5" align="center" sx={{ mt: 2 }}>
+      Welcome!
+    </Typography>
   );
 } 

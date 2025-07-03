@@ -1,6 +1,6 @@
 import localFont from 'next/font/local';
 import './globals.css';
-import AuthStatus from '../components/AuthStatus';
+import NavBar from '../components/NavBar';
 import Providers from '../components/Providers';
 
 const geistSans = localFont({
@@ -26,9 +26,7 @@ export default function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
-          <header style={{ padding: '1rem', borderBottom: '1px solid #eee' }}>
-            {/* AuthStatus removed to avoid duplicate login forms */}
-          </header>
+          <NavBar />
           {children}
         </Providers>
       </body>

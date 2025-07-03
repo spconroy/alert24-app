@@ -13,65 +13,47 @@ import {
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 export default function CreateOrganizationForm({ onBack, onSuccess }) {
-  const [formData, setFormData] = useState({
-    name: '',
-    slug: '',
-    domain: '',
-  });
+  const [name, setName] = useState('');
+  const [slug, setSlug] = useState('');
+  const [domain, setDomain] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }));
-
-    // Auto-generate slug from name
     if (name === 'name') {
+      setName(value);
       const slug = value.toLowerCase()
         .replace(/[^a-z0-9]/g, '-')
         .replace(/-+/g, '-')
         .replace(/^-|-$/g, '');
-      setFormData(prev => ({
-        ...prev,
-        slug,
-      }));
+      setSlug(slug);
+    } else if (name === 'domain') {
+      setDomain(value);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!formData.name || !formData.slug) {
-      setError('Name and slug are required');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await fetch('/api/organizations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create organization');
-      }
-
-      const data = await response.json();
-      onSuccess(data.organization);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+    setLoading(true);
+    setError('');
+    setSuccess(false);
+    const res = await fetch('/api/organizations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, slug, domain }),
+    });
+    const data = await res.json();
+    setLoading(false);
+    if (!res.ok) {
+      setError(data.error || 'Failed to create organization');
+    } else {
+      setSuccess(true);
+      setName('');
+      setSlug('');
+      setDomain('');
+      if (onSuccess) onSuccess(data.organization);
     }
   };
 
@@ -97,6 +79,12 @@ export default function CreateOrganizationForm({ onBack, onSuccess }) {
           </Alert>
         )}
 
+        {success && (
+          <Alert severity="success" sx={{ mb: 2 }}>
+            Organization created!
+          </Alert>
+        )}
+
         <form onSubmit={handleSubmit}>
           <Grid container spacing={3}>
             <Grid item xs={12}>
@@ -104,11 +92,11 @@ export default function CreateOrganizationForm({ onBack, onSuccess }) {
                 fullWidth
                 label="Organization Name"
                 name="name"
-                value={formData.name}
+                value={name}
                 onChange={handleChange}
                 required
                 disabled={loading}
-                helperText="Enter a descriptive name for your organization"
+                helperText="Enter a descriptive name for your organization. Organization name must be globally unique."
               />
             </Grid>
 
@@ -117,11 +105,11 @@ export default function CreateOrganizationForm({ onBack, onSuccess }) {
                 fullWidth
                 label="Slug"
                 name="slug"
-                value={formData.slug}
+                value={slug}
                 onChange={handleChange}
                 required
                 disabled={loading}
-                helperText="URL-friendly identifier (auto-generated from name)"
+                helperText="URL-friendly identifier (auto-generated from name). Short unique identifier (e.g. acme-corp). Must be globally unique."
               />
             </Grid>
 
@@ -130,10 +118,10 @@ export default function CreateOrganizationForm({ onBack, onSuccess }) {
                 fullWidth
                 label="Custom Domain (Optional)"
                 name="domain"
-                value={formData.domain}
+                value={domain}
                 onChange={handleChange}
                 disabled={loading}
-                helperText="e.g., mycompany.alert24.com"
+                helperText="e.g., mycompany.alert24.com. Custom domain for your organization (optional, must be globally unique if used)"
               />
             </Grid>
 
@@ -142,7 +130,7 @@ export default function CreateOrganizationForm({ onBack, onSuccess }) {
                 <Button
                   type="submit"
                   variant="contained"
-                  disabled={loading || !formData.name || !formData.slug}
+                  disabled={loading || !name || !slug}
                   startIcon={loading ? <CircularProgress size={20} /> : null}
                 >
                   {loading ? 'Creating...' : 'Create Organization'}
