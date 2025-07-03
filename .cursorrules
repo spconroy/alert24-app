@@ -107,3 +107,7 @@ docs/                  # Documentation
 Remember: This project uses JavaScript, not TypeScript. All code should be written in .js/.jsx files with proper JSDoc comments for documentation. 
 
 Dont ask me to make changes you can make
+
+Postgres MCP is read only. If you need to write to the database, use the psql cli tool
+
+when running cli commands make sure you properly escape passwords

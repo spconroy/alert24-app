@@ -1,0 +1,98 @@
+import { getServerSession } from 'next-auth/next';
+import { Pool } from 'pg';
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+async function getStatusPageAndCheckOrg(id, userEmail) {
+  // Get user ID from email
+  const userQuery = `SELECT id FROM public.users WHERE email = $1`;
+  const { rows: userRows } = await pool.query(userQuery, [userEmail]);
+  
+  if (userRows.length === 0) {
+    return null;
+  }
+
+  const userId = userRows[0].id;
+
+  // Fetch status page and check org membership
+  const { rows } = await pool.query(
+    `SELECT sp.*, om.user_id FROM public.status_pages sp
+     JOIN public.organization_members om ON sp.organization_id = om.organization_id
+     WHERE sp.id = $1 AND om.user_id = $2 AND om.is_active = true AND sp.deleted_at IS NULL`,
+    [id, userId]
+  );
+  return rows[0] || null;
+}
+
+export async function GET(req, { params }) {
+  try {
+    const session = await getServerSession();
+    if (!session || !session.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+    }
+    const { id } = params;
+    const statusPage = await getStatusPageAndCheckOrg(id, session.user.email);
+    if (!statusPage) {
+      return new Response(JSON.stringify({ error: 'Not found or forbidden' }), { status: 404 });
+    }
+    return new Response(JSON.stringify({ statusPage }), { status: 200 });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+  }
+}
+
+export async function PUT(req, { params }) {
+  try {
+    const session = await getServerSession();
+    if (!session || !session.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+    }
+    const { id } = params;
+    const statusPage = await getStatusPageAndCheckOrg(id, session.user.email);
+    if (!statusPage) {
+      return new Response(JSON.stringify({ error: 'Not found or forbidden' }), { status: 404 });
+    }
+    const body = await req.json();
+    const { name, slug, description, is_public } = body;
+    const updateQuery = `
+      UPDATE public.status_pages
+      SET name = $1, slug = $2, description = $3, is_public = $4, updated_at = NOW()
+      WHERE id = $5
+      RETURNING *
+    `;
+    const { rows } = await pool.query(updateQuery, [
+      name || statusPage.name,
+      slug || statusPage.slug,
+      description || statusPage.description,
+      typeof is_public === 'boolean' ? is_public : statusPage.is_public,
+      id
+    ]);
+    return new Response(JSON.stringify({ statusPage: rows[0] }), { status: 200 });
+  } catch (err) {
+    if (err.code === '23505') {
+      return new Response(JSON.stringify({ error: 'Slug must be unique within the organization.' }), { status: 409 });
+    }
+    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+  }
+}
+
+export async function DELETE(req, { params }) {
+  try {
+    const session = await getServerSession();
+    if (!session || !session.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+    }
+    const { id } = params;
+    const statusPage = await getStatusPageAndCheckOrg(id, session.user.email);
+    if (!statusPage) {
+      return new Response(JSON.stringify({ error: 'Not found or forbidden' }), { status: 404 });
+    }
+    await pool.query(
+      'UPDATE public.status_pages SET deleted_at = NOW() WHERE id = $1',
+      [id]
+    );
+    return new Response(JSON.stringify({ success: true }), { status: 200 });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+  }
+} 

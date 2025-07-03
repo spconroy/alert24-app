@@ -1,11 +1,10 @@
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../auth/[...nextauth]/route';
 import { Pool } from 'pg';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 export async function GET(req) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession();
   if (!session || !session.user?.email) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
@@ -27,7 +26,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession();
   if (!session || !session.user?.email) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }

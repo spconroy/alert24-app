@@ -1,0 +1,1 @@
+npx -y @modelcontextprotocol/server-postgres postgresql://alert24:Sg47%5EkLm9%40wPz%21rT@34.223.13.196:5432/alert24

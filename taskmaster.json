@@ -296,5 +296,15 @@
     "user": "User guides and tutorials",
     "developer": "Developer documentation",
     "deployment": "Deployment guides"
-  }
+  },
+  "completed": [
+    "User authentication (signup, login, logout) with raw SQL",
+    "Remove Prisma and all ORM dependencies",
+    "NavBar with user info, sign out, and Settings link",
+    "Organization creation (API and UI)",
+    "Organization listing (API and UI)",
+    "Move organization management to the Settings page",
+    "User-friendly error handling for org creation (unique name, slug, domain)",
+    "Clean up homepage to only show welcome after login"
+  ]
 }

@@ -2,15 +2,6 @@
 -- Multi-Tenant SaaS Application for Real-Time Collaboration
 -- PostgreSQL Schema with proper indexing and constraints
 
--- Create schema and set authorization
-CREATE SCHEMA IF NOT EXISTS alert24_schema AUTHORIZATION alert24;
-
--- Set search path to use the new schema
-SET search_path TO alert24_schema, public;
-
--- Enable UUID extension for primary keys
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 -- Enable pgcrypto for secure hashing
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
@@ -20,7 +11,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- Organizations (Multi-tenant core)
 CREATE TABLE organizations (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
     slug VARCHAR(100) UNIQUE NOT NULL,
     domain VARCHAR(255) UNIQUE, -- Custom domain
@@ -52,7 +43,7 @@ CREATE TABLE organizations (
 
 -- Users (Google OAuth based)
 CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email VARCHAR(255) UNIQUE NOT NULL,
     name VARCHAR(255) NOT NULL,
     avatar_url TEXT,
@@ -79,7 +70,7 @@ CREATE TABLE users (
 
 -- Organization Members (Many-to-many with roles)
 CREATE TABLE organization_members (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     role VARCHAR(50) NOT NULL DEFAULT 'member' CHECK (role IN ('owner', 'admin', 'member')),
@@ -107,7 +98,7 @@ CREATE TABLE organization_members (
 
 -- Notifications
 CREATE TABLE notifications (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     
@@ -133,7 +124,7 @@ CREATE TABLE notifications (
 
 -- Real-time channels for WebSocket subscriptions
 CREATE TABLE realtime_channels (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     channel_name VARCHAR(255) NOT NULL, -- e.g., 'notifications', 'activity', 'team_presence'
     user_id UUID REFERENCES users(id), -- NULL for org-wide channels
@@ -154,7 +145,7 @@ CREATE TABLE realtime_channels (
 
 -- Activity History (Audit Log)
 CREATE TABLE activity_history (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     
     -- Actor information
@@ -186,7 +177,7 @@ CREATE TABLE activity_history (
 
 -- Subscription Plans
 CREATE TABLE subscription_plans (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(100) NOT NULL UNIQUE,
     stripe_product_id VARCHAR(255) UNIQUE,
     stripe_price_id VARCHAR(255) UNIQUE,
@@ -215,7 +206,7 @@ CREATE TABLE subscription_plans (
 
 -- Billing History
 CREATE TABLE billing_history (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     
     -- Stripe integration
@@ -243,7 +234,7 @@ CREATE TABLE billing_history (
 
 -- Projects (Example of domain-specific entities)
 CREATE TABLE projects (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     
     -- Project details
@@ -263,15 +254,58 @@ CREATE TABLE projects (
 
 -- Project Members (Many-to-many)
 CREATE TABLE project_members (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     role VARCHAR(50) DEFAULT 'member' CHECK (role IN ('owner', 'admin', 'member', 'viewer')),
-    
     -- Metadata
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    
     UNIQUE(project_id, user_id)
+);
+
+-- ============================================================================
+-- STATUS PAGES, SERVICES, DEPENDENCIES
+-- ============================================================================
+
+-- Status Pages (per organization)
+CREATE TABLE status_pages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(100) NOT NULL,
+    description TEXT,
+    is_public BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    deleted_at TIMESTAMP WITH TIME ZONE,
+    UNIQUE(organization_id, slug)
+);
+
+-- Services (per status page)
+CREATE TABLE services (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    status_page_id UUID NOT NULL REFERENCES status_pages(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    status VARCHAR(50) NOT NULL DEFAULT 'operational' CHECK (status IN ('operational', 'degraded', 'down', 'maintenance')),
+    sort_order INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    deleted_at TIMESTAMP WITH TIME ZONE,
+    UNIQUE(status_page_id, name)
+);
+
+-- Dependencies (per service)
+CREATE TABLE dependencies (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    service_id UUID NOT NULL REFERENCES services(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    type VARCHAR(50) NOT NULL DEFAULT 'external' CHECK (type IN ('internal', 'external')),
+    status VARCHAR(50) NOT NULL DEFAULT 'operational' CHECK (status IN ('operational', 'degraded', 'down', 'maintenance')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    deleted_at TIMESTAMP WITH TIME ZONE,
+    UNIQUE(service_id, name)
 );
 
 -- ============================================================================
@@ -280,7 +314,7 @@ CREATE TABLE project_members (
 
 -- User Sessions (for session management)
 CREATE TABLE user_sessions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     organization_id UUID REFERENCES organizations(id),
     
@@ -371,6 +405,11 @@ CREATE INDEX idx_billing_history_stripe_invoice ON billing_history(stripe_invoic
 CREATE INDEX idx_billing_history_status ON billing_history(status);
 CREATE INDEX idx_billing_history_created_at ON billing_history(created_at);
 
+-- Indexes for performance
+CREATE INDEX idx_status_pages_org_id ON status_pages(organization_id);
+CREATE INDEX idx_services_status_page_id ON services(status_page_id);
+CREATE INDEX idx_dependencies_service_id ON dependencies(service_id);
+
 -- ============================================================================
 -- TRIGGERS FOR UPDATED_AT TIMESTAMPS
 -- ============================================================================
@@ -391,6 +430,9 @@ CREATE TRIGGER update_organization_members_updated_at BEFORE UPDATE ON organizat
 CREATE TRIGGER update_notifications_updated_at BEFORE UPDATE ON notifications FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_subscription_plans_updated_at BEFORE UPDATE ON subscription_plans FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_projects_updated_at BEFORE UPDATE ON projects FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_status_pages_updated_at BEFORE UPDATE ON status_pages FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_services_updated_at BEFORE UPDATE ON services FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_dependencies_updated_at BEFORE UPDATE ON dependencies FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ============================================================================
 -- FUNCTIONS FOR COMMON OPERATIONS
@@ -566,6 +608,9 @@ COMMENT ON TABLE subscription_plans IS 'Available subscription plans and their f
 COMMENT ON TABLE billing_history IS 'Payment and billing transaction history';
 COMMENT ON TABLE projects IS 'Example domain entity for collaboration features';
 COMMENT ON TABLE user_sessions IS 'User session management for authentication';
+COMMENT ON TABLE status_pages IS 'Status pages for each organization';
+COMMENT ON TABLE services IS 'Services displayed on a status page';
+COMMENT ON TABLE dependencies IS 'Dependencies for each service on a status page';
 
 COMMENT ON COLUMN organizations.subscription_plan IS 'Current subscription plan: free, pro, enterprise';
 COMMENT ON COLUMN organizations.stripe_customer_id IS 'Stripe customer ID for billing integration';

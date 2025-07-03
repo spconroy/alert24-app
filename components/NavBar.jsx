@@ -15,7 +15,20 @@ export default function NavBar() {
   return (
     <AppBar position="static" color="default" elevation={1}>
       <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
-        <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+        <Typography 
+          variant="h6" 
+          component={Link} 
+          href="/"
+          sx={{ 
+            flexGrow: 1,
+            textDecoration: 'none',
+            color: 'inherit',
+            cursor: 'pointer',
+            '&:hover': {
+              opacity: 0.8
+            }
+          }}
+        >
           Alert24
         </Typography>
         <Box display="flex" alignItems="center" gap={2}>
