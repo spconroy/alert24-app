@@ -1,15 +1,12 @@
 // Note: Signup is not handled here. See /api/auth/signup for registration logic.
 import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { PrismaAdapter } from '@auth/prisma-adapter';
-// import prisma from '@/lib/prisma';
 import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 export const authOptions = {
-  adapter: PrismaAdapter(pool), // Adapter is still required for NextAuth, but not used for login
   providers: [
     CredentialsProvider({
       name: 'Credentials',
