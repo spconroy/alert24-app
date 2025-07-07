@@ -1,0 +1,99 @@
+MVP App Pages (Post-Login)
+🧠 Incident Management
+Dashboard / Overview
+
+Snapshot of current incidents, active alerts, and recent updates
+
+Incidents
+
+List + detail view of all incidents
+
+Actions: create, update, escalate, resolve
+
+Timeline and status history
+
+Escalation Policies
+
+Create and manage escalation rules
+
+Set notification delay, priority, fallbacks, etc.
+
+📡 Monitoring & Dependencies
+Monitoring Checks
+
+Create/edit/delete checks (HTTP, ping, keyword match)
+
+Status (Up/Down), last response time, region
+
+Dependency Watch
+
+Map services to upstream cloud/vendor components
+
+Real-time scraped status of external services
+
+Link to auto-update internal status
+
+🌐 Status Page Management
+Status Page Editor
+
+Configure which components/services are shown
+
+Incident display options
+
+Branding (logo, colors, domain)
+
+Components & Services
+
+Define internal components (e.g., “API,” “Checkout”)
+
+Group by region/product/etc.
+
+Set manual or monitored status
+
+👥 Team Management
+Team Members
+
+View/add/remove users
+
+Assign roles (Admin, Manager, Responder)
+
+On-Call Schedules
+
+Visual calendar per team
+
+Add, rotate, override on-call duties
+
+📣 Notifications & Subscribers
+Subscribers
+
+View/manage email & SMS subscribers
+
+Import/export CSV or add manually
+
+Notification Settings
+
+Select which channels to use per severity
+
+Toggle Slack, SMS, voice, etc. per user or role
+
+📊 Analytics & Settings
+Reports
+
+MTTA / MTTR, incident frequency, on-call load
+
+Exportable summary charts and tables
+
+Settings
+
+Org-level settings: name, logo, domain
+
+Billing (placeholder if not implemented yet)
+
+API keys, Slack integrations, etc.
+
+🔐 Auth Pages
+/login
+
+/logout
+
+/setup (first-time onboarding)

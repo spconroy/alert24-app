@@ -1,7 +1,7 @@
 'use client';
 import AuthStatus from '../components/AuthStatus';
 import SignupForm from '../components/SignupForm';
-import StatusPageOverview from '../components/StatusPageOverview';
+import IncidentDashboard from '../components/IncidentDashboard';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
@@ -22,31 +22,23 @@ export default function Home() {
         <Typography variant="h3" component="h1" gutterBottom>
           Welcome to Alert24
         </Typography>
-        <Typography variant="body1" color="text.secondary" gutterBottom>
+        <Typography variant="body1" color="text.secondary" gutterBottom textAlign="center" maxWidth="500px">
           {showSignup
-            ? 'Create your account below.'
-            : 'Please sign in to continue.'}
+            ? 'Create your account to start managing incidents, monitoring services, and coordinating your team response.'
+            : 'Your comprehensive incident management and monitoring platform. Sign in to manage incidents, monitor services, and coordinate team responses.'}
         </Typography>
         {showSignup ? <SignupForm onSuccess={() => setShowSignup(false)} /> : <AuthStatus />}
         <Button variant="text" color="primary" onClick={() => setShowSignup(s => !s)}>
-          {showSignup ? 'Already have an account? Log in' : "Don't have an account? Sign up"}
+          {showSignup ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
         </Button>
       </Box>
     );
   }
 
-  // If signed in, show the status page overview
+  // If signed in, show the incident management dashboard
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box mb={4}>
-        <Typography variant="h3" component="h1" gutterBottom>
-          Welcome to Alert24
-        </Typography>
-        <Typography variant="h6" color="text.secondary" gutterBottom>
-          Monitor and manage your service status pages
-        </Typography>
-      </Box>
-      <StatusPageOverview />
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      <IncidentDashboard />
     </Container>
   );
 }

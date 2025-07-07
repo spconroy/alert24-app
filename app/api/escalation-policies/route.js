@@ -1,0 +1,247 @@
+import { getServerSession } from 'next-auth/next';
+import { Pool } from 'pg';
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+export async function GET(req) {
+  const session = await getServerSession();
+  if (!session || !session.user?.email) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+  }
+
+  try {
+    // Get user ID
+    const userRes = await pool.query('SELECT id FROM public.users WHERE email = $1', [session.user.email]);
+    const user = userRes.rows[0];
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'User not found' }), { status: 404 });
+    }
+
+    // Parse query parameters
+    const { searchParams } = new URL(req.url);
+    const organizationId = searchParams.get('organization_id');
+    const activeOnly = searchParams.get('active_only') === 'true';
+
+    // Build query for escalation policies
+    let query = `
+      SELECT ep.*,
+             o.name as organization_name,
+             u.name as created_by_name, u.email as created_by_email
+      FROM public.escalation_policies ep
+      JOIN public.organizations o ON ep.organization_id = o.id
+      JOIN public.organization_members om ON o.id = om.organization_id
+      JOIN public.users u ON ep.created_by = u.id
+      WHERE om.user_id = $1 AND om.is_active = true
+    `;
+    
+    const params = [user.id];
+    let paramIndex = 2;
+
+    // Add filters
+    if (organizationId) {
+      query += ` AND ep.organization_id = $${paramIndex}`;
+      params.push(organizationId);
+      paramIndex++;
+    }
+
+    if (activeOnly) {
+      query += ` AND ep.is_active = true`;
+    }
+
+    query += ` ORDER BY ep.name ASC`;
+
+    const result = await pool.query(query, params);
+
+    // For each policy, get the escalation rules
+    const policies = [];
+    for (const policy of result.rows) {
+      const rulesRes = await pool.query(`
+        SELECT nr.*,
+               u.name as user_name, u.email as user_email,
+               ucm.contact_type, ucm.contact_value
+        FROM public.notification_rules nr
+        LEFT JOIN public.users u ON nr.user_id = u.id
+        LEFT JOIN public.user_contact_methods ucm ON nr.contact_method_id = ucm.id
+        WHERE nr.escalation_policy_id = $1
+        ORDER BY nr.escalation_level ASC, nr.delay_minutes ASC
+      `, [policy.id]);
+
+      policies.push({
+        ...policy,
+        rules: rulesRes.rows
+      });
+    }
+
+    return new Response(JSON.stringify({
+      escalation_policies: policies
+    }), { status: 200 });
+
+  } catch (error) {
+    console.error('GET escalation policies error:', error);
+    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+  }
+}
+
+export async function POST(req) {
+  const session = await getServerSession();
+  if (!session || !session.user?.email) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+  }
+
+  try {
+    const body = await req.json();
+    const {
+      organization_id,
+      name,
+      description,
+      escalation_timeout_minutes = 30,
+      repeat_escalation = false,
+      max_escalation_level = 3,
+      rules = []
+    } = body;
+
+    // Validation
+    if (!organization_id || !name) {
+      return new Response(JSON.stringify({ error: 'Organization ID and name are required' }), { status: 400 });
+    }
+
+    if (rules.length === 0) {
+      return new Response(JSON.stringify({ error: 'At least one escalation rule is required' }), { status: 400 });
+    }
+
+    // Get user ID
+    const userRes = await pool.query('SELECT id FROM public.users WHERE email = $1', [session.user.email]);
+    const user = userRes.rows[0];
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'User not found' }), { status: 404 });
+    }
+
+    // Check if user is a member of the organization and has permission to manage escalation policies
+    const membershipRes = await pool.query(`
+      SELECT om.*, om.can_manage_escalation_policies
+      FROM public.organization_members om
+      WHERE om.organization_id = $1 AND om.user_id = $2 AND om.is_active = true
+    `, [organization_id, user.id]);
+
+    if (membershipRes.rows.length === 0) {
+      return new Response(JSON.stringify({ error: 'Not a member of this organization' }), { status: 403 });
+    }
+
+    const membership = membershipRes.rows[0];
+    if (!membership.can_manage_escalation_policies && membership.incident_role !== 'admin' && membership.incident_role !== 'manager') {
+      return new Response(JSON.stringify({ error: 'Insufficient permissions to manage escalation policies' }), { status: 403 });
+    }
+
+    // Validate all users and contact methods in rules
+    for (const rule of rules) {
+      if (rule.user_id) {
+        const userCheckRes = await pool.query(`
+          SELECT u.id
+          FROM public.users u
+          JOIN public.organization_members om ON u.id = om.user_id
+          WHERE u.id = $1 AND om.organization_id = $2 AND om.is_active = true
+        `, [rule.user_id, organization_id]);
+
+        if (userCheckRes.rows.length === 0) {
+          return new Response(JSON.stringify({ 
+            error: `User ID ${rule.user_id} not found or not a member of this organization` 
+          }), { status: 400 });
+        }
+      }
+
+      if (rule.contact_method_id) {
+        const contactRes = await pool.query(`
+          SELECT ucm.id
+          FROM public.user_contact_methods ucm
+          JOIN public.users u ON ucm.user_id = u.id
+          JOIN public.organization_members om ON u.id = om.user_id
+          WHERE ucm.id = $1 AND om.organization_id = $2 AND om.is_active = true
+        `, [rule.contact_method_id, organization_id]);
+
+        if (contactRes.rows.length === 0) {
+          return new Response(JSON.stringify({ 
+            error: `Contact method ID ${rule.contact_method_id} not found or not accessible` 
+          }), { status: 400 });
+        }
+      }
+    }
+
+    // Begin transaction
+    await pool.query('BEGIN');
+
+    try {
+      // Create escalation policy
+      const policyRes = await pool.query(`
+        INSERT INTO public.escalation_policies (
+          organization_id, name, description, escalation_timeout_minutes,
+          repeat_escalation, max_escalation_level, created_by
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING *
+      `, [
+        organization_id, name, description, escalation_timeout_minutes,
+        repeat_escalation, max_escalation_level, user.id
+      ]);
+
+      const policy = policyRes.rows[0];
+
+      // Create notification rules
+      const createdRules = [];
+      for (const rule of rules) {
+        const ruleRes = await pool.query(`
+          INSERT INTO public.notification_rules (
+            escalation_policy_id, escalation_level, delay_minutes,
+            user_id, contact_method_id
+          ) VALUES ($1, $2, $3, $4, $5)
+          RETURNING *
+        `, [
+          policy.id,
+          rule.escalation_level || 1,
+          rule.delay_minutes || 0,
+          rule.user_id || null,
+          rule.contact_method_id || null
+        ]);
+
+        createdRules.push(ruleRes.rows[0]);
+      }
+
+      await pool.query('COMMIT');
+
+      // Get full policy details with rules
+      const fullPolicyRes = await pool.query(`
+        SELECT ep.*,
+               o.name as organization_name,
+               u.name as created_by_name, u.email as created_by_email
+        FROM public.escalation_policies ep
+        JOIN public.organizations o ON ep.organization_id = o.id
+        JOIN public.users u ON ep.created_by = u.id
+        WHERE ep.id = $1
+      `, [policy.id]);
+
+      const rulesRes = await pool.query(`
+        SELECT nr.*,
+               u.name as user_name, u.email as user_email,
+               ucm.contact_type, ucm.contact_value
+        FROM public.notification_rules nr
+        LEFT JOIN public.users u ON nr.user_id = u.id
+        LEFT JOIN public.user_contact_methods ucm ON nr.contact_method_id = ucm.id
+        WHERE nr.escalation_policy_id = $1
+        ORDER BY nr.escalation_level ASC, nr.delay_minutes ASC
+      `, [policy.id]);
+
+      return new Response(JSON.stringify({
+        escalation_policy: {
+          ...fullPolicyRes.rows[0],
+          rules: rulesRes.rows
+        }
+      }), { status: 201 });
+
+    } catch (err) {
+      await pool.query('ROLLBACK');
+      throw err;
+    }
+
+  } catch (error) {
+    console.error('POST escalation policy error:', error);
+    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+  }
+} 

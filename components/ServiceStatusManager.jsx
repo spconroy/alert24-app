@@ -168,14 +168,19 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
 
     try {
       setPostUpdateLoading(true);
+      
+      const payload = {
+        ...updateForm,
+        status_page_id: statusPageId,
+        service_id: updateForm.service_id || null
+      };
+      
+      console.log('Posting general status update with payload:', payload);
+      
       const response = await fetch('/api/status-updates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...updateForm,
-          status_page_id: statusPageId,
-          service_id: updateForm.service_id || null
-        })
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) throw new Error('Failed to post status update');
@@ -482,7 +487,21 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
                   <InputLabel>Update Type</InputLabel>
                   <Select
                     value={updateForm.update_type}
-                    onChange={(e) => setUpdateForm({ ...updateForm, update_type: e.target.value })}
+                    onChange={(e) => {
+                      const newType = e.target.value;
+                      let newStatus = updateForm.status;
+                      
+                      // Reset status to appropriate default when type changes
+                      if (newType === 'incident' && !['investigating', 'identified', 'monitoring', 'resolved'].includes(newStatus)) {
+                        newStatus = 'investigating';
+                      } else if (newType === 'maintenance' && !['maintenance', 'operational'].includes(newStatus)) {
+                        newStatus = 'maintenance';
+                      } else if (newType === 'general' && !['operational', 'degraded', 'down', 'maintenance'].includes(newStatus)) {
+                        newStatus = 'operational';
+                      }
+                      
+                      setUpdateForm({ ...updateForm, update_type: newType, status: newStatus });
+                    }}
                     label="Update Type"
                   >
                     <MenuItem value="general">General Update</MenuItem>
@@ -510,23 +529,39 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
                 </FormControl>
               </Grid>
 
-              {updateForm.update_type === 'incident' && (
-                <Grid item xs={12} md={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Incident Status</InputLabel>
-                    <Select
-                      value={updateForm.status}
-                      onChange={(e) => setUpdateForm({ ...updateForm, status: e.target.value })}
-                      label="Incident Status"
-                    >
-                      <MenuItem value="investigating">Investigating</MenuItem>
-                      <MenuItem value="identified">Identified</MenuItem>
-                      <MenuItem value="monitoring">Monitoring</MenuItem>
-                      <MenuItem value="resolved">Resolved</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-              )}
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Status</InputLabel>
+                  <Select
+                    value={updateForm.status}
+                    onChange={(e) => setUpdateForm({ ...updateForm, status: e.target.value })}
+                    label="Status"
+                  >
+                    {updateForm.update_type === 'incident' && (
+                      <>
+                        <MenuItem value="investigating">Investigating</MenuItem>
+                        <MenuItem value="identified">Identified</MenuItem>
+                        <MenuItem value="monitoring">Monitoring</MenuItem>
+                        <MenuItem value="resolved">Resolved</MenuItem>
+                      </>
+                    )}
+                    {updateForm.update_type === 'maintenance' && (
+                      <>
+                        <MenuItem value="maintenance">Maintenance</MenuItem>
+                        <MenuItem value="operational">Operational</MenuItem>
+                      </>
+                    )}
+                    {updateForm.update_type === 'general' && (
+                      <>
+                        <MenuItem value="operational">Operational</MenuItem>
+                        <MenuItem value="degraded">Degraded</MenuItem>
+                        <MenuItem value="down">Down</MenuItem>
+                        <MenuItem value="maintenance">Maintenance</MenuItem>
+                      </>
+                    )}
+                  </Select>
+                </FormControl>
+              </Grid>
 
               <Grid item xs={12}>
                 <TextField

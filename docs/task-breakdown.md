@@ -1,768 +1,574 @@
-# Alert24 Task Breakdown & Subtasks
+# Alert24 Incident Management Platform - Adapted Task Breakdown
 
-## Analysis of Development Phases
+## Overview
 
-This document provides a detailed breakdown of all tasks from the Taskmaster configuration, with specific subtasks for each phase.
+This document provides a detailed breakdown of development tasks for transforming the existing Alert24 SaaS platform into an incident management and monitoring platform combining features from Pingdom, PagerDuty, and StatusPage.io.
 
----
-
-## Phase 1: Core Foundation (Weeks 1-4)
-
-### 1. Next.js Project Setup with Cloudflare Pages
-
-#### Subtasks:
-
-- [ ] **1.1.1** Initialize Next.js 13+ project with App Router
-  - [ ] Create new Next.js project with TypeScript
-  - [ ] Configure App Router structure
-  - [ ] Set up Tailwind CSS integration
-  - [ ] Configure PostCSS and build tools
-
-- [ ] **1.1.2** Configure Cloudflare Pages deployment
-  - [ ] Set up Cloudflare Pages project
-  - [ ] Configure build settings for Next.js
-  - [ ] Set up environment variables in Cloudflare
-  - [ ] Configure custom domain (if available)
-  - [ ] Test deployment pipeline
-
-- [ ] **1.1.3** Set up development environment
-  - [ ] Configure ESLint and Prettier
-  - [ ] Set up Git hooks with Husky
-  - [ ] Configure VS Code settings
-  - [ ] Set up debugging configuration
-
-### 2. PostgreSQL Database Setup and Schema Design
-
-#### Subtasks:
-
-- [ ] **1.2.1** Database connection setup
-  - [ ] Install and configure Prisma ORM
-  - [ ] Set up database connection string
-  - [ ] Test database connectivity
-  - [ ] Configure connection pooling
-
-- [ ] **1.2.2** Schema implementation
-  - [ ] Create Prisma schema based on PostgreSQL schema
-  - [ ] Generate Prisma client
-  - [ ] Create initial migration
-  - [ ] Verify schema matches database_schema.sql
-
-- [ ] **1.2.3** Database utilities
-  - [ ] Create database utility functions
-  - [ ] Set up database seeding scripts
-  - [ ] Create database backup scripts
-  - [ ] Set up database monitoring
-
-### 3. Google OAuth Integration with NextAuth.js
-
-#### Subtasks:
-
-- [ ] **1.3.1** NextAuth.js setup
-  - [ ] Install NextAuth.js dependencies
-  - [ ] Configure NextAuth.js with Google provider
-  - [ ] Set up session management
-  - [ ] Configure JWT strategy
-
-- [ ] **1.3.2** Google OAuth configuration
-  - [ ] Create Google Cloud Console project
-  - [ ] Configure OAuth 2.0 credentials
-  - [ ] Set up authorized redirect URIs
-  - [ ] Test OAuth flow
-
-- [ ] **1.3.3** Authentication API routes
-  - [ ] Create `/api/auth/[...nextauth]` route
-  - [ ] Implement sign-in/sign-out handlers
-  - [ ] Set up authentication middleware
-  - [ ] Create authentication utilities
-
-### 4. Basic User Authentication and Session Management
-
-#### Subtasks:
-
-- [ ] **1.4.1** User model integration
-  - [ ] Create user service functions
-  - [ ] Implement user creation on first login
-  - [ ] Set up user profile management
-  - [ ] Create user validation utilities
-
-- [ ] **1.4.2** Session management
-  - [ ] Implement session persistence
-  - [ ] Set up session refresh logic
-  - [ ] Create session validation middleware
-  - [ ] Implement session cleanup
-
-- [ ] **1.4.3** Authentication UI
-  - [ ] Create login page
-  - [ ] Create sign-up flow
-  - [ ] Implement protected route wrapper
-  - [ ] Create authentication status components
-
-### 5. Organization Model and Multi-Tenant Architecture
-
-#### Subtasks:
-
-- [ ] **1.5.1** Organization service layer
-  - [ ] Create organization CRUD operations
-  - [ ] Implement organization validation
-  - [ ] Set up organization utilities
-  - [ ] Create organization middleware
-
-- [ ] **1.5.2** Multi-tenant routing
-  - [ ] Implement organization-based routing
-  - [ ] Set up subdomain handling
-  - [ ] Create custom domain support
-  - [ ] Implement tenant isolation
-
-- [ ] **1.5.3** Organization context
-  - [ ] Create organization context provider
-  - [ ] Implement organization switching
-  - [ ] Set up organization state management
-  - [ ] Create organization utilities
+**PROJECT ADAPTATION SCOPE:** We are modifying the existing Next.js application with established authentication, organization management, and basic status page functionality.
 
 ---
 
-## Phase 2: Team Management (Weeks 5-8)
+## ✅ Already Completed Features
 
-### 1. Organization CRUD Operations
-
-#### Subtasks:
-
-- [ ] **2.1.1** Organization API endpoints
-  - [ ] Create GET /api/organizations
-  - [ ] Create POST /api/organizations
-  - [ ] Create PUT /api/organizations/[id]
-  - [ ] Create DELETE /api/organizations/[id]
-
-- [ ] **2.1.2** Organization management UI
-  - [ ] Create organization list page
-  - [ ] Create organization creation form
-  - [ ] Create organization edit form
-  - [ ] Create organization settings page
-
-- [ ] **2.1.3** Organization validation
-  - [ ] Implement organization name validation
-  - [ ] Set up slug generation
-  - [ ] Create domain validation
-  - [ ] Implement organization limits
-
-### 2. Team Member Invitation System
-
-#### Subtasks:
-
-- [ ] **2.2.1** Invitation API
-  - [ ] Create POST /api/organizations/[id]/invitations
-  - [ ] Create GET /api/invitations/[token]
-  - [ ] Create POST /api/invitations/[token]/accept
-  - [ ] Create DELETE /api/invitations/[token]
-
-- [ ] **2.2.2** Email integration
-  - [ ] Set up SendGrid integration
-  - [ ] Create invitation email templates
-  - [ ] Implement email sending service
-  - [ ] Set up email tracking
-
-- [ ] **2.2.3** Invitation UI
-  - [ ] Create invitation form
-  - [ ] Create invitation management page
-  - [ ] Create invitation acceptance page
-  - [ ] Implement invitation status tracking
-
-### 3. Role-Based Access Control Implementation
-
-#### Subtasks:
-
-- [ ] **2.3.1** Permission system
-  - [ ] Define permission matrix
-  - [ ] Create permission checking utilities
-  - [ ] Implement role-based middleware
-  - [ ] Set up permission validation
-
-- [ ] **2.3.2** Role management
-  - [ ] Create role assignment API
-  - [ ] Implement role validation
-  - [ ] Create role management UI
-  - [ ] Set up role inheritance
-
-- [ ] **2.3.3** Access control UI
-  - [ ] Create permission-based UI components
-  - [ ] Implement role-based navigation
-  - [ ] Create access denied pages
-  - [ ] Set up permission indicators
-
-### 4. Organization Switching Functionality
-
-#### Subtasks:
-
-- [ ] **2.4.1** Organization switcher component
-  - [ ] Create organization dropdown
-  - [ ] Implement organization switching logic
-  - [ ] Set up organization context updates
-  - [ ] Create organization switcher UI
-
-- [ ] **2.4.2** Multi-organization support
-  - [ ] Implement user organization list
-  - [ ] Create organization selection logic
-  - [ ] Set up organization persistence
-  - [ ] Implement organization defaults
-
-- [ ] **2.4.3** Organization context management
-  - [ ] Update organization context provider
-  - [ ] Implement organization state persistence
-  - [ ] Create organization loading states
-  - [ ] Set up organization error handling
-
-### 5. Basic UI with Material UI Components
-
-#### Subtasks:
-
-- [ ] **2.5.1** Material UI setup
-  - [ ] Install Material UI dependencies
-  - [ ] Configure Material UI theme
-  - [ ] Set up Material UI provider
-  - [ ] Create custom theme configuration
-
-- [ ] **2.5.2** Core components
-  - [ ] Create layout components
-  - [ ] Implement navigation components
-  - [ ] Create form components
-  - [ ] Set up data display components
-
-- [ ] **2.5.3** Component library
-  - [ ] Create reusable button components
-  - [ ] Implement modal components
-  - [ ] Create table components
-  - [ ] Set up form validation components
+### Foundation Infrastructure
+- ✅ Next.js 14+ project with App Router (JavaScript)
+- ✅ Tailwind CSS + Material UI integration
+- ✅ Google OAuth authentication with NextAuth.js
+- ✅ PostgreSQL database connection and raw SQL implementation
+- ✅ Multi-tenant organization architecture
+- ✅ Organization CRUD operations (API and UI)
+- ✅ User management and role-based access
+- ✅ Basic status page functionality
+- ✅ Status page components and services management
+- ✅ Public status page display
+- ✅ Navigation and settings infrastructure
 
 ---
 
-## Phase 3: Real-Time Features (Weeks 9-12)
+## Phase 1: Foundation Adaptation (Weeks 1-4)
 
-### 1. WebSocket Integration Setup
-
-#### Subtasks:
-
-- [ ] **3.1.1** WebSocket service selection
-  - [ ] Evaluate Pusher vs Ably vs Supabase
-  - [ ] Set up chosen WebSocket service
-  - [ ] Configure WebSocket credentials
-  - [ ] Test WebSocket connectivity
-
-- [ ] **3.1.2** WebSocket client setup
-  - [ ] Install WebSocket client library
-  - [ ] Create WebSocket connection manager
-  - [ ] Implement connection retry logic
-  - [ ] Set up connection monitoring
-
-- [ ] **3.1.3** WebSocket server integration
-  - [ ] Create WebSocket event handlers
-  - [ ] Implement channel management
-  - [ ] Set up event broadcasting
-  - [ ] Create WebSocket utilities
-
-### 2. Real-Time Notification System
+### 1. Database Schema Transformation for Incident Management
 
 #### Subtasks:
 
-- [ ] **3.2.1** Notification API
-  - [ ] Create GET /api/notifications
-  - [ ] Create POST /api/notifications
-  - [ ] Create PUT /api/notifications/[id]
-  - [ ] Create DELETE /api/notifications/[id]
+- [ ] **1.1.1** Incident management schema (NEW)
+  - [ ] Create incidents table with severity levels (Critical, High, Medium, Low, Maintenance)
+  - [ ] Create incident_updates table for timeline tracking
+  - [ ] Create escalation_policies table with time-based triggers
+  - [ ] Create notification_rules table for alerting configuration
+  - [ ] Add proper indexes and foreign key relationships
 
-- [ ] **3.2.2** Real-time notification delivery
-  - [ ] Implement notification broadcasting
-  - [ ] Create notification channels
-  - [ ] Set up notification queuing
-  - [ ] Implement notification delivery tracking
+- [ ] **1.1.2** Monitoring system schema (NEW)
+  - [ ] Create monitoring_checks table (HTTP, ping, keyword, SSL, port, DNS)
+  - [ ] Create check_results table with timestamps and regional data
+  - [ ] Create monitoring_locations table for global probe locations
+  - [ ] Create check_schedules table for cron-based scheduling
+  - [ ] Set up monitoring-to-incident correlation tables
 
-- [ ] **3.2.3** Notification UI
-  - [ ] Create notification bell component
-  - [ ] Implement notification dropdown
-  - [ ] Create notification list page
-  - [ ] Set up notification preferences
+- [ ] **1.1.3** Enhanced organization and user management (ADAPT EXISTING)
+  - [ ] Extend users table with incident management roles (Admin, Manager, Responder, Viewer)
+  - [ ] Create on_call_schedules table for rotation management
+  - [ ] Create user_contact_methods table (email, SMS, phone preferences)
+  - [ ] Add notification_preferences table for user-specific settings
+  - [ ] Update organization_members table with new role structure
 
-### 3. Activity History and Audit Logging
+- [ ] **1.1.4** Status page enhancement (ADAPT EXISTING)
+  - [ ] Extend status_pages table with incident management features
+  - [ ] Enhance status_page_components table with monitoring check links
+  - [ ] Update subscribers table with SMS subscription capabilities
+  - [ ] Create incident_status_updates table for public timeline
+  - [ ] Add uptime calculation and historical data tables
 
-#### Subtasks:
+- [ ] **1.1.5** Database functions and triggers (NEW)
+  - [ ] **1.1.5.1** Incident auto-creation functions
+    - [ ] Write check failure detection trigger function
+    - [ ] Create incident deduplication logic (based on check_id, time window)
+    - [ ] Implement severity calculation based on check type and failure count
+    - [ ] Create incident auto-resolution trigger for recovered checks
+    - [ ] Set up incident grouping logic for related failures
+  - [ ] **1.1.5.2** Escalation trigger functions
+    - [ ] Create time-based escalation trigger (using pg_cron)
+    - [ ] Implement escalation state transition logic
+    - [ ] Create escalation override handling
+    - [ ] Set up escalation notification queuing
+  - [ ] **1.1.5.3** Uptime calculation functions
+    - [ ] Create real-time uptime calculation (sliding window)
+    - [ ] Implement historical uptime aggregation
+    - [ ] Set up SLA compliance calculation
+    - [ ] Create uptime reporting views
+  - [ ] **1.1.5.4** Activity logging triggers
+    - [ ] Create audit logging trigger for all critical tables
+    - [ ] Set up activity aggregation for dashboard
+    - [ ] Implement activity retention policy
+    - [ ] Create activity search indexes
 
-- [ ] **3.3.1** Activity logging service
-  - [ ] Create activity logging utilities
-  - [ ] Implement activity tracking middleware
-  - [ ] Set up activity aggregation
-  - [ ] Create activity export functionality
-
-- [ ] **3.3.2** Activity API
-  - [ ] Create GET /api/activities
-  - [ ] Create GET /api/activities/[id]
-  - [ ] Implement activity filtering
-  - [ ] Create activity search functionality
-
-- [ ] **3.3.3** Activity UI
-  - [ ] Create activity feed component
-  - [ ] Implement activity timeline
-  - [ ] Create activity filters
-  - [ ] Set up activity export UI
-
-### 4. Real-Time Collaboration Features
-
-#### Subtasks:
-
-- [ ] **3.4.1** Collaboration state management
-  - [ ] Implement real-time state synchronization
-  - [ ] Create conflict resolution logic
-  - [ ] Set up collaboration locking
-  - [ ] Implement collaboration undo/redo
-
-- [ ] **3.4.2** Collaboration UI
-  - [ ] Create collaboration indicators
-  - [ ] Implement user presence display
-  - [ ] Create collaboration cursors
-  - [ ] Set up collaboration chat
-
-- [ ] **3.4.3** Collaboration permissions
-  - [ ] Implement collaboration access control
-  - [ ] Create collaboration role management
-  - [ ] Set up collaboration restrictions
-  - [ ] Implement collaboration audit logging
-
-### 5. Performance Optimization
+### 2. Transform Existing Pages for Incident Management
 
 #### Subtasks:
 
-- [ ] **3.5.1** Database optimization
-  - [ ] Analyze and optimize database queries
-  - [ ] Implement database connection pooling
-  - [ ] Set up database caching
-  - [ ] Create database performance monitoring
+- [ ] **1.2.1** Dashboard transformation (ADAPT EXISTING)
+  - [ ] Replace current dashboard with incident management overview
+  - [ ] Add real-time incident status indicators
+  - [ ] Create active alerts and monitoring status widgets
+  - [ ] Implement quick action buttons for incident response
+  - [ ] Add recent incidents timeline
 
-- [ ] **3.5.2** Frontend optimization
-  - [ ] Implement code splitting
-  - [ ] Set up lazy loading
-  - [ ] Optimize bundle size
-  - [ ] Implement caching strategies
+- [ ] **1.2.2** Settings page enhancement (ADAPT EXISTING)
+  - [ ] Keep existing organization management functionality
+  - [ ] Add monitoring configuration section
+  - [ ] Create escalation policy management
+  - [ ] Add notification settings for incident alerting
+  - [ ] Integrate team role management for incident response
 
-- [ ] **3.5.3** Real-time optimization
-  - [ ] Optimize WebSocket message size
-  - [ ] Implement message batching
-  - [ ] Set up connection pooling
-  - [ ] Create performance monitoring
+- [ ] **1.2.3** Navigation updates (ADAPT EXISTING)
+  - [ ] Update NavBar with incident management sections
+  - [ ] Add Incidents, Monitoring, On-Call links
+  - [ ] Keep existing status page and organization navigation
+  - [ ] Add alert indicators and notification counters
+  - [ ] Create context-aware navigation based on user role
+
+### 3. Basic Incident Management Implementation
+
+#### Subtasks:
+
+- [ ] **1.3.1** Incident API endpoints (NEW)
+  - [ ] Create POST /api/incidents (create incident)
+  - [ ] Create GET /api/incidents (list incidents with filtering)
+  - [ ] Create GET /api/incidents/[id] (get incident details)
+  - [ ] Create PATCH /api/incidents/[id] (update incident status/details)
+  - [ ] Create POST /api/incidents/[id]/updates (add timeline update)
+
+- [ ] **1.3.2** Incident management UI (NEW)
+  - [ ] Create /incidents page with list and filtering
+  - [ ] Create /incidents/[id] page for incident details
+  - [ ] Create incident creation modal/form
+  - [ ] Create incident update and escalation interface
+  - [ ] Implement incident severity indicators and status badges
+
+- [ ] **1.3.3** Incident data validation and workflows (NEW)
+  - [ ] Implement incident validation schemas
+  - [ ] Add input sanitization for incident data
+  - [ ] Set up incident status transition rules
+  - [ ] Create incident assignment and ownership logic
+  - [ ] Add incident timeline tracking
+
+### 4. Basic Monitoring System Implementation
+
+#### Subtasks:
+
+- [ ] **1.4.1** Monitoring check types (NEW)
+  - [ ] Implement HTTP/HTTPS monitoring with status code validation
+  - [ ] Implement ping monitoring for network reachability
+  - [ ] Create monitoring check configuration interface
+  - [ ] Set up basic check scheduling and execution
+  - [ ] Add check result storage and history
+
+- [ ] **1.4.2** Monitoring API endpoints (NEW)
+  - [ ] Create POST /api/monitoring/checks (create check)
+  - [ ] Create GET /api/monitoring/checks (list checks)
+  - [ ] Create PUT /api/monitoring/checks/[id] (update check)
+  - [ ] Create DELETE /api/monitoring/checks/[id] (delete check)
+  - [ ] Create GET /api/monitoring/checks/[id]/results (get results)
+
+- [ ] **1.4.3** Monitoring dashboard (NEW)
+  - [ ] Create /monitoring page with check overview
+  - [ ] Add real-time check status indicators
+  - [ ] Create check configuration forms
+  - [ ] Implement check testing and validation tools
+  - [ ] Add basic performance metrics display
+
+### 5. Enhanced Status Page Integration
+
+#### Subtasks:
+
+- [ ] **1.5.1** Status page incident integration (ADAPT EXISTING)
+  - [ ] Link existing status page components to monitoring checks
+  - [ ] Add incident display to public status pages
+  - [ ] Create automatic status updates from monitoring results
+  - [ ] Implement incident timeline on status pages
+  - [ ] Add maintenance window support
+
+- [ ] **1.5.2** Enhanced subscriber management (ADAPT EXISTING)
+  - [ ] Extend existing subscriber system with SMS support
+  - [ ] Add notification preferences for different incident types
+  - [ ] Create subscriber import/export functionality
+  - [ ] Implement subscriber notification history
+  - [ ] Add unsubscribe and preference management
+
+### 6. Basic Email Alerting Integration
+
+#### Subtasks:
+
+- [ ] **1.6.1** Alert notification system (NEW, integrate with existing SendGrid)
+  - [ ] Create incident notification email templates
+  - [ ] Implement notification routing based on severity
+  - [ ] Set up escalation notification timing
+  - [ ] Add notification delivery tracking
+  - [ ] Create notification preference management
+
+- [ ] **1.6.2** Integration with existing systems (ADAPT EXISTING)
+  - [ ] Use existing SendGrid integration for incident alerts
+  - [ ] Extend existing user management for contact methods
+  - [ ] Integrate with existing organization multi-tenancy
+  - [ ] Maintain existing authentication and access control
+  - [ ] Keep existing status page notification system
 
 ---
 
-## Phase 4: Subscription & Billing (Weeks 13-16)
+## Phase 2: Core Monitoring Enhancement (Weeks 5-8)
 
-### 1. Stripe Integration and Subscription Management
-
-#### Subtasks:
-
-- [ ] **4.1.1** Stripe setup
-  - [ ] Install Stripe SDK
-  - [ ] Configure Stripe credentials
-  - [ ] Set up Stripe webhooks
-  - [ ] Test Stripe integration
-
-- [ ] **4.1.2** Subscription API
-  - [ ] Create POST /api/subscriptions
-  - [ ] Create GET /api/subscriptions
-  - [ ] Create PUT /api/subscriptions/[id]
-  - [ ] Create DELETE /api/subscriptions/[id]
-
-- [ ] **4.1.3** Stripe webhook handlers
-  - [ ] Implement subscription.created webhook
-  - [ ] Implement subscription.updated webhook
-  - [ ] Implement subscription.deleted webhook
-  - [ ] Implement payment_intent.succeeded webhook
-
-### 2. Plan-Based Feature Access Control
+### 1. Advanced Monitoring Checks Implementation
 
 #### Subtasks:
 
-- [ ] **4.2.1** Feature flag system
-  - [ ] Create feature flag utilities
-  - [ ] Implement feature checking middleware
-  - [ ] Set up feature flag configuration
-  - [ ] Create feature flag UI components
+- [ ] **2.1.1** Advanced monitoring check types (DETAILED BREAKDOWN)
+  - [ ] **2.1.1.1** Keyword monitoring implementation
+    - [ ] Create keyword search functionality in HTTP responses
+    - [ ] Implement expected text matching with regex support
+    - [ ] Set up content change detection
+    - [ ] Create keyword alert configuration
+    - [ ] Add keyword match result storage
+  - [ ] **2.1.1.2** SSL certificate monitoring
+    - [ ] Implement SSL certificate expiration checking
+    - [ ] Create certificate chain validation
+    - [ ] Set up certificate issuer verification
+    - [ ] Add certificate change detection
+    - [ ] Create SSL alert thresholds (30, 14, 7 days)
+  - [ ] **2.1.1.3** DNS monitoring implementation
+    - [ ] Create DNS resolution time monitoring
+    - [ ] Implement DNS record type checking (A, AAAA, CNAME, MX)
+    - [ ] Set up DNS propagation validation
+    - [ ] Add DNS server response validation
+    - [ ] Create DNS change detection alerts
+  - [ ] **2.1.1.4** Port monitoring implementation
+    - [ ] Create TCP port connectivity checking
+    - [ ] Implement UDP port monitoring
+    - [ ] Set up port response time measurement
+    - [ ] Add port service identification
+    - [ ] Create port availability alerting
+  - [ ] **2.1.1.5** Advanced HTTP monitoring
+    - [ ] Implement custom header validation
+    - [ ] Create response body size monitoring
+    - [ ] Set up authentication-based monitoring (Basic, Bearer token)
+    - [ ] Add HTTP method support (POST, PUT, DELETE)
+    - [ ] Create JSON response validation
+  - [ ] **2.1.1.6** Monitoring configuration management
+    - [ ] Create monitoring template system
+    - [ ] Implement bulk monitoring setup
+    - [ ] Set up monitoring group management
+    - [ ] Add monitoring tag and categorization
+    - [ ] Create monitoring clone functionality
+  - [ ] **2.1.1.7** Check execution optimization
+    - [ ] Implement distributed check execution
+    - [ ] Create check result caching
+    - [ ] Set up check execution monitoring
+    - [ ] Add check performance optimization
+    - [ ] Create check execution analytics
 
-- [ ] **4.2.2** Plan validation
-  - [ ] Implement plan-based access control
-  - [ ] Create plan upgrade prompts
-  - [ ] Set up plan downgrade handling
-  - [ ] Implement plan usage tracking
+- [ ] **2.1.2** Multi-region monitoring infrastructure (NEW)
+  - [ ] Set up multiple probe locations (US East, US West, EU, Asia)
+  - [ ] Implement regional check distribution
+  - [ ] Create location-based result aggregation
+  - [ ] Add regional performance comparison
+  - [ ] Set up region-specific alerting rules
 
-- [ ] **4.2.3** Feature restrictions
-  - [ ] Create feature restriction components
-  - [ ] Implement usage limit enforcement
-  - [ ] Set up feature upgrade flows
-  - [ ] Create feature comparison UI
+- [ ] **2.1.3** Advanced check scheduling and execution (NEW)
+  - [ ] Implement cron-based scheduling system
+  - [ ] Create check queue management with priorities
+  - [ ] Add check execution load balancing
+  - [ ] Set up check retry logic and exponential backoff
+  - [ ] Create check execution monitoring and alerting
 
-### 3. Billing Interface and Customer Portal
-
-#### Subtasks:
-
-- [ ] **4.3.1** Billing UI
-  - [ ] Create billing dashboard
-  - [ ] Implement plan selection interface
-  - [ ] Create billing history page
-  - [ ] Set up payment method management
-
-- [ ] **4.3.2** Stripe customer portal
-  - [ ] Integrate Stripe customer portal
-  - [ ] Set up portal configuration
-  - [ ] Implement portal session management
-  - [ ] Create portal access controls
-
-- [ ] **4.3.3** Billing notifications
-  - [ ] Create billing email templates
-  - [ ] Implement billing notification system
-  - [ ] Set up payment failure handling
-  - [ ] Create billing reminder system
-
-### 4. Payment Failure Handling
-
-#### Subtasks:
-
-- [ ] **4.4.1** Payment failure detection
-  - [ ] Implement payment failure monitoring
-  - [ ] Create payment failure notifications
-  - [ ] Set up payment retry logic
-  - [ ] Implement payment failure escalation
-
-- [ ] **4.4.2** Grace period management
-  - [ ] Implement grace period logic
-  - [ ] Create grace period notifications
-  - [ ] Set up grace period UI
-  - [ ] Implement grace period extensions
-
-- [ ] **4.4.3** Account suspension
-  - [ ] Implement account suspension logic
-  - [ ] Create suspension notifications
-  - [ ] Set up suspension UI
-  - [ ] Implement account reactivation
-
-### 5. Subscription Analytics
+### 2. Incident Auto-Creation and Correlation
 
 #### Subtasks:
 
-- [ ] **4.5.1** Analytics data collection
-  - [ ] Implement subscription event tracking
-  - [ ] Create analytics data aggregation
-  - [ ] Set up analytics reporting
-  - [ ] Implement analytics export
+- [ ] **2.2.1** Incident auto-creation system (NEW)
+  - [ ] Create monitoring failure detection algorithms
+  - [ ] Implement incident creation rules and thresholds
+  - [ ] Set up incident severity mapping from check failures
+  - [ ] Add incident deduplication logic
+  - [ ] Create incident auto-resolution when checks recover
 
-- [ ] **4.5.2** Analytics dashboard
-  - [ ] Create subscription analytics dashboard
-  - [ ] Implement revenue tracking
-  - [ ] Create churn analysis
-  - [ ] Set up conversion tracking
+- [ ] **2.2.2** Alert correlation and grouping (NEW)
+  - [ ] Implement related incident detection
+  - [ ] Create service dependency mapping
+  - [ ] Set up cascading failure correlation
+  - [ ] Add root cause analysis automation
+  - [ ] Create incident impact assessment
 
-- [ ] **4.5.3** Analytics API
-  - [ ] Create GET /api/analytics/subscriptions
-  - [ ] Create GET /api/analytics/revenue
-  - [ ] Create GET /api/analytics/churn
-  - [ ] Implement analytics filtering
+### 3. Enhanced Status Page Auto-Updates
+
+#### Subtasks:
+
+- [ ] **2.3.1** Real-time status synchronization (ENHANCE EXISTING)
+  - [ ] Connect monitoring results to status page components
+  - [ ] Implement automatic status updates based on check results
+  - [ ] Create status aggregation rules for multiple checks
+  - [ ] Set up real-time status broadcasting
+  - [ ] Add manual status override capabilities
+
+- [ ] **2.3.2** Historical uptime tracking (NEW)
+  - [ ] Create uptime calculation system
+  - [ ] Implement 30/60/90-day uptime reporting
+  - [ ] Set up uptime trend analysis
+  - [ ] Add SLA compliance tracking
+  - [ ] Create uptime visualization components
+
+### 4. Advanced Email Alerting
+
+#### Subtasks:
+
+- [ ] **2.4.1** Enhanced notification system (EXTEND EXISTING)
+  - [ ] Create severity-based notification templates
+  - [ ] Implement notification batching and throttling
+  - [ ] Set up notification delivery confirmation
+  - [ ] Add notification failure handling and retries
+  - [ ] Create notification analytics and tracking
+
+- [ ] **2.4.2** Alert fatigue prevention (NEW)
+  - [ ] Implement notification frequency limits
+  - [ ] Create alert suppression during maintenance windows
+  - [ ] Set up intelligent alert grouping
+  - [ ] Add quiet hours and on-call scheduling awareness
+  - [ ] Create notification quality scoring
 
 ---
 
-## Phase 5: Custom Branding (Weeks 17-20)
+## Phase 3: Advanced Alerting (Weeks 9-12)
 
-### 1. Custom Domain Support Implementation
-
-#### Subtasks:
-
-- [ ] **5.1.1** Domain management API
-  - [ ] Create POST /api/organizations/[id]/domains
-  - [ ] Create GET /api/organizations/[id]/domains
-  - [ ] Create DELETE /api/organizations/[id]/domains
-  - [ ] Implement domain validation
-
-- [ ] **5.1.2** DNS verification
-  - [ ] Implement DNS record verification
-  - [ ] Create DNS setup instructions
-  - [ ] Set up domain verification UI
-  - [ ] Implement domain status tracking
-
-- [ ] **5.1.3** Domain routing
-  - [ ] Implement custom domain routing
-  - [ ] Set up domain-based organization resolution
-  - [ ] Create domain fallback handling
-  - [ ] Implement domain SSL management
-
-### 2. Branding Customization Interface
+### 1. SMS and Voice Notification Integration
 
 #### Subtasks:
 
-- [ ] **5.2.1** Branding API
-  - [ ] Create PUT /api/organizations/[id]/branding
-  - [ ] Create GET /api/organizations/[id]/branding
-  - [ ] Implement branding validation
-  - [ ] Create branding upload endpoints
+- [ ] **3.1.1** Twilio integration setup (NEW)
+  - [ ] Set up Twilio account and API integration
+  - [ ] Create SMS notification delivery system
+  - [ ] Implement voice call notification with text-to-speech
+  - [ ] Add delivery confirmation and failure handling
+  - [ ] Create SMS/voice notification templates
 
-- [ ] **5.2.2** Branding UI
-  - [ ] Create branding settings page
-  - [ ] Implement logo upload interface
-  - [ ] Create color picker components
-  - [ ] Set up branding preview
+- [ ] **3.1.2** Multi-channel notification routing (NEW)
+  - [ ] Create notification preference management
+  - [ ] Implement channel failover logic
+  - [ ] Set up notification delivery tracking
+  - [ ] Add notification acknowledgment handling
+  - [ ] Create notification delivery analytics
 
-- [ ] **5.2.3** File storage
-  - [ ] Set up Cloudflare R2 integration
-  - [ ] Implement file upload handling
-  - [ ] Create file validation
-  - [ ] Set up file CDN delivery
-
-### 3. Multi-Tenant Routing and Host Resolution
+### 2. Escalation Policy Engine
 
 #### Subtasks:
 
-- [ ] **5.3.1** Host-based routing
-  - [ ] Implement host header parsing
-  - [ ] Create organization resolution logic
-  - [ ] Set up routing middleware
-  - [ ] Implement routing fallbacks
+- [ ] **3.2.1** Escalation configuration (NEW)
+  - [ ] Create escalation policy management interface
+  - [ ] Implement multi-level escalation chains
+  - [ ] Set up time-based escalation triggers
+  - [ ] Add severity-based escalation rules
+  - [ ] Create escalation override capabilities
 
-- [ ] **5.3.2** Subdomain support
-  - [ ] Implement subdomain routing
-  - [ ] Create subdomain validation
-  - [ ] Set up subdomain management
-  - [ ] Implement subdomain branding
+- [ ] **3.2.2** Escalation engine implementation (DETAILED BREAKDOWN)
+  - [ ] **3.2.2.1** Escalation state machine
+    - [ ] Design escalation state transitions (pending → escalated → resolved)
+    - [ ] Create escalation level tracking
+    - [ ] Implement escalation timeout handling
+    - [ ] Set up escalation cancellation logic
+    - [ ] Create escalation state persistence
+  - [ ] **3.2.2.2** Job queue system
+    - [ ] Set up Redis/Bull queue for escalation jobs
+    - [ ] Create escalation job scheduling
+    - [ ] Implement job retry logic with exponential backoff
+    - [ ] Set up job priority handling
+    - [ ] Create job monitoring and alerting
+  - [ ] **3.2.2.3** Time-based trigger system
+    - [ ] Create timer-based escalation triggers
+    - [ ] Implement business hours awareness
+    - [ ] Set up timezone handling for global teams
+    - [ ] Create escalation delay calculation
+    - [ ] Implement escalation pause/resume functionality
 
-- [ ] **5.3.3** Routing optimization
-  - [ ] Implement routing caching
-  - [ ] Create routing performance monitoring
-  - [ ] Set up routing error handling
-  - [ ] Implement routing analytics
-
-### 4. Email Branding Integration
-
-#### Subtasks:
-
-- [ ] **5.4.1** Email template system
-  - [ ] Create branded email templates
-  - [ ] Implement template customization
-  - [ ] Set up template variables
-  - [ ] Create template preview system
-
-- [ ] **5.4.2** Email branding API
-  - [ ] Create PUT /api/organizations/[id]/email-branding
-  - [ ] Create GET /api/organizations/[id]/email-branding
-  - [ ] Implement email branding validation
-  - [ ] Create email branding utilities
-
-- [ ] **5.4.3** Email delivery
-  - [ ] Update SendGrid integration
-  - [ ] Implement branded email sending
-  - [ ] Set up email tracking
-  - [ ] Create email analytics
-
-### 5. White-Label Feature Completion
+### 3. On-Call Schedule Management
 
 #### Subtasks:
 
-- [ ] **5.5.1** White-label configuration
-  - [ ] Create white-label settings
-  - [ ] Implement white-label validation
-  - [ ] Set up white-label defaults
-  - [ ] Create white-label utilities
+- [ ] **3.3.1** On-call scheduling system (NEW)
+  - [ ] Create on-call schedule management interface
+  - [ ] Implement rotation patterns (weekly, bi-weekly, monthly)
+  - [ ] Set up schedule conflict detection and resolution
+  - [ ] Add on-call override and substitution functionality
+  - [ ] Create schedule notification and reminder system
 
-- [ ] **5.5.2** White-label UI
-  - [ ] Implement dynamic branding loading
-  - [ ] Create white-label components
-  - [ ] Set up white-label theming
-  - [ ] Implement white-label navigation
+- [ ] **3.3.2** Advanced scheduling features (NEW)
+  - [ ] Implement holiday and vacation scheduling
+  - [ ] Create multi-timezone support
+  - [ ] Set up on-call handoff procedures
+  - [ ] Add on-call load balancing
+  - [ ] Create on-call performance analytics
 
-- [ ] **5.5.3** White-label testing
-  - [ ] Create white-label test scenarios
-  - [ ] Implement white-label validation
-  - [ ] Set up white-label monitoring
-  - [ ] Create white-label documentation
+### 4. Slack/Teams Integration
+
+#### Subtasks:
+
+- [ ] **3.4.1** Slack integration (NEW)
+  - [ ] Create Slack app and bot configuration
+  - [ ] Implement incident notification to Slack channels
+  - [ ] Set up interactive message actions for incident response
+  - [ ] Create Slack slash commands for incident management
+  - [ ] Add bidirectional sync for incident updates
+
+- [ ] **3.4.2** Microsoft Teams integration (NEW)
+  - [ ] Create Teams app and bot configuration
+  - [ ] Implement adaptive card notifications
+  - [ ] Set up Teams webhook integration
+  - [ ] Create Teams command handlers
+  - [ ] Add incident management workflow in Teams
+
+### 5. Alert Deduplication System
+
+#### Subtasks:
+
+- [ ] **3.5.1** Alert deduplication (NEW)
+  - [ ] Create alert fingerprinting system
+  - [ ] Implement duplicate detection algorithms
+  - [ ] Set up alert clustering and grouping
+  - [ ] Create deduplication rules engine
+  - [ ] Add deduplication performance monitoring
+
+- [ ] **3.5.2** Alert correlation (NEW)
+  - [ ] Implement service dependency correlation
+  - [ ] Create alert relationship detection
+  - [ ] Set up root cause analysis automation
+  - [ ] Add impact assessment for correlated alerts
+  - [ ] Create correlation rule management
+
+---
+
+## Phase 4: Advanced Features (Weeks 13-16)
+
+### 1. Dependency Monitoring
+
+#### Subtasks:
+
+- [ ] **4.1.1** External service integration (NEW)
+  - [ ] Integrate with AWS Service Health Dashboard
+  - [ ] Create Azure Status integration
+  - [ ] Set up Google Cloud Status monitoring
+  - [ ] Add third-party service status tracking
+  - [ ] Create dependency impact analysis
+
+- [ ] **4.1.2** Service dependency mapping (NEW)
+  - [ ] Create service dependency visualization
+  - [ ] Implement dependency-aware alerting
+  - [ ] Set up cascading failure detection
+  - [ ] Add dependency health scoring
+  - [ ] Create dependency change tracking
+
+### 2. Advanced Analytics Dashboard
+
+#### Subtasks:
+
+- [ ] **4.2.1** Incident analytics (NEW)
+  - [ ] **4.2.1.1** MTTA/MTTR calculation system
+    - [ ] Create time-series data aggregation jobs
+    - [ ] Implement MTTA calculation (time to acknowledge)
+    - [ ] Create MTTR calculation (time to resolution)
+    - [ ] Set up rolling averages and percentiles
+    - [ ] Create trend analysis and forecasting
+  - [ ] **4.2.1.2** Analytics dashboard creation
+    - [ ] Create executive-level analytics dashboard
+    - [ ] Implement team performance metrics
+    - [ ] Set up service reliability reporting
+    - [ ] Add custom report builder
+    - [ ] Create scheduled report delivery
+
+### 3. Custom Branding Enhancement
+
+#### Subtasks:
+
+- [ ] **4.3.1** Enhanced status page branding (EXTEND EXISTING)
+  - [ ] Extend existing branding with custom CSS injection
+  - [ ] Add advanced logo and color customization
+  - [ ] Create theme management system
+  - [ ] Implement brand preview functionality
+  - [ ] Add white-label status page options
+
+### 4. REST API Development
+
+#### Subtasks:
+
+- [ ] **4.4.1** Comprehensive API endpoints (NEW)
+  - [ ] Create incident management API
+  - [ ] Implement monitoring configuration API
+  - [ ] Set up escalation policy API
+  - [ ] Create team management API
+  - [ ] Add analytics data API
+
+### 5. Integration Endpoints
+
+#### Subtasks:
+
+- [ ] **4.5.1** Email-to-incident system (NEW)
+  - [ ] **4.5.1.1** Email receiving infrastructure
+    - [ ] Set up email receiving service (SendGrid Inbound Parse)
+    - [ ] Create email webhook endpoint
+    - [ ] Implement email authentication and validation
+    - [ ] Set up email routing and filtering
+  - [ ] **4.5.1.2** Email processing pipeline
+    - [ ] Create email content parsing
+    - [ ] Implement incident data extraction
+    - [ ] Set up automatic incident creation
+    - [ ] Add email processing monitoring
+
+- [ ] **4.5.2** Webhook receiver system (NEW)
+  - [ ] **4.5.2.1** Webhook infrastructure
+    - [ ] Create generic webhook endpoints
+    - [ ] Implement webhook authentication
+    - [ ] Set up payload validation
+    - [ ] Create webhook rate limiting
+  - [ ] **4.5.2.2** Webhook processing
+    - [ ] Create payload transformation engine
+    - [ ] Implement webhook processing queue
+    - [ ] Set up webhook retry logic
+    - [ ] Add webhook monitoring
+
+---
+
+## Phase 5: Enterprise Features (Weeks 17-20)
+
+### 1. Advanced Integrations
+- [ ] Jira integration for ticket creation
+- [ ] GitHub integration for deployment correlation
+- [ ] Advanced cloud provider integrations
+
+### 2. Enterprise Authentication
+- [ ] SSO implementation (SAML/OIDC)
+- [ ] Advanced security features
+- [ ] Comprehensive audit logging
+
+### 3. Custom Domain Support
+- [ ] Domain verification system
+- [ ] SSL certificate management
+- [ ] Multi-domain routing
 
 ---
 
 ## Phase 6: Polish & Launch (Weeks 21-24)
 
-### 1. UI/UX Refinement and Testing
+### 1. Performance Optimization
+- [ ] Database query optimization
+- [ ] Caching implementation
+- [ ] Real-time performance tuning
 
-#### Subtasks:
+### 2. Security Audit
+- [ ] Penetration testing
+- [ ] Security hardening
+- [ ] Compliance preparation
 
-- [ ] **6.1.1** UI polish
-  - [ ] Implement responsive design improvements
-  - [ ] Create loading states and animations
-  - [ ] Optimize accessibility (WCAG compliance)
-  - [ ] Implement dark mode support
-
-- [ ] **6.1.2** User experience testing
-  - [ ] Conduct usability testing
-  - [ ] Implement user feedback collection
-  - [ ] Create user journey optimization
-  - [ ] Set up A/B testing framework
-
-- [ ] **6.1.3** Cross-browser testing
-  - [ ] Test across major browsers
-  - [ ] Implement browser-specific fixes
-  - [ ] Create mobile responsiveness testing
-  - [ ] Set up automated testing
-
-### 2. Performance Optimization and Monitoring
-
-#### Subtasks:
-
-- [ ] **6.2.1** Performance monitoring
-  - [ ] Set up performance monitoring tools
-  - [ ] Implement performance metrics collection
-  - [ ] Create performance dashboards
-  - [ ] Set up performance alerts
-
-- [ ] **6.2.2** Optimization implementation
-  - [ ] Implement image optimization
-  - [ ] Set up CDN optimization
-  - [ ] Create caching strategies
-  - [ ] Implement lazy loading
-
-- [ ] **6.2.3** Database optimization
-  - [ ] Optimize database queries
-  - [ ] Implement database indexing
-  - [ ] Set up database monitoring
-  - [ ] Create database backup strategies
-
-### 3. Security Audit and Penetration Testing
-
-#### Subtasks:
-
-- [ ] **6.3.1** Security audit
-  - [ ] Conduct code security review
-  - [ ] Implement security best practices
-  - [ ] Set up security monitoring
-  - [ ] Create security documentation
-
-- [ ] **6.3.2** Penetration testing
-  - [ ] Conduct penetration testing
-  - [ ] Implement security fixes
-  - [ ] Set up vulnerability scanning
-  - [ ] Create security incident response
-
-- [ ] **6.3.3** Compliance review
-  - [ ] Review GDPR compliance
-  - [ ] Implement data protection measures
-  - [ ] Set up privacy controls
-  - [ ] Create compliance documentation
-
-### 4. Documentation and User Guides
-
-#### Subtasks:
-
-- [ ] **6.4.1** User documentation
-  - [ ] Create user onboarding guide
-  - [ ] Implement in-app help system
-  - [ ] Create feature documentation
-  - [ ] Set up knowledge base
-
-- [ ] **6.4.2** Developer documentation
-  - [ ] Create API documentation
-  - [ ] Implement code documentation
-  - [ ] Create deployment guides
-  - [ ] Set up developer resources
-
-- [ ] **6.4.3** Admin documentation
-  - [ ] Create admin user guide
-  - [ ] Implement admin training materials
-  - [ ] Create troubleshooting guides
-  - [ ] Set up support documentation
-
-### 5. Production Deployment and Launch
-
-#### Subtasks:
-
-- [ ] **6.5.1** Production deployment
-  - [ ] Set up production environment
-  - [ ] Configure production settings
-  - [ ] Implement deployment automation
-  - [ ] Set up monitoring and alerting
-
-- [ ] **6.5.2** Launch preparation
-  - [ ] Create launch checklist
-  - [ ] Implement soft launch strategy
-  - [ ] Set up beta testing program
-  - [ ] Create launch marketing materials
-
-- [ ] **6.5.3** Post-launch monitoring
-  - [ ] Set up post-launch monitoring
-  - [ ] Implement user feedback collection
-  - [ ] Create performance tracking
-  - [ ] Set up support system
+### 3. Documentation & Launch
+- [ ] User documentation
+- [ ] API documentation
+- [ ] Production deployment
 
 ---
 
-## Task Dependencies and Critical Path
+## Priority Changes for Adaptation
 
-### Critical Path Analysis:
+### Immediate Focus (First 2 weeks):
+1. **Database schema transformation** - Add incident and monitoring tables
+2. **Dashboard adaptation** - Transform existing dashboard for incident management
+3. **Basic incident CRUD** - Core incident management functionality
+4. **Simple monitoring** - HTTP/ping checks with existing status page integration
 
-1. **Database setup** must be completed before any other development
-2. **Authentication system** is required for all user-facing features
-3. **Organization model** is needed for multi-tenant features
-4. **Real-time system** depends on WebSocket setup
-5. **Billing system** requires Stripe integration
-6. **Custom branding** depends on multi-tenant routing
+### Key Advantages of Adaptation:
+- ✅ Authentication and user management already working
+- ✅ Organization multi-tenancy already implemented
+- ✅ Status page foundation already built
+- ✅ Database connection and basic infrastructure ready
+- ✅ Navigation and settings infrastructure in place
 
-### Parallel Development Opportunities:
+### Modified Success Metrics:
+- Incident management functionality operational within 4 weeks
+- Basic monitoring with auto-incident creation within 6 weeks
+- Advanced alerting and escalation within 12 weeks
+- Full incident management platform within 20 weeks (vs 24 weeks from scratch)
 
-- UI components can be developed in parallel with backend APIs
-- Documentation can be written alongside feature development
-- Testing can be implemented incrementally
-- Performance optimization can be ongoing throughout development
-
-### Risk Mitigation:
-
-- Database schema changes should be minimal after Phase 1
-- Authentication system should be thoroughly tested early
-- Real-time features should be prototyped before full implementation
-- Billing system should be tested with Stripe sandbox environment
-- Custom branding should be validated with multiple test organizations
-
----
-
-## Resource Requirements
-
-### Development Team:
-
-- **1 Full-stack Developer** (Next.js, PostgreSQL, API development)
-- **1 Frontend Developer** (React, Material UI, UI/UX)
-- **1 DevOps Engineer** (Cloudflare, deployment, monitoring)
-- **1 QA Engineer** (Testing, security, performance)
-
-### Infrastructure:
-
-- **Cloudflare Pages** for hosting
-- **PostgreSQL Database** (already configured)
-- **Stripe** for payments
-- **SendGrid** for emails
-- **WebSocket Service** (Pusher/Ably/Supabase)
-
-### Timeline:
-
-- **24 weeks total** (6 phases × 4 weeks each)
-- **Critical path**: ~20 weeks
-- **Buffer time**: 4 weeks for unexpected issues
-
----
-
-## Success Metrics
-
-### Technical Metrics:
-
-- Page load time < 2 seconds
-- Real-time updates < 500ms
-- 99.9% uptime
-- Zero critical security vulnerabilities
-
-### Business Metrics:
-
-- User registration and activation rates
-- Organization creation and team member growth
-- Subscription conversion rates
-- Customer retention and satisfaction scores
-
-### Development Metrics:
-
-- Code coverage > 80%
-- Zero critical bugs in production
-- All security vulnerabilities addressed
-- Complete documentation coverage
+This adaptation approach allows us to build on the solid foundation already established while transforming the application into a comprehensive incident management platform.

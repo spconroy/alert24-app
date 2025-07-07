@@ -1,9 +1,9 @@
 {
-  "name": "Alert24 - Multi-Tenant SaaS Application",
+  "name": "Alert24 - Incident Management & Monitoring Platform",
   "version": "1.0.0",
-  "description": "Real-time collaboration platform with custom branding and subscription management",
+  "description": "Comprehensive incident management platform combining monitoring (Pingdom), alerting (PagerDuty), and status pages (StatusPage.io)",
   "project": {
-    "type": "saas",
+    "type": "incident-management",
     "architecture": "multi-tenant",
     "framework": "nextjs",
     "database": "postgresql",
@@ -20,18 +20,22 @@
   },
   "techStack": {
     "frontend": {
-      "framework": "Next.js 13+",
-      "ui": "Material UI (MUI)",
+      "framework": "Next.js 14+",
+      "language": "JavaScript (NOT TypeScript)",
+      "ui": "Material UI (MUI) + Tailwind CSS",
       "styling": "Tailwind CSS",
       "state": "React Context + Hooks"
     },
     "backend": {
       "runtime": "Next.js API Routes",
-      "orm": "Prisma/Drizzle",
-      "authentication": "NextAuth.js (Auth.js)",
+      "orm": "Prisma ORM",
+      "authentication": "NextAuth.js",
       "email": "SendGrid",
+      "sms": "Twilio",
       "payments": "Stripe",
-      "realtime": "WebSocket (Pusher/Ably/Supabase)"
+      "realtime": "WebSocket (Pusher/Ably/Supabase)",
+      "monitoring": "External API calls for HTTP/ping checks",
+      "scheduler": "Vercel Cron or external scheduler"
     },
     "infrastructure": {
       "hosting": "Cloudflare Pages",
@@ -41,33 +45,62 @@
     }
   },
   "features": {
-    "core": [
-      "Multi-tenant organization management",
-      "Google OAuth authentication",
-      "Role-based access control",
-      "Real-time notifications",
-      "Activity history and audit logging",
-      "Subscription management with Stripe",
-      "Custom branding and white-labeling",
-      "Team member invitations"
+    "incidentManagement": [
+      "Real-time incident dashboard",
+      "Incident lifecycle management (create, update, escalate, resolve)",
+      "Severity levels (Critical, High, Medium, Low, Maintenance)",
+      "Escalation policies with time-based triggers",
+      "Post-mortem documentation and analysis"
     ],
-    "realTime": [
-      "WebSocket connections",
-      "Live notifications",
-      "Collaboration updates",
-      "Status indicators"
+    "monitoring": [
+      "HTTP/HTTPS monitoring with status code validation",
+      "Ping monitoring for network reachability",
+      "Keyword monitoring for content verification",
+      "SSL certificate expiration monitoring",
+      "Port monitoring (TCP/UDP)",
+      "DNS resolution monitoring",
+      "Multiple global monitoring regions",
+      "Configurable check intervals and timeouts"
     ],
-    "billing": [
-      "Subscription plans (Free, Pro, Enterprise)",
-      "Stripe integration",
-      "Usage tracking",
-      "Billing history"
+    "statusPages": [
+      "Branded public status pages",
+      "Component and service management",
+      "Incident display and timeline",
+      "Subscriber management (email/SMS)",
+      "Historical uptime reporting",
+      "Custom domain support",
+      "Embedded status widgets"
     ],
-    "branding": [
-      "Custom logos",
-      "Brand colors",
-      "Custom domains",
-      "White-label emails"
+    "alerting": [
+      "Multi-channel notifications (email, SMS, voice, Slack, Teams)",
+      "Severity-based notification routing",
+      "Escalation timeout configuration",
+      "Alert deduplication and correlation",
+      "Maintenance window awareness",
+      "Mobile push notifications"
+    ],
+    "teamManagement": [
+      "Role-based access control (Admin, Manager, Responder, Viewer)",
+      "On-call schedule management with rotations",
+      "Team member contact preferences",
+      "Holiday and vacation scheduling",
+      "Time zone support"
+    ],
+    "analytics": [
+      "MTTA/MTTR incident metrics",
+      "Availability and uptime reporting",
+      "Team performance analytics",
+      "Response time trends",
+      "SLA compliance reporting",
+      "Exportable reports and dashboards"
+    ],
+    "integrations": [
+      "Incoming email-to-incident creation",
+      "Webhook receivers for external alerts",
+      "REST API for incident management",
+      "Slack/Teams bidirectional integration",
+      "Jira ticket creation",
+      "Cloud provider status integration"
     ]
   },
   "databaseSchema": {
@@ -75,90 +108,112 @@
       "organizations",
       "users",
       "organization_members",
+      "incidents",
+      "incident_updates",
+      "monitoring_checks",
+      "check_results",
+      "escalation_policies",
+      "notification_rules",
+      "on_call_schedules",
+      "status_pages",
+      "status_page_components",
+      "subscribers",
       "notifications",
-      "realtime_channels",
+      "integrations",
+      "webhook_endpoints",
       "activity_history",
       "subscription_plans",
-      "billing_history",
-      "projects",
-      "project_members",
-      "user_sessions"
+      "billing_history"
     ],
     "extensions": ["uuid-ossp", "pgcrypto"],
     "functions": [
       "update_updated_at_column",
-      "get_user_organizations",
+      "create_incident_from_check",
+      "escalate_incident",
       "log_activity",
-      "create_notification"
+      "create_notification",
+      "calculate_uptime",
+      "get_on_call_responder"
     ],
-    "views": ["organization_dashboard", "user_dashboard"]
+    "views": [
+      "incident_dashboard",
+      "service_health_overview",
+      "team_performance_metrics",
+      "uptime_statistics"
+    ]
   },
   "development": {
     "phases": [
       {
-        "name": "Phase 1: Core Foundation",
+        "name": "Phase 1: Foundation",
         "duration": "4 weeks",
         "tasks": [
-          "Next.js project setup with Cloudflare Pages",
-          "PostgreSQL database setup and schema design",
-          "Google OAuth integration with NextAuth.js",
-          "Basic user authentication and session management",
-          "Organization model and multi-tenant architecture"
+          "Next.js project setup with authentication",
+          "PostgreSQL database schema for incidents and monitoring",
+          "Basic incident management CRUD operations",
+          "Simple monitoring check system (HTTP/ping)",
+          "Basic status page functionality",
+          "Organization and user management foundation"
         ]
       },
       {
-        "name": "Phase 2: Team Management",
+        "name": "Phase 2: Core Monitoring",
         "duration": "4 weeks",
         "tasks": [
-          "Organization CRUD operations",
-          "Team member invitation system",
-          "Role-based access control implementation",
-          "Organization switching functionality",
-          "Basic UI with Material UI components"
+          "HTTP/ping monitoring implementation with multiple regions",
+          "Check scheduling and result processing system",
+          "Incident auto-creation from failed checks",
+          "Basic email alerting via SendGrid",
+          "Status page auto-updates from monitoring results",
+          "Monitoring dashboard and check management UI"
         ]
       },
       {
-        "name": "Phase 3: Real-Time Features",
+        "name": "Phase 3: Advanced Alerting",
         "duration": "4 weeks",
         "tasks": [
-          "WebSocket integration setup",
-          "Real-time notification system",
-          "Activity history and audit logging",
-          "Real-time collaboration features",
-          "Performance optimization"
+          "SMS and voice notification integration via Twilio",
+          "Escalation policy engine with time-based triggers",
+          "On-call schedule management with rotations",
+          "Mobile app development for incident response",
+          "Slack/Teams integration for notifications",
+          "Alert deduplication and correlation system"
         ]
       },
       {
-        "name": "Phase 4: Subscription & Billing",
+        "name": "Phase 4: Advanced Features",
         "duration": "4 weeks",
         "tasks": [
-          "Stripe integration and subscription management",
-          "Plan-based feature access control",
-          "Billing interface and customer portal",
-          "Payment failure handling",
-          "Subscription analytics"
+          "Dependency monitoring and external service correlation",
+          "Advanced analytics and reporting dashboard",
+          "Custom branding and white-label features",
+          "REST API development and documentation",
+          "Incoming integration endpoints (email-to-incident, webhook receivers)",
+          "Outgoing webhook system implementation"
         ]
       },
       {
-        "name": "Phase 5: Custom Branding",
+        "name": "Phase 5: Enterprise Features",
         "duration": "4 weeks",
         "tasks": [
-          "Custom domain support implementation",
-          "Branding customization interface",
-          "Multi-tenant routing and host resolution",
-          "Email branding integration",
-          "White-label feature completion"
+          "Advanced integrations (Jira, GitHub, cloud providers)",
+          "Enterprise authentication (SSO, SAML)",
+          "Advanced security features and audit logging",
+          "Custom domain support for status pages",
+          "Enterprise reporting and analytics",
+          "Advanced team management and permissions"
         ]
       },
       {
-        "name": "Phase 6: Polish & Launch",
+        "name": "Phase 6: Launch & Optimization",
         "duration": "4 weeks",
         "tasks": [
-          "UI/UX refinement and testing",
-          "Performance optimization and monitoring",
+          "Performance optimization and load testing",
           "Security audit and penetration testing",
-          "Documentation and user guides",
-          "Production deployment and launch"
+          "Scalability validation and optimization",
+          "Comprehensive documentation and user guides",
+          "Production deployment and monitoring setup",
+          "Customer onboarding and support system"
         ]
       }
     ]
@@ -172,9 +227,15 @@
       "GOOGLE_CLIENT_ID": "your-google-client-id",
       "GOOGLE_CLIENT_SECRET": "your-google-client-secret",
       "SENDGRID_API_KEY": "your-sendgrid-api-key",
+      "TWILIO_ACCOUNT_SID": "your-twilio-account-sid",
+      "TWILIO_AUTH_TOKEN": "your-twilio-auth-token",
       "STRIPE_SECRET_KEY": "your-stripe-secret-key",
       "STRIPE_PUBLISHABLE_KEY": "your-stripe-publishable-key",
-      "STRIPE_WEBHOOK_SECRET": "your-stripe-webhook-secret"
+      "STRIPE_WEBHOOK_SECRET": "your-stripe-webhook-secret",
+      "PUSHER_APP_ID": "your-pusher-app-id",
+      "PUSHER_KEY": "your-pusher-key",
+      "PUSHER_SECRET": "your-pusher-secret",
+      "PUSHER_CLUSTER": "your-pusher-cluster"
     },
     "production": {
       "NODE_ENV": "production",
@@ -184,9 +245,15 @@
       "GOOGLE_CLIENT_ID": "your-google-client-id",
       "GOOGLE_CLIENT_SECRET": "your-google-client-secret",
       "SENDGRID_API_KEY": "your-sendgrid-api-key",
+      "TWILIO_ACCOUNT_SID": "your-twilio-account-sid",
+      "TWILIO_AUTH_TOKEN": "your-twilio-auth-token",
       "STRIPE_SECRET_KEY": "your-stripe-secret-key",
       "STRIPE_PUBLISHABLE_KEY": "your-stripe-publishable-key",
-      "STRIPE_WEBHOOK_SECRET": "your-stripe-webhook-secret"
+      "STRIPE_WEBHOOK_SECRET": "your-stripe-webhook-secret",
+      "PUSHER_APP_ID": "your-pusher-app-id",
+      "PUSHER_KEY": "your-pusher-key",
+      "PUSHER_SECRET": "your-pusher-secret",
+      "PUSHER_CLUSTER": "your-pusher-cluster"
     }
   },
   "dependencies": {
@@ -196,86 +263,113 @@
       "react-dom@^18",
       "@mui/material",
       "@mui/icons-material",
+      "@mui/x-date-pickers",
       "@emotion/react",
       "@emotion/styled",
       "next-auth",
       "@prisma/client",
       "prisma",
       "@sendgrid/mail",
+      "twilio",
       "stripe",
+      "pusher",
+      "pusher-js",
       "uuid",
       "bcryptjs",
-      "jsonwebtoken"
+      "jsonwebtoken",
+      "node-cron",
+      "axios",
+      "date-fns",
+      "recharts",
+      "react-hook-form",
+      "zod"
     ],
     "development": [
       "eslint",
       "eslint-config-next",
       "postcss",
       "tailwindcss",
-      "@types/node",
-      "@types/react",
-      "@types/react-dom"
+      "jest",
+      "testing-library/react",
+      "testing-library/jest-dom"
     ]
   },
   "fileStructure": {
     "app": {
       "layout.js": "Root layout with providers",
-      "page.js": "Landing page",
+      "page.js": "Dashboard or landing page",
       "globals.css": "Global styles",
       "api": {
         "auth": "Authentication API routes",
-        "organizations": "Organization management",
-        "users": "User management",
+        "incidents": "Incident management endpoints",
+        "monitoring": "Monitoring check endpoints",
+        "status-pages": "Status page management",
         "notifications": "Notification system",
-        "billing": "Subscription and billing",
-        "webhooks": "External service webhooks"
+        "escalation": "Escalation policy management",
+        "on-call": "On-call schedule management",
+        "analytics": "Analytics and reporting",
+        "integrations": "Incoming webhook/email endpoints",
+        "webhooks": "Outgoing webhook system"
       },
-      "dashboard": "Protected dashboard pages",
-      "auth": "Authentication pages",
-      "organizations": "Organization management pages",
-      "components": "Reusable UI components",
-      "lib": "Utility functions and configurations"
+      "dashboard": "Main incident management dashboard",
+      "incidents": "Incident management pages",
+      "monitoring": "Monitoring configuration pages",
+      "status-pages": "Status page management",
+      "team": "Team and on-call management",
+      "analytics": "Analytics and reporting pages",
+      "settings": "Organization and user settings",
+      "status": "Public status pages"
     },
-    "prisma": {
-      "schema.prisma": "Database schema definition",
-      "migrations": "Database migrations"
+    "components": {
+      "incidents": "Incident-related components",
+      "monitoring": "Monitoring dashboard components",
+      "status-pages": "Status page components",
+      "notifications": "Notification components",
+      "analytics": "Analytics and chart components",
+      "team": "Team management components",
+      "ui": "Shared UI components"
     },
-    "docs": {
-      "database_schema.sql": "Complete PostgreSQL schema",
-      "database_config.md": "Database configuration",
-      "verify_schema.sql": "Schema verification script"
+    "lib": {
+      "monitoring": "Monitoring check utilities",
+      "notifications": "Notification sending utilities",
+      "escalation": "Escalation logic",
+      "analytics": "Analytics calculations",
+      "integrations": "Integration handlers"
     }
   },
   "security": {
     "authentication": "Google OAuth 2.0",
     "authorization": "Role-based access control",
     "dataIsolation": "Multi-tenant with organization scoping",
-    "encryption": "HTTPS, JWT tokens, bcrypt passwords",
+    "encryption": "HTTPS, JWT tokens, encrypted sensitive data",
     "validation": "Input sanitization and validation",
-    "rateLimiting": "API rate limiting",
-    "auditLogging": "Comprehensive activity tracking"
+    "rateLimiting": "API rate limiting and abuse prevention",
+    "auditLogging": "Comprehensive activity tracking",
+    "webhookSecurity": "Signed webhooks and API key validation"
   },
   "performance": {
     "targets": {
-      "pageLoadTime": "< 2 seconds",
-      "realTimeUpdates": "< 500ms",
-      "databaseQueries": "Optimized with indexes",
-      "uptime": "99.9%"
+      "platformUptime": "99.9%",
+      "monitoringCheckProcessing": "< 30 seconds",
+      "incidentNotificationDelivery": "< 5 seconds",
+      "statusPageLoadTime": "< 2 seconds",
+      "falsePositiveRate": "< 1%"
     },
     "optimizations": [
-      "Server-side rendering (SSR)",
-      "Edge computing with Cloudflare",
-      "Database connection pooling",
-      "Caching strategies",
-      "Code splitting"
+      "Efficient monitoring check scheduling",
+      "Optimized database queries with indexes",
+      "Caching for status pages and analytics",
+      "Real-time updates via WebSocket",
+      "Edge computing with Cloudflare"
     ]
   },
   "monitoring": {
-    "logging": "Comprehensive activity logging",
+    "platformHealth": "Self-monitoring of the platform",
+    "checkReliability": "Monitoring check success rates",
+    "notificationDelivery": "Notification delivery tracking",
+    "performance": "Response time and throughput monitoring",
     "errorTracking": "Error monitoring and alerting",
-    "performance": "Performance monitoring",
-    "analytics": "User behavior analytics",
-    "healthChecks": "System health monitoring"
+    "analytics": "Usage and performance analytics"
   },
   "deployment": {
     "platform": "Cloudflare Pages",
@@ -283,19 +377,22 @@
     "storage": "Cloudflare R2",
     "cdn": "Cloudflare CDN",
     "ssl": "Automatic SSL certificates",
-    "domains": "Custom domain support"
+    "domains": "Custom domain support for status pages",
+    "monitoring": "Global monitoring probe locations"
   },
   "testing": {
-    "unit": "Jest for unit tests",
+    "unit": "Jest for utility functions",
     "integration": "API integration tests",
-    "e2e": "End-to-end testing",
-    "database": "Database migration tests"
+    "e2e": "End-to-end incident response flows",
+    "monitoring": "Monitoring check accuracy tests",
+    "performance": "Load testing for monitoring system"
   },
   "documentation": {
-    "api": "API documentation",
-    "user": "User guides and tutorials",
-    "developer": "Developer documentation",
-    "deployment": "Deployment guides"
+    "api": "REST API documentation",
+    "integrations": "Integration setup guides",
+    "user": "User guides for incident management",
+    "admin": "Admin guides for setup and configuration",
+    "developer": "Developer documentation for custom integrations"
   },
   "completed": [
     "User authentication (signup, login, logout) with raw SQL",
@@ -305,6 +402,39 @@
     "Organization listing (API and UI)",
     "Move organization management to the Settings page",
     "User-friendly error handling for org creation (unique name, slug, domain)",
-    "Clean up homepage to only show welcome after login"
-  ]
+    "Clean up homepage to only show welcome after login",
+    "Basic status page functionality",
+    "Status page components and services management",
+    "Public status page display"
+  ],
+  "nextTask": {
+    "id": "1.1.1",
+    "title": "Database Schema Transformation for Incident Management",
+    "description": "Adapt existing database by adding incident management schema (incidents, incident_updates, escalation_policies, notification_rules, monitoring_checks, check_results) while preserving existing organization and status page functionality",
+    "phase": "Phase 1: Foundation Adaptation",
+    "priority": "High",
+    "estimatedDays": 3,
+    "dependencies": [],
+    "notes": "This is adaptation of current project, not starting from scratch. Keep existing tables and add new incident management tables."
+  },
+  "adaptationScope": {
+    "existingInfrastructure": [
+      "Next.js 14+ with App Router (JavaScript)",
+      "Google OAuth authentication with NextAuth.js",
+      "PostgreSQL database with raw SQL implementation",
+      "Multi-tenant organization architecture",
+      "Basic status page functionality",
+      "SendGrid email integration",
+      "Navigation and settings infrastructure"
+    ],
+    "transformationNeeded": [
+      "Add incident management database schema",
+      "Transform dashboard for incident management",
+      "Add monitoring check system",
+      "Enhance status pages with incident integration",
+      "Extend user roles for incident response",
+      "Add alerting and escalation systems"
+    ],
+    "timelineBenefit": "20 weeks total vs 24 weeks from scratch (4 week advantage)"
+  }
 }

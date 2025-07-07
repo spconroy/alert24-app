@@ -2,6 +2,7 @@ import localFont from 'next/font/local';
 import './globals.css';
 import NavBar from '../components/NavBar';
 import Providers from '../components/Providers';
+import HelpWidget from '../components/HelpWidget';
 
 const geistSans = localFont({
   src: './fonts/GeistVF.woff',
@@ -15,8 +16,8 @@ const geistMono = localFont({
 });
 
 export const metadata = {
-  title: 'Alert24 - Multi-tenant SaaS Platform',
-  description: 'Organization management and collaboration platform',
+  title: 'Alert24 - Incident Management Platform',
+  description: 'Comprehensive incident management, monitoring, and team coordination platform',
 };
 
 export default function RootLayout({ children }) {
@@ -28,6 +29,7 @@ export default function RootLayout({ children }) {
         <Providers>
           <NavBar />
           {children}
+          <HelpWidget />
         </Providers>
       </body>
     </html>
