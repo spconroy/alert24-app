@@ -66,6 +66,18 @@ export async function GET(req, { params }) {
       });
     }
 
+    const userRole = memberRows[0].role;
+
+    // Check if user has permission to manage services
+    if (!['owner', 'admin', 'responder'].includes(userRole)) {
+      return new Response(
+        JSON.stringify({
+          error: 'Insufficient permissions to modify services',
+        }),
+        { status: 403 }
+      );
+    }
+
     return new Response(JSON.stringify({ service }), { status: 200 });
   } catch (err) {
     console.error('Service GET error:', err);
@@ -135,6 +147,18 @@ export async function PUT(req, { params }) {
       return new Response(JSON.stringify({ error: 'Access denied' }), {
         status: 403,
       });
+    }
+
+    const userRole = memberRows[0].role;
+
+    // Check if user has permission to manage services
+    if (!['owner', 'admin', 'responder'].includes(userRole)) {
+      return new Response(
+        JSON.stringify({
+          error: 'Insufficient permissions to modify services',
+        }),
+        { status: 403 }
+      );
     }
 
     // Update the service
@@ -240,6 +264,18 @@ export async function DELETE(req, { params }) {
       return new Response(JSON.stringify({ error: 'Access denied' }), {
         status: 403,
       });
+    }
+
+    const userRole = memberRows[0].role;
+
+    // Only owners and admins can delete services
+    if (!['owner', 'admin'].includes(userRole)) {
+      return new Response(
+        JSON.stringify({
+          error: 'Insufficient permissions to delete services',
+        }),
+        { status: 403 }
+      );
     }
 
     // Soft delete the service

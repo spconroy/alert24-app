@@ -1,0 +1,4 @@
+Re-send invitation button on settings page
+Need a checkmark to control if we auto-generate incidents when service is failed on status page
+On the monitors that are attached to a service, need a drop down on what to do if the healthcheck fails. Example, Set the service to degraded or failed.
+On the monitoring screen, need a delete button on each monitor with a confimation modal

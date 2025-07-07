@@ -22,14 +22,14 @@ import {
   CardContent,
   Divider,
   IconButton,
-  Tooltip
+  Tooltip,
 } from '@mui/material';
 import {
   PersonAdd as InviteIcon,
   Email as EmailIcon,
   Delete as DeleteIcon,
   Refresh as RefreshIcon,
-  Schedule as PendingIcon
+  Schedule as PendingIcon,
 } from '@mui/icons-material';
 
 export default function OrganizationMembers({ orgId }) {
@@ -37,10 +37,13 @@ export default function OrganizationMembers({ orgId }) {
   const [invitations, setInvitations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
   // Invitation modal state
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
-  const [inviteForm, setInviteForm] = useState({ email: '', role: 'member' });
+  const [inviteForm, setInviteForm] = useState({
+    email: '',
+    role: 'responder',
+  });
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteError, setInviteError] = useState('');
   const [inviteSuccess, setInviteSuccess] = useState('');
@@ -52,13 +55,13 @@ export default function OrganizationMembers({ orgId }) {
 
   const fetchData = async () => {
     if (!orgId) return;
-    
+
     setLoading(true);
     try {
       // Fetch members and invitations in parallel
       const [membersRes, invitationsRes] = await Promise.all([
         fetch(`/api/organizations/${orgId}`),
-        fetch(`/api/organizations/${orgId}/invitations`)
+        fetch(`/api/organizations/${orgId}/invitations`),
       ]);
 
       if (membersRes.ok) {
@@ -85,12 +88,12 @@ export default function OrganizationMembers({ orgId }) {
 
     setInviteLoading(true);
     setInviteError('');
-    
+
     try {
       const response = await fetch(`/api/organizations/${orgId}/invitations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(inviteForm)
+        body: JSON.stringify(inviteForm),
       });
 
       const data = await response.json();
@@ -100,17 +103,16 @@ export default function OrganizationMembers({ orgId }) {
       }
 
       setInviteSuccess(`Invitation sent to ${inviteForm.email}`);
-      setInviteForm({ email: '', role: 'member' });
-      
+      setInviteForm({ email: '', role: 'responder' });
+
       // Refresh data
       fetchData();
-      
+
       // Close modal after brief delay
       setTimeout(() => {
         setInviteModalOpen(false);
         setInviteSuccess('');
       }, 2000);
-
     } catch (err) {
       setInviteError(err.message);
     } finally {
@@ -118,12 +120,12 @@ export default function OrganizationMembers({ orgId }) {
     }
   };
 
-  const formatDate = (dateString) => {
+  const formatDate = dateString => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -133,16 +135,15 @@ export default function OrganizationMembers({ orgId }) {
 
   return (
     <Box mt={3}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-        <Typography variant="h6">
-          Team Members ({members.length})
-        </Typography>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={2}
+      >
+        <Typography variant="h6">Team Members ({members.length})</Typography>
         <Box display="flex" gap={1}>
-          <Button
-            startIcon={<RefreshIcon />}
-            onClick={fetchData}
-            size="small"
-          >
+          <Button startIcon={<RefreshIcon />} onClick={fetchData} size="small">
             Refresh
           </Button>
           <Button
@@ -172,12 +173,20 @@ export default function OrganizationMembers({ orgId }) {
                     secondary={member.email}
                   />
                   <Box display="flex" gap={1}>
-                    <Chip 
-                      label={member.role} 
-                      color={member.role === 'owner' ? 'primary' : member.role === 'admin' ? 'secondary' : 'default'} 
-                      size="small" 
+                    <Chip
+                      label={member.role}
+                      color={
+                        member.role === 'owner'
+                          ? 'primary'
+                          : member.role === 'admin'
+                            ? 'secondary'
+                            : 'default'
+                      }
+                      size="small"
                     />
-                    {!member.is_active && <Chip label="Inactive" color="warning" size="small" />}
+                    {!member.is_active && (
+                      <Chip label="Inactive" color="warning" size="small" />
+                    )}
                   </Box>
                 </ListItem>
               ))}
@@ -202,9 +211,9 @@ export default function OrganizationMembers({ orgId }) {
                     secondary={`Invited ${formatDate(invitation.invited_at)} • Expires ${formatDate(invitation.invitation_expires_at)}`}
                   />
                   <Box display="flex" gap={1} alignItems="center">
-                    <Chip 
-                      label={invitation.role} 
-                      size="small" 
+                    <Chip
+                      label={invitation.role}
+                      size="small"
                       color="default"
                       variant="outlined"
                     />
@@ -229,8 +238,8 @@ export default function OrganizationMembers({ orgId }) {
       )}
 
       {/* Invite Member Modal */}
-      <Dialog 
-        open={inviteModalOpen} 
+      <Dialog
+        open={inviteModalOpen}
         onClose={() => setInviteModalOpen(false)}
         maxWidth="sm"
         fullWidth
@@ -238,19 +247,17 @@ export default function OrganizationMembers({ orgId }) {
         <DialogTitle>Invite Team Member</DialogTitle>
         <DialogContent>
           <Box display="flex" flexDirection="column" gap={3} mt={1}>
-            {inviteError && (
-              <Alert severity="error">{inviteError}</Alert>
-            )}
-            
-            {inviteSuccess && (
-              <Alert severity="success">{inviteSuccess}</Alert>
-            )}
+            {inviteError && <Alert severity="error">{inviteError}</Alert>}
+
+            {inviteSuccess && <Alert severity="success">{inviteSuccess}</Alert>}
 
             <TextField
               label="Email Address"
               type="email"
               value={inviteForm.email}
-              onChange={(e) => setInviteForm(prev => ({ ...prev, email: e.target.value }))}
+              onChange={e =>
+                setInviteForm(prev => ({ ...prev, email: e.target.value }))
+              }
               fullWidth
               required
               placeholder="colleague@company.com"
@@ -262,10 +269,13 @@ export default function OrganizationMembers({ orgId }) {
               <Select
                 value={inviteForm.role}
                 label="Role"
-                onChange={(e) => setInviteForm(prev => ({ ...prev, role: e.target.value }))}
+                onChange={e =>
+                  setInviteForm(prev => ({ ...prev, role: e.target.value }))
+                }
                 disabled={inviteLoading}
               >
-                <MenuItem value="member">Member</MenuItem>
+                <MenuItem value="stakeholder">Stakeholder</MenuItem>
+                <MenuItem value="responder">Responder</MenuItem>
                 <MenuItem value="admin">Admin</MenuItem>
               </Select>
             </FormControl>
@@ -274,28 +284,34 @@ export default function OrganizationMembers({ orgId }) {
               <Typography variant="subtitle2" gutterBottom>
                 Role Permissions:
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {inviteForm.role === 'admin' ? (
-                  '• Manage incidents, monitoring, and team members\n• Configure escalation policies\n• Access organization settings'
-                ) : (
-                  '• Respond to incidents and update statuses\n• Participate in on-call schedules\n• View monitoring and reports'
-                )}
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ whiteSpace: 'pre-line' }}
+              >
+                {inviteForm.role === 'admin'
+                  ? '• Manage incidents, monitoring, and team members\n• Configure escalation policies and schedules\n• Access all organization settings\n• Cannot modify organization name or delete organization\n• Cannot modify owners'
+                  : inviteForm.role === 'responder'
+                    ? '• View all organization data\n• Manage incidents and update service statuses\n• Post status updates and messages\n• Participate in on-call schedules\n• Cannot manage users or organization settings'
+                    : '• View non-public status pages\n• Read-only access to incidents and services\n• Cannot make changes to any data\n• Ideal for external stakeholders and observers'}
               </Typography>
             </Box>
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button 
+          <Button
             onClick={() => setInviteModalOpen(false)}
             disabled={inviteLoading}
           >
             Cancel
           </Button>
-          <Button 
+          <Button
             variant="contained"
             onClick={handleInviteSubmit}
             disabled={inviteLoading}
-            startIcon={inviteLoading ? <CircularProgress size={20} /> : <EmailIcon />}
+            startIcon={
+              inviteLoading ? <CircularProgress size={20} /> : <EmailIcon />
+            }
           >
             {inviteLoading ? 'Sending...' : 'Send Invitation'}
           </Button>
@@ -303,4 +319,4 @@ export default function OrganizationMembers({ orgId }) {
       </Dialog>
     </Box>
   );
-} 
+}
