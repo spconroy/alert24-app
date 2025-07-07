@@ -1,8 +1,13 @@
-export const runtime = 'edge';
 
 import { getServerSession } from 'next-auth/next';
 import { Pool } from 'pg';
-import crypto from 'crypto';
+
+// Web Crypto API replacement for crypto.randomBytes in Edge Runtime
+function generateInvitationToken() {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+}
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
@@ -214,7 +219,7 @@ export async function POST(req, { params }) {
     }
 
     // Generate invitation token
-    const invitationToken = crypto.randomBytes(32).toString('hex');
+    const invitationToken = generateInvitationToken();
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
 
     let invitationId;

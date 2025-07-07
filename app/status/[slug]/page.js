@@ -1,5 +1,3 @@
-export const runtime = 'edge';
-
 import { Pool } from 'pg';
 import { notFound } from 'next/navigation';
 import PublicStatusPage from '../../../components/PublicStatusPage';

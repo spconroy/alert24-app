@@ -1,4 +1,3 @@
-export const runtime = 'edge';
 
 import { getServerSession } from 'next-auth/next';
 import { Pool } from 'pg';
