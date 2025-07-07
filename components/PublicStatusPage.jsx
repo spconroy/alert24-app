@@ -9,17 +9,19 @@ import {
   Chip,
   Grid,
   Divider,
-  Paper
+  Paper,
 } from '@mui/material';
 import StatusUpdatesFeed from './StatusUpdatesFeed';
 import StatusPageSubscribe from './StatusPageSubscribe';
+import ServiceUptimeTimeline from './ServiceUptimeTimeline';
+import ServiceUptimeStats from './ServiceUptimeStats';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
 import ErrorIcon from '@mui/icons-material/Error';
 import BuildIcon from '@mui/icons-material/Build';
 
 export default function PublicStatusPage({ statusPage, services }) {
-  const getStatusIcon = (status) => {
+  const getStatusIcon = status => {
     switch (status) {
       case 'operational':
         return <CheckCircleIcon sx={{ fontSize: 20 }} />;
@@ -34,7 +36,7 @@ export default function PublicStatusPage({ statusPage, services }) {
     }
   };
 
-  const getStatusColor = (status) => {
+  const getStatusColor = status => {
     switch (status) {
       case 'operational':
         return 'success';
@@ -49,14 +51,14 @@ export default function PublicStatusPage({ statusPage, services }) {
     }
   };
 
-  const getStatusText = (status) => {
+  const getStatusText = status => {
     switch (status) {
       case 'operational':
         return 'Operational';
       case 'degraded':
         return 'Degraded Performance';
       case 'down':
-        return 'Major Outage';
+        return 'Outage';
       case 'maintenance':
         return 'Under Maintenance';
       default:
@@ -66,18 +68,24 @@ export default function PublicStatusPage({ statusPage, services }) {
 
   const getOverallStatus = () => {
     if (services.length === 0) {
-      return { status: 'No Services', color: 'default', description: 'No services are currently being monitored.' };
+      return {
+        status: 'No Services',
+        color: 'default',
+        description: 'No services are currently being monitored.',
+      };
     }
 
     const downServices = services.filter(s => s.status === 'down');
     const degradedServices = services.filter(s => s.status === 'degraded');
-    const maintenanceServices = services.filter(s => s.status === 'maintenance');
+    const maintenanceServices = services.filter(
+      s => s.status === 'maintenance'
+    );
 
     if (downServices.length > 0) {
       return {
-        status: 'Major Outage',
+        status: 'Outage',
         color: 'error',
-        description: `${downServices.length} service${downServices.length > 1 ? 's are' : ' is'} currently experiencing an outage.`
+        description: `${downServices.length} service${downServices.length > 1 ? 's are' : ' is'} currently experiencing an outage.`,
       };
     }
 
@@ -85,7 +93,7 @@ export default function PublicStatusPage({ statusPage, services }) {
       return {
         status: 'Partial Outage',
         color: 'warning',
-        description: `${degradedServices.length} service${degradedServices.length > 1 ? 's are' : ' is'} experiencing degraded performance.`
+        description: `${degradedServices.length} service${degradedServices.length > 1 ? 's are' : ' is'} experiencing degraded performance.`,
       };
     }
 
@@ -93,14 +101,14 @@ export default function PublicStatusPage({ statusPage, services }) {
       return {
         status: 'Under Maintenance',
         color: 'info',
-        description: `${maintenanceServices.length} service${maintenanceServices.length > 1 ? 's are' : ' is'} currently under maintenance.`
+        description: `${maintenanceServices.length} service${maintenanceServices.length > 1 ? 's are' : ' is'} currently under maintenance.`,
       };
     }
 
     return {
       status: 'All Systems Operational',
       color: 'success',
-      description: 'All services are operating normally.'
+      description: 'All services are operating normally.',
     };
   };
 
@@ -110,9 +118,20 @@ export default function PublicStatusPage({ statusPage, services }) {
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'grey.50' }}>
       {/* Header */}
-      <Box sx={{ bgcolor: 'white', borderBottom: 1, borderColor: 'divider', py: 3 }}>
+      <Box
+        sx={{
+          bgcolor: 'white',
+          borderBottom: 1,
+          borderColor: 'divider',
+          py: 3,
+        }}
+      >
         <Container maxWidth="lg">
-          <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            alignItems="flex-start"
+          >
             <Box flex={1}>
               <Typography variant="h3" component="h1" gutterBottom>
                 {statusPage.name}
@@ -127,8 +146,8 @@ export default function PublicStatusPage({ statusPage, services }) {
               )}
             </Box>
             <Box sx={{ ml: 2, mt: 1 }}>
-              <StatusPageSubscribe 
-                statusPageId={statusPage.id} 
+              <StatusPageSubscribe
+                statusPageId={statusPage.id}
                 statusPageName={statusPage.name}
               />
             </Box>
@@ -141,9 +160,15 @@ export default function PublicStatusPage({ statusPage, services }) {
         <Paper elevation={1} sx={{ p: 3, mb: 4 }}>
           <Box display="flex" alignItems="center" gap={2} mb={2}>
             <Chip
-              icon={getStatusIcon(overallStatus.color === 'success' ? 'operational' : 
-                              overallStatus.color === 'warning' ? 'degraded' :
-                              overallStatus.color === 'error' ? 'down' : 'maintenance')}
+              icon={getStatusIcon(
+                overallStatus.color === 'success'
+                  ? 'operational'
+                  : overallStatus.color === 'warning'
+                    ? 'degraded'
+                    : overallStatus.color === 'error'
+                      ? 'down'
+                      : 'maintenance'
+              )}
               label={overallStatus.status}
               color={overallStatus.color}
               size="large"
@@ -153,16 +178,20 @@ export default function PublicStatusPage({ statusPage, services }) {
           <Typography variant="body1" color="text.secondary">
             {overallStatus.description}
           </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ mt: 1, display: 'block' }}
+          >
             Last updated: {lastUpdated}
           </Typography>
         </Paper>
 
-        {/* Services */}
+        {/* Services with SLA Tracking */}
         <Typography variant="h4" component="h2" gutterBottom>
           Services
         </Typography>
-        
+
         {services.length === 0 ? (
           <Paper elevation={1} sx={{ p: 4, textAlign: 'center' }}>
             <Typography variant="h6" color="text.secondary" gutterBottom>
@@ -173,35 +202,60 @@ export default function PublicStatusPage({ statusPage, services }) {
             </Typography>
           </Paper>
         ) : (
-          <Grid container spacing={3}>
-            {services.map((service, index) => (
-              <Grid item xs={12} key={service.id}>
-                <Card elevation={1}>
-                  <CardContent>
-                    <Box display="flex" justifyContent="space-between" alignItems="flex-start">
-                      <Box flex={1}>
-                        <Typography variant="h6" component="h3" gutterBottom>
-                          {service.name}
-                        </Typography>
-                        {service.description && (
-                          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                            {service.description}
-                          </Typography>
-                        )}
-                      </Box>
-                      <Chip
-                        icon={getStatusIcon(service.status)}
-                        label={getStatusText(service.status)}
-                        color={getStatusColor(service.status)}
-                        variant="outlined"
-                      />
-                    </Box>
-                  </CardContent>
-                </Card>
-                {index < services.length - 1 && <Divider sx={{ my: 2 }} />}
-              </Grid>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {services.map(service => (
+              <Paper key={service.id} elevation={1} sx={{ p: 3 }}>
+                {/* Service Header */}
+                <Box
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="flex-start"
+                  mb={2}
+                >
+                  <Box flex={1}>
+                    <Typography variant="h5" component="h3" gutterBottom>
+                      {service.name}
+                    </Typography>
+                    {service.description && (
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mb: 2 }}
+                      >
+                        {service.description}
+                      </Typography>
+                    )}
+                  </Box>
+                  <Chip
+                    icon={getStatusIcon(service.status)}
+                    label={getStatusText(service.status)}
+                    color={getStatusColor(service.status)}
+                    size="medium"
+                  />
+                </Box>
+
+                {/* SLA Section */}
+                <Grid container spacing={3} alignItems="center">
+                  {/* Timeline Visualization */}
+                  <Grid item xs={12} md={8}>
+                    <Typography
+                      variant="subtitle2"
+                      color="text.secondary"
+                      mb={1}
+                    >
+                      90 days uptime history
+                    </Typography>
+                    <ServiceUptimeTimeline serviceId={service.id} days={90} />
+                  </Grid>
+
+                  {/* Uptime Stats */}
+                  <Grid item xs={12} md={4}>
+                    <ServiceUptimeStats serviceId={service.id} compact={true} />
+                  </Grid>
+                </Grid>
+              </Paper>
             ))}
-          </Grid>
+          </Box>
         )}
 
         {/* Status Updates Feed */}
@@ -218,4 +272,4 @@ export default function PublicStatusPage({ statusPage, services }) {
       </Container>
     </Box>
   );
-} 
+}

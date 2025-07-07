@@ -39,6 +39,14 @@ export default function GettingStartedChecklist({ onClose, organizationData = nu
       priority: 'high'
     },
     {
+      id: 'profile',
+      title: 'Complete Your Profile',
+      description: 'Add phone number and notification preferences',
+      link: '/profile',
+      completed: false, // We'd check this via API
+      priority: 'high'
+    },
+    {
       id: 'monitoring',
       title: 'Set Up First Monitoring Check',
       description: 'Monitor your critical services',
@@ -52,6 +60,14 @@ export default function GettingStartedChecklist({ onClose, organizationData = nu
       description: 'Ensure 24/7 incident response',
       link: '/on-call/new',
       completed: false,
+      priority: 'high'
+    },
+    {
+      id: 'team',
+      title: 'Invite Team Members',
+      description: 'Add colleagues to your organization',
+      link: '/organizations',
+      completed: organizationData?.members?.length > 1 || organizationData?.pendingInvitations > 0,
       priority: 'high'
     },
     {

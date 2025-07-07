@@ -97,6 +97,23 @@ export default function HelpWidget() {
       };
     }
     
+    if (pathname.includes('/profile')) {
+      return {
+        title: '👤 Profile Management Help',
+        description: 'Manage your account information and notification preferences',
+        quickTips: [
+          'Click "Edit Profile" to modify your information',
+          'Add a phone number to enable SMS notifications',
+          'Set your timezone for accurate timestamps',
+          'Configure notification preferences for optimal alerting',
+          'SMS notifications require a valid phone number format'
+        ],
+        guides: [
+          { title: 'Profile Settings', section: 'profile' }
+        ]
+      };
+    }
+    
     // Default help for other pages
     return {
       title: '🚀 Getting Started Help',

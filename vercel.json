@@ -1,0 +1,16 @@
+{
+  "functions": {
+    "app/api/monitoring/scheduler/route.js": {
+      "maxDuration": 300
+    },
+    "app/api/monitoring/execute/route.js": {
+      "maxDuration": 60
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/monitoring/scheduler",
+      "schedule": "*/2 * * * *"
+    }
+  ]
+}

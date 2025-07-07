@@ -207,16 +207,68 @@ export default function HelpPage() {
         memberRoles: {
           'Owner': 'Full administrative access to organization settings',
           'Admin': 'Manage incidents, monitoring, and team members',
-          'Manager': 'Create incidents and manage team schedules',
-          'Responder': 'Respond to incidents and update status'
+          'Member': 'Respond to incidents, update status, participate in on-call schedules'
+        },
+        invitingMembers: [
+          '1. Navigate to Organizations page and select your organization',
+          '2. Scroll to "Team Members" section',
+          '3. Click the blue "Invite Member" button',
+          '4. Enter the colleague\'s email address',
+          '5. Select their role (Member or Admin)',
+          '6. Click "Send Invitation"',
+          '7. Copy the invitation link to share manually if needed',
+          '8. Track pending invitations in the "Pending Invitations" section'
+        ],
+        invitationDetails: {
+          'Expiration': 'Invitations expire after 7 days',
+          'Tracking': 'Monitor pending invitations and copy links to resend',
+          'Acceptance': 'Users must sign in to accept invitations',
+          'Roles': 'Choose Member for basic access or Admin for management permissions'
         },
         managingMembers: [
-          'Go to Organizations page',
-          'Select your organization',
-          'Click "Manage Members"',
-          'Send email invitations to new team members',
-          'Assign appropriate roles based on responsibilities',
+          'View all active members with their roles',
+          'Monitor pending invitations and expiration dates',
+          'Copy invitation links to resend manually',
+          'Track who invited whom and when',
           'Remove inactive members as needed'
+        ],
+        troubleshooting: [
+          'Invitation not received? Check spam folder and copy the link manually',
+          'Wrong email address? Delete the pending invitation and create a new one',
+          'User can\'t accept? Ensure they\'re signed in with the correct email',
+          'Need to change role? Delete and resend with correct permissions'
+        ]
+      }
+    },
+    {
+      id: 'profile',
+      title: '👤 Profile & Settings',
+      icon: <SettingsIcon />,
+      description: 'Manage your personal account information and notification preferences.',
+      content: {
+        overview: `Your profile page allows you to update personal information, set notification 
+        preferences, and manage account settings for optimal incident response.`,
+        accessingProfile: [
+          'Click your name/avatar in the top-right corner of any page',
+          'Select "Profile" from the navigation menu',
+          'Or visit /profile directly'
+        ],
+        profileSections: {
+          'Personal Information': 'Update name, email, phone number, and timezone',
+          'Notification Preferences': 'Configure email and SMS alert settings',
+          'Security & Account': 'Manage Google OAuth settings and security'
+        },
+        notificationTypes: {
+          'Email - New Incidents': 'Receive email when new incidents are created',
+          'Email - Escalations': 'Get notified when incidents escalate',
+          'SMS - Critical Incidents': 'Text alerts for critical severity incidents',
+          'SMS - Escalations': 'Text notifications for escalated incidents'
+        },
+        importantNotes: [
+          'Add a phone number to enable SMS notifications',
+          'Timezone affects all date/time displays in the application',
+          'Email changes require verification',
+          'SMS notifications require a valid phone number format'
         ]
       }
     }
@@ -267,7 +319,7 @@ export default function HelpPage() {
               { title: 'Create Your First Incident', path: '/incidents/new' },
               { title: 'Set Up Monitoring', path: '/monitoring/new' },
               { title: 'Configure On-Call', path: '/on-call/new' },
-              { title: 'Build Escalation Policy', path: '/escalation-policies/new' }
+              { title: 'Update Your Profile', path: '/profile' }
             ].map((link, index) => (
               <Grid item xs={12} sm={6} md={3} key={index}>
                 <Paper 

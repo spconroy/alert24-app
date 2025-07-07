@@ -10,52 +10,44 @@ import {
   Grid,
   Alert,
   CircularProgress,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   IconButton,
   Tooltip,
   Avatar,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
-  Divider
+  Switch,
+  FormControlLabel,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import Link from 'next/link';
 import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import EditIcon from '@mui/icons-material/Edit';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import PersonIcon from '@mui/icons-material/Person';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { useSession } from 'next-auth/react';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 export default function OnCallPage() {
   const [schedules, setSchedules] = useState([]);
-  const [organizations, setOrganizations] = useState([]);
-  const [selectedOrgId, setSelectedOrgId] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [actionMenuAnchor, setActionMenuAnchor] = useState(null);
+  const [selectedSchedule, setSelectedSchedule] = useState(null);
   const { data: session } = useSession();
+  const { selectedOrganization } = useOrganization();
 
   useEffect(() => {
     if (session) {
       fetchSchedules();
-      fetchOrganizations();
     }
-  }, [session, selectedOrgId]);
-
-  const fetchOrganizations = async () => {
-    try {
-      const response = await fetch('/api/organizations');
-      if (response.ok) {
-        const data = await response.json();
-        setOrganizations(data.organizations || []);
-      }
-    } catch (err) {
-      console.error('Error fetching organizations:', err);
-    }
-  };
+  }, [session, selectedOrganization]);
 
   const fetchSchedules = async () => {
     try {
@@ -63,24 +55,19 @@ export default function OnCallPage() {
       setError(null);
 
       const params = new URLSearchParams();
-      if (selectedOrgId && selectedOrgId !== 'all') {
-        params.append('organization_id', selectedOrgId);
+      if (selectedOrganization?.id) {
+        params.append('organization_id', selectedOrganization.id);
       }
-      
-      // Get schedules for the next 7 days
-      const now = new Date();
-      const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-      params.append('start_date', now.toISOString());
-      params.append('end_date', nextWeek.toISOString());
 
-      const response = await fetch(`/api/on-call-schedules?${params.toString()}`);
+      const response = await fetch(
+        `/api/on-call-schedules?${params.toString()}`
+      );
       if (!response.ok) {
         throw new Error('Failed to fetch on-call schedules');
       }
 
       const data = await response.json();
       setSchedules(data.on_call_schedules || []);
-
     } catch (err) {
       console.error('Error fetching schedules:', err);
       setError(err.message);
@@ -89,36 +76,77 @@ export default function OnCallPage() {
     }
   };
 
-  const formatDateTime = (dateString) => {
+  const handleToggleSchedule = async (scheduleId, currentStatus) => {
+    try {
+      const response = await fetch(`/api/on-call-schedules/${scheduleId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          is_active: !currentStatus,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update schedule status');
+      }
+
+      // Refresh schedules
+      fetchSchedules();
+    } catch (err) {
+      console.error('Error toggling schedule:', err);
+      setError(err.message);
+    }
+  };
+
+  const handleActionClick = (event, schedule) => {
+    setActionMenuAnchor(event.currentTarget);
+    setSelectedSchedule(schedule);
+  };
+
+  const handleActionClose = () => {
+    setActionMenuAnchor(null);
+    setSelectedSchedule(null);
+  };
+
+  const formatDateTime = dateString => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleString();
   };
 
-  const formatTimeRemaining = (endTime) => {
-    const now = new Date();
-    const end = new Date(endTime);
-    const diff = end.getTime() - now.getTime();
-    
-    if (diff <= 0) return 'Ended';
-    
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const days = Math.floor(hours / 24);
-    
-    if (days > 0) return `${days}d ${hours % 24}h remaining`;
-    return `${hours}h remaining`;
+  const getScheduleStatus = schedule => {
+    if (!schedule.is_active) return { label: 'Inactive', color: 'default' };
+    if (schedule.current_on_call_member)
+      return { label: 'Active', color: 'success' };
+    return { label: 'Configured', color: 'info' };
   };
 
-  // Separate current and upcoming schedules
-  const now = new Date();
-  const currentSchedules = schedules.filter(s => 
-    new Date(s.start_time) <= now && new Date(s.end_time) >= now && s.is_active
-  );
-  const upcomingSchedules = schedules.filter(s => 
-    new Date(s.start_time) > now && s.is_active
-  ).slice(0, 10);
+  const getCurrentOnCallName = schedule => {
+    if (!schedule.current_on_call_member) return 'None';
+    return (
+      schedule.current_on_call_member.name ||
+      schedule.current_on_call_member.email
+    );
+  };
+
+  // Calculate stats
+  const stats = {
+    total: schedules.length,
+    active: schedules.filter(s => s.is_active).length,
+    withOnCall: schedules.filter(s => s.is_active && s.current_on_call_member)
+      .length,
+    inactive: schedules.filter(s => !s.is_active).length,
+  };
 
   if (!session) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="400px"
+      >
         <Typography>Please sign in to view on-call schedules.</Typography>
       </Box>
     );
@@ -127,7 +155,12 @@ export default function OnCallPage() {
   return (
     <Box sx={{ p: 3 }}>
       {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={4}
+      >
         <Box>
           <Typography variant="h4" component="h1" gutterBottom>
             On-Call Schedules
@@ -154,28 +187,6 @@ export default function OnCallPage() {
         </Box>
       </Box>
 
-      {/* Organization Filter */}
-      {organizations.length > 1 && (
-        <Box sx={{ mb: 3 }}>
-          <FormControl sx={{ minWidth: 250 }}>
-            <InputLabel id="org-filter-label">Organization</InputLabel>
-            <Select
-              labelId="org-filter-label"
-              value={selectedOrgId}
-              label="Organization"
-              onChange={(e) => setSelectedOrgId(e.target.value)}
-            >
-              <MenuItem value="all">All Organizations</MenuItem>
-              {organizations.map((org) => (
-                <MenuItem key={org.id} value={org.id}>
-                  {org.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Box>
-      )}
-
       {/* Error Alert */}
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -184,199 +195,227 @@ export default function OnCallPage() {
       )}
 
       {loading ? (
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          minHeight="200px"
+        >
           <CircularProgress />
         </Box>
       ) : (
-        <Grid container spacing={3}>
-          {/* Currently On-Call */}
-          <Grid item xs={12} lg={6}>
-            <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center" gap={2} mb={2}>
-                  <PersonIcon color="primary" />
-                  <Typography variant="h6">Currently On-Call</Typography>
-                  <Chip 
-                    label={currentSchedules.length} 
-                    color="primary" 
-                    size="small" 
-                  />
+        <>
+          {/* Stats Cards */}
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            <Grid item xs={12} md={3}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" color="text.secondary" gutterBottom>
+                    Total Schedules
+                  </Typography>
+                  <Typography variant="h3" color="primary">
+                    {stats.total}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" color="text.secondary" gutterBottom>
+                    Active
+                  </Typography>
+                  <Typography variant="h3" color="success.main">
+                    {stats.active}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" color="text.secondary" gutterBottom>
+                    With On-Call
+                  </Typography>
+                  <Typography variant="h3" color="info.main">
+                    {stats.withOnCall}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" color="text.secondary" gutterBottom>
+                    Inactive
+                  </Typography>
+                  <Typography variant="h3" color="warning.main">
+                    {stats.inactive}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+
+          {/* Schedules Table */}
+          <Card>
+            <CardContent sx={{ p: 0 }}>
+              {schedules.length === 0 ? (
+                <Box textAlign="center" py={6}>
+                  <Typography variant="h6" color="text.secondary" gutterBottom>
+                    No on-call schedules found
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" mb={3}>
+                    Create your first on-call schedule to start managing
+                    rotations.
+                  </Typography>
+                  <Button
+                    component={Link}
+                    href="/on-call/new"
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    color="primary"
+                  >
+                    Add Schedule
+                  </Button>
                 </Box>
-                <Divider sx={{ mb: 2 }} />
-                
-                {currentSchedules.length === 0 ? (
-                  <Box textAlign="center" py={4}>
-                    <Typography color="text.secondary">
-                      No one is currently on-call
-                    </Typography>
-                  </Box>
-                ) : (
-                  <List>
-                    {currentSchedules.map((schedule, index) => (
-                      <ListItem key={schedule.id} divider={index < currentSchedules.length - 1}>
-                        <ListItemAvatar>
-                          <Avatar>
-                            {schedule.user_name?.charAt(0) || 'U'}
-                          </Avatar>
-                        </ListItemAvatar>
-                        <ListItemText
-                          primary={schedule.user_name}
-                          secondary={
-                            <Box>
-                              <Typography variant="body2" color="text.secondary">
-                                {schedule.organization_name}
-                              </Typography>
-                              <Box display="flex" alignItems="center" gap={1} mt={0.5}>
-                                <AccessTimeIcon fontSize="small" color="action" />
-                                <Typography variant="body2" color="text.secondary">
-                                  {formatTimeRemaining(schedule.end_time)}
+              ) : (
+                <TableContainer component={Paper} elevation={0}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Schedule Name</TableCell>
+                        <TableCell>Currently On-Call</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell>Created</TableCell>
+                        <TableCell align="center">Active</TableCell>
+                        <TableCell align="center">Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {schedules.map(schedule => {
+                        const status = getScheduleStatus(schedule);
+                        return (
+                          <TableRow key={schedule.id} hover>
+                            <TableCell>
+                              <Box>
+                                <Typography variant="body1" fontWeight="medium">
+                                  {schedule.name || 'Unnamed Schedule'}
+                                </Typography>
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                >
+                                  {schedule.description || 'No description'}
                                 </Typography>
                               </Box>
-                            </Box>
-                          }
-                        />
-                        <Chip
-                          label="Active"
-                          color="success"
-                          size="small"
-                        />
-                      </ListItem>
-                    ))}
-                  </List>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Upcoming Schedules */}
-          <Grid item xs={12} lg={6}>
-            <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center" gap={2} mb={2}>
-                  <AccessTimeIcon color="primary" />
-                  <Typography variant="h6">Upcoming Schedules</Typography>
-                </Box>
-                <Divider sx={{ mb: 2 }} />
-                
-                {upcomingSchedules.length === 0 ? (
-                  <Box textAlign="center" py={4}>
-                    <Typography color="text.secondary">
-                      No upcoming schedules
-                    </Typography>
-                  </Box>
-                ) : (
-                  <List>
-                    {upcomingSchedules.map((schedule, index) => (
-                      <ListItem key={schedule.id} divider={index < upcomingSchedules.length - 1}>
-                        <ListItemAvatar>
-                          <Avatar>
-                            {schedule.user_name?.charAt(0) || 'U'}
-                          </Avatar>
-                        </ListItemAvatar>
-                        <ListItemText
-                          primary={schedule.user_name}
-                          secondary={
-                            <Box>
-                              <Typography variant="body2" color="text.secondary">
-                                {schedule.organization_name}
+                            </TableCell>
+                            <TableCell>
+                              <Box display="flex" alignItems="center" gap={1}>
+                                <Avatar sx={{ width: 32, height: 32 }}>
+                                  {getCurrentOnCallName(schedule).charAt(0)}
+                                </Avatar>
+                                <Box>
+                                  <Typography variant="body2">
+                                    {getCurrentOnCallName(schedule)}
+                                  </Typography>
+                                  {schedule.current_on_call_member && (
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
+                                    >
+                                      {schedule.current_on_call_member.email}
+                                    </Typography>
+                                  )}
+                                </Box>
+                              </Box>
+                            </TableCell>
+                            <TableCell>
+                              <Chip
+                                label={status.label}
+                                color={status.color}
+                                size="small"
+                                variant="outlined"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2">
+                                {formatDateTime(schedule.created_at)}
                               </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                Starts: {formatDateTime(schedule.start_time)}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                Ends: {formatDateTime(schedule.end_time)}
-                              </Typography>
-                            </Box>
-                          }
-                        />
-                        <Chip
-                          label="Upcoming"
-                          color="info"
-                          size="small"
-                        />
-                      </ListItem>
-                    ))}
-                  </List>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
+                            </TableCell>
+                            <TableCell align="center">
+                              <Switch
+                                checked={schedule.is_active}
+                                onChange={() =>
+                                  handleToggleSchedule(
+                                    schedule.id,
+                                    schedule.is_active
+                                  )
+                                }
+                                color="primary"
+                                size="small"
+                              />
+                            </TableCell>
+                            <TableCell align="center">
+                              <Tooltip title="Edit Schedule">
+                                <IconButton
+                                  component={Link}
+                                  href={`/on-call/${schedule.id}/edit`}
+                                  size="small"
+                                  color="primary"
+                                >
+                                  <EditIcon />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="More actions">
+                                <IconButton
+                                  size="small"
+                                  onClick={e => handleActionClick(e, schedule)}
+                                >
+                                  <MoreVertIcon />
+                                </IconButton>
+                              </Tooltip>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </CardContent>
+          </Card>
 
-          {/* Stats */}
-          <Grid item xs={12}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Schedule Statistics
-                </Typography>
-                <Grid container spacing={3}>
-                  <Grid item xs={12} md={3}>
-                    <Box textAlign="center">
-                      <Typography variant="h4" color="primary">
-                        {currentSchedules.length}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Currently On-Call
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12} md={3}>
-                    <Box textAlign="center">
-                      <Typography variant="h4" color="info.main">
-                        {upcomingSchedules.length}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Upcoming This Week
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12} md={3}>
-                    <Box textAlign="center">
-                      <Typography variant="h4" color="success.main">
-                        {schedules.filter(s => s.is_active).length}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Total Active Schedules
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12} md={3}>
-                    <Box textAlign="center">
-                      <Typography variant="h4" color="warning.main">
-                        {new Set(schedules.map(s => s.user_id)).size}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Team Members Involved
-                      </Typography>
-                    </Box>
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      )}
-
-      {/* Empty State */}
-      {!loading && schedules.length === 0 && (
-        <Box textAlign="center" py={6}>
-          <Typography variant="h6" color="text.secondary" gutterBottom>
-            No on-call schedules found
-          </Typography>
-          <Typography variant="body2" color="text.secondary" mb={3}>
-            Create your first on-call schedule to manage team rotations.
-          </Typography>
-          <Button
-            component={Link}
-            href="/on-call/new"
-            variant="contained"
-            startIcon={<AddIcon />}
-            color="primary"
+          {/* Action Menu */}
+          <Menu
+            anchorEl={actionMenuAnchor}
+            open={Boolean(actionMenuAnchor)}
+            onClose={handleActionClose}
           >
-            Add Schedule
-          </Button>
-        </Box>
+            <MenuItem
+              component={Link}
+              href={`/on-call/${selectedSchedule?.id}/edit`}
+              onClick={handleActionClose}
+            >
+              <EditIcon sx={{ mr: 1 }} />
+              Edit Schedule
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                if (selectedSchedule) {
+                  handleToggleSchedule(
+                    selectedSchedule.id,
+                    selectedSchedule.is_active
+                  );
+                }
+                handleActionClose();
+              }}
+            >
+              {selectedSchedule?.is_active ? 'Disable' : 'Enable'} Schedule
+            </MenuItem>
+          </Menu>
+        </>
       )}
     </Box>
   );
-} 
+}

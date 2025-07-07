@@ -167,15 +167,19 @@ export async function GET(req, { params }) {
       return new Response(JSON.stringify({ error: 'Organization not found' }), { status: 404 });
     }
 
-    // Get all members and their roles
+    // Get all active members and their roles
+    console.log('Fetching members for organization:', orgId);
     const membersRes = await pool.query(
-      `SELECT u.id, u.email, u.name, m.role, m.is_active
+      `SELECT u.id, u.email, u.name, m.role, m.is_active, m.accepted_at
        FROM public.organization_members m
        JOIN public.users u ON m.user_id = u.id
-       WHERE m.organization_id = $1
+       WHERE m.organization_id = $1 
+         AND m.is_active = true
+         AND (m.accepted_at IS NOT NULL OR m.role = 'owner')
        ORDER BY m.role DESC, u.name ASC`,
       [orgId]
     );
+    console.log('Members found:', membersRes.rows);
 
     return new Response(JSON.stringify({ 
       organization: organization,

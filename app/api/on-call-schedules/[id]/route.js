@@ -1,0 +1,199 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { Pool } from 'pg';
+import { authOptions } from '../../auth/[...nextauth]/route.js';
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+export async function GET(request, { params }) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    const { id } = params;
+
+    const query = `
+      SELECT 
+        ocs.*,
+        o.name as organization_name
+      FROM public.on_call_schedules ocs
+      LEFT JOIN public.organizations o ON ocs.organization_id = o.id
+      WHERE ocs.id = $1
+    `;
+
+    const result = await pool.query(query, [id]);
+
+    if (result.rows.length === 0) {
+      return NextResponse.json(
+        { error: 'Schedule not found' },
+        { status: 404 }
+      );
+    }
+
+    const schedule = result.rows[0];
+
+    // Calculate current on-call member from rotation config (like main API does)
+    const rotationConfig = schedule.rotation_config || {};
+    const participants = rotationConfig.participants || [];
+
+    let currentOnCallMember = null;
+    if (participants.length > 0) {
+      // Simple rotation logic - for demo purposes (matches main API)
+      const now = new Date();
+      const dayOfYear = Math.floor(
+        (now - new Date(now.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24)
+      );
+      const rotationIndex = dayOfYear % participants.length;
+      currentOnCallMember = participants[rotationIndex];
+    }
+
+    // Format the response to match the expected structure
+    const formattedSchedule = {
+      ...schedule,
+      current_on_call_member: currentOnCallMember,
+    };
+
+    return NextResponse.json({
+      success: true,
+      schedule: formattedSchedule,
+    });
+  } catch (error) {
+    console.error('Error fetching schedule:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(request, { params }) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    const { id } = params;
+    const body = await request.json();
+
+    // Build dynamic update query based on provided fields
+    const updateFields = [];
+    const values = [];
+    let paramIndex = 1;
+
+    if (typeof body.is_active === 'boolean') {
+      updateFields.push(`is_active = $${paramIndex++}`);
+      values.push(body.is_active);
+    }
+
+    if (body.name) {
+      updateFields.push(`name = $${paramIndex++}`);
+      values.push(body.name);
+    }
+
+    if (body.description !== undefined) {
+      updateFields.push(`description = $${paramIndex++}`);
+      values.push(body.description);
+    }
+
+    if (body.rotation_config) {
+      updateFields.push(`rotation_config = $${paramIndex++}`);
+      values.push(JSON.stringify(body.rotation_config));
+    }
+
+    if (body.members) {
+      updateFields.push(`members = $${paramIndex++}`);
+      values.push(JSON.stringify(body.members));
+    }
+
+    if (updateFields.length === 0) {
+      return NextResponse.json(
+        { error: 'No valid update fields provided' },
+        { status: 400 }
+      );
+    }
+
+    // Add updated_at timestamp
+    updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
+    values.push(id);
+
+    const query = `
+      UPDATE public.on_call_schedules 
+      SET ${updateFields.join(', ')}
+      WHERE id = $${paramIndex}
+      RETURNING *
+    `;
+
+    const result = await pool.query(query, values);
+
+    if (result.rows.length === 0) {
+      return NextResponse.json(
+        { error: 'Schedule not found or update failed' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      schedule: result.rows[0],
+      message: 'Schedule updated successfully',
+    });
+  } catch (error) {
+    console.error('Error updating schedule:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request, { params }) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    const { id } = params;
+
+    const query = `
+      DELETE FROM public.on_call_schedules 
+      WHERE id = $1
+      RETURNING *
+    `;
+
+    const result = await pool.query(query, [id]);
+
+    if (result.rows.length === 0) {
+      return NextResponse.json(
+        { error: 'Schedule not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Schedule deleted successfully',
+    });
+  } catch (error) {
+    console.error('Error deleting schedule:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}

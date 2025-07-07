@@ -3,6 +3,7 @@
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { SessionProvider } from 'next-auth/react';
+import { OrganizationProvider } from '@/contexts/OrganizationContext';
 
 const theme = createTheme({
   palette: {
@@ -20,8 +21,8 @@ export default function Providers({ children }) {
     <SessionProvider>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        {children}
+        <OrganizationProvider>{children}</OrganizationProvider>
       </ThemeProvider>
     </SessionProvider>
   );
-} 
+}

@@ -8,13 +8,13 @@ import {
   Chip,
   Grid,
   CircularProgress,
-  Alert
+  Alert,
 } from '@mui/material';
 import {
   CheckCircle as CheckCircleIcon,
   Warning as WarningIcon,
   Error as ErrorIcon,
-  Build as BuildIcon
+  Build as BuildIcon,
 } from '@mui/icons-material';
 
 export default function StatusPageOverallStatus({ statusPageId }) {
@@ -31,7 +31,9 @@ export default function StatusPageOverallStatus({ statusPageId }) {
   const fetchServices = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/services?status_page_id=${statusPageId}`);
+      const response = await fetch(
+        `/api/services?status_page_id=${statusPageId}`
+      );
       if (!response.ok) throw new Error('Failed to fetch services');
       const data = await response.json();
       setServices(data.services || []);
@@ -44,21 +46,30 @@ export default function StatusPageOverallStatus({ statusPageId }) {
 
   const getOverallStatus = () => {
     if (services.length === 0) {
-      return { status: 'No Services', color: 'default', icon: <CheckCircleIcon />, count: 0 };
+      return {
+        status: 'No Services',
+        color: 'default',
+        icon: <CheckCircleIcon />,
+        count: 0,
+      };
     }
 
     const downServices = services.filter(s => s.status === 'down');
     const degradedServices = services.filter(s => s.status === 'degraded');
-    const maintenanceServices = services.filter(s => s.status === 'maintenance');
-    const operationalServices = services.filter(s => s.status === 'operational');
+    const maintenanceServices = services.filter(
+      s => s.status === 'maintenance'
+    );
+    const operationalServices = services.filter(
+      s => s.status === 'operational'
+    );
 
     if (downServices.length > 0) {
       return {
-        status: 'Major Outage',
+        status: 'Outage',
         color: 'error',
         icon: <ErrorIcon />,
         count: downServices.length,
-        description: `${downServices.length} service${downServices.length > 1 ? 's' : ''} down`
+        description: `${downServices.length} service${downServices.length > 1 ? 's' : ''} down`,
       };
     }
 
@@ -68,7 +79,7 @@ export default function StatusPageOverallStatus({ statusPageId }) {
         color: 'warning',
         icon: <WarningIcon />,
         count: degradedServices.length,
-        description: `${degradedServices.length} service${degradedServices.length > 1 ? 's' : ''} degraded`
+        description: `${degradedServices.length} service${degradedServices.length > 1 ? 's' : ''} degraded`,
       };
     }
 
@@ -78,7 +89,7 @@ export default function StatusPageOverallStatus({ statusPageId }) {
         color: 'info',
         icon: <BuildIcon />,
         count: maintenanceServices.length,
-        description: `${maintenanceServices.length} service${maintenanceServices.length > 1 ? 's' : ''} in maintenance`
+        description: `${maintenanceServices.length} service${maintenanceServices.length > 1 ? 's' : ''} in maintenance`,
       };
     }
 
@@ -87,7 +98,7 @@ export default function StatusPageOverallStatus({ statusPageId }) {
       color: 'success',
       icon: <CheckCircleIcon />,
       count: operationalServices.length,
-      description: `${operationalServices.length} service${operationalServices.length !== 1 ? 's' : ''} operational`
+      description: `${operationalServices.length} service${operationalServices.length !== 1 ? 's' : ''} operational`,
     };
   };
 
@@ -96,7 +107,7 @@ export default function StatusPageOverallStatus({ statusPageId }) {
       operational: services.filter(s => s.status === 'operational').length,
       degraded: services.filter(s => s.status === 'degraded').length,
       down: services.filter(s => s.status === 'down').length,
-      maintenance: services.filter(s => s.status === 'maintenance').length
+      maintenance: services.filter(s => s.status === 'maintenance').length,
     };
   };
 
@@ -111,11 +122,7 @@ export default function StatusPageOverallStatus({ statusPageId }) {
   }
 
   if (error) {
-    return (
-      <Alert severity="error">
-        Error loading status: {error}
-      </Alert>
-    );
+    return <Alert severity="error">Error loading status: {error}</Alert>;
   }
 
   const overallStatus = getOverallStatus();
@@ -127,7 +134,7 @@ export default function StatusPageOverallStatus({ statusPageId }) {
         <Typography variant="h6" gutterBottom>
           Overall Status
         </Typography>
-        
+
         <Box display="flex" alignItems="center" gap={2} mb={3}>
           <Chip
             icon={overallStatus.icon}
@@ -190,4 +197,4 @@ export default function StatusPageOverallStatus({ statusPageId }) {
       </CardContent>
     </Card>
   );
-} 
+}

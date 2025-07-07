@@ -15,7 +15,7 @@ import {
   FormControl,
   InputLabel,
   Select,
-  MenuItem
+  MenuItem,
 } from '@mui/material';
 import Link from 'next/link';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
@@ -40,11 +40,13 @@ export default function StatusPageOverview() {
     if (selectedOrgId === 'all') {
       setFilteredStatusPages(statusPages);
     } else {
-      setFilteredStatusPages(statusPages.filter(page => page.organization_id === selectedOrgId));
+      setFilteredStatusPages(
+        statusPages.filter(page => page.organization_id === selectedOrgId)
+      );
     }
   }, [selectedOrgId, statusPages]);
 
-  const handleOrgFilterChange = (event) => {
+  const handleOrgFilterChange = event => {
     setSelectedOrgId(event.target.value);
   };
 
@@ -59,14 +61,14 @@ export default function StatusPageOverview() {
       const pages = data.statusPages || [];
       setStatusPages(pages);
       setFilteredStatusPages(pages);
-      
+
       // Extract unique organizations
       const uniqueOrgs = pages.reduce((acc, page) => {
         const existing = acc.find(org => org.id === page.organization_id);
         if (!existing) {
           acc.push({
             id: page.organization_id,
-            name: page.organization_name
+            name: page.organization_name,
           });
         }
         return acc;
@@ -80,7 +82,7 @@ export default function StatusPageOverview() {
     }
   };
 
-  const getStatusColor = (status) => {
+  const getStatusColor = status => {
     switch (status) {
       case 'operational':
         return 'success';
@@ -95,17 +97,25 @@ export default function StatusPageOverview() {
     }
   };
 
-  const getOverallStatus = (serviceSummary) => {
-    if (serviceSummary.total === 0) return { status: 'No Services', color: 'default' };
-    if (serviceSummary.down > 0) return { status: 'Major Outage', color: 'error' };
-    if (serviceSummary.degraded > 0) return { status: 'Partial Outage', color: 'warning' };
-    if (serviceSummary.maintenance > 0) return { status: 'Under Maintenance', color: 'info' };
+  const getOverallStatus = serviceSummary => {
+    if (serviceSummary.total === 0)
+      return { status: 'No Services', color: 'default' };
+    if (serviceSummary.down > 0) return { status: 'Outage', color: 'error' };
+    if (serviceSummary.degraded > 0)
+      return { status: 'Partial Outage', color: 'warning' };
+    if (serviceSummary.maintenance > 0)
+      return { status: 'Under Maintenance', color: 'info' };
     return { status: 'All Systems Operational', color: 'success' };
   };
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="200px"
+      >
         <CircularProgress />
       </Box>
     );
@@ -140,7 +150,7 @@ export default function StatusPageOverview() {
       <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
         Monitor the health of all your services across organizations
       </Typography>
-      
+
       {/* Organization Filter */}
       <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-start' }}>
         <FormControl sx={{ minWidth: 200 }}>
@@ -153,7 +163,7 @@ export default function StatusPageOverview() {
             onChange={handleOrgFilterChange}
           >
             <MenuItem value="all">All Organizations</MenuItem>
-            {organizations.map((org) => (
+            {organizations.map(org => (
               <MenuItem key={org.id} value={org.id}>
                 {org.name}
               </MenuItem>
@@ -161,7 +171,7 @@ export default function StatusPageOverview() {
           </Select>
         </FormControl>
       </Box>
-      
+
       {filteredStatusPages.length === 0 && selectedOrgId !== 'all' ? (
         <Box textAlign="center" py={4}>
           <Typography variant="h6" color="text.secondary" gutterBottom>
@@ -173,102 +183,119 @@ export default function StatusPageOverview() {
         </Box>
       ) : (
         <Grid container spacing={3}>
-          {filteredStatusPages.map((statusPage) => {
-          const overallStatus = getOverallStatus(statusPage.service_summary);
-          
-          return (
-            <Grid item xs={12} md={6} lg={4} key={statusPage.id}>
-              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
-                    <Typography variant="h6" component="h3" gutterBottom>
-                      {statusPage.name}
-                    </Typography>
-                    <Chip
-                      label={overallStatus.status}
-                      color={overallStatus.color}
-                      size="small"
-                    />
-                  </Box>
-                  
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Organization: {statusPage.organization_name}
-                  </Typography>
-                  
-                  {statusPage.description && (
-                    <Typography variant="body2" sx={{ mb: 2 }}>
-                      {statusPage.description}
-                    </Typography>
-                  )}
-                  
-                  <Box>
-                    <Typography variant="subtitle2" gutterBottom>
-                      Services ({statusPage.service_summary.total})
-                    </Typography>
-                    <Box display="flex" flexWrap="wrap" gap={1}>
-                      {statusPage.service_summary.operational > 0 && (
-                        <Chip
-                          label={`${statusPage.service_summary.operational} Operational`}
-                          color="success"
-                          size="small"
-                          variant="outlined"
-                        />
-                      )}
-                      {statusPage.service_summary.degraded > 0 && (
-                        <Chip
-                          label={`${statusPage.service_summary.degraded} Degraded`}
-                          color="warning"
-                          size="small"
-                          variant="outlined"
-                        />
-                      )}
-                      {statusPage.service_summary.down > 0 && (
-                        <Chip
-                          label={`${statusPage.service_summary.down} Down`}
-                          color="error"
-                          size="small"
-                          variant="outlined"
-                        />
-                      )}
-                      {statusPage.service_summary.maintenance > 0 && (
-                        <Chip
-                          label={`${statusPage.service_summary.maintenance} Maintenance`}
-                          color="info"
-                          size="small"
-                          variant="outlined"
-                        />
-                      )}
+          {filteredStatusPages.map(statusPage => {
+            const overallStatus = getOverallStatus(statusPage.service_summary);
+
+            return (
+              <Grid item xs={12} md={6} lg={4} key={statusPage.id}>
+                <Card
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
+                  <CardContent sx={{ flexGrow: 1 }}>
+                    <Box
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="flex-start"
+                      mb={2}
+                    >
+                      <Typography variant="h6" component="h3" gutterBottom>
+                        {statusPage.name}
+                      </Typography>
+                      <Chip
+                        label={overallStatus.status}
+                        color={overallStatus.color}
+                        size="small"
+                      />
                     </Box>
-                  </Box>
-                </CardContent>
-                
-                <CardActions sx={{ justifyContent: 'space-between', px: 2, pb: 2 }}>
-                  <Button
-                    component={Link}
-                    href={`/settings?org=${statusPage.organization_id}&statusPage=${statusPage.id}`}
-                    variant="outlined"
-                    size="small"
+
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      gutterBottom
+                    >
+                      Organization: {statusPage.organization_name}
+                    </Typography>
+
+                    {statusPage.description && (
+                      <Typography variant="body2" sx={{ mb: 2 }}>
+                        {statusPage.description}
+                      </Typography>
+                    )}
+
+                    <Box>
+                      <Typography variant="subtitle2" gutterBottom>
+                        Services ({statusPage.service_summary.total})
+                      </Typography>
+                      <Box display="flex" flexWrap="wrap" gap={1}>
+                        {statusPage.service_summary.operational > 0 && (
+                          <Chip
+                            label={`${statusPage.service_summary.operational} Operational`}
+                            color="success"
+                            size="small"
+                            variant="outlined"
+                          />
+                        )}
+                        {statusPage.service_summary.degraded > 0 && (
+                          <Chip
+                            label={`${statusPage.service_summary.degraded} Degraded`}
+                            color="warning"
+                            size="small"
+                            variant="outlined"
+                          />
+                        )}
+                        {statusPage.service_summary.down > 0 && (
+                          <Chip
+                            label={`${statusPage.service_summary.down} Down`}
+                            color="error"
+                            size="small"
+                            variant="outlined"
+                          />
+                        )}
+                        {statusPage.service_summary.maintenance > 0 && (
+                          <Chip
+                            label={`${statusPage.service_summary.maintenance} Maintenance`}
+                            color="info"
+                            size="small"
+                            variant="outlined"
+                          />
+                        )}
+                      </Box>
+                    </Box>
+                  </CardContent>
+
+                  <CardActions
+                    sx={{ justifyContent: 'space-between', px: 2, pb: 2 }}
                   >
-                    Manage
-                  </Button>
-                  <Button
-                    component={MuiLink}
-                    href={`/status/${statusPage.slug}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    variant="contained"
-                    size="small"
-                    endIcon={<OpenInNewIcon />}
-                  >
-                    View Public Page
-                  </Button>
-                </CardActions>
-              </Card>
-            </Grid>
-          );
-        })}
+                    <Button
+                      component={Link}
+                      href={`/settings?org=${statusPage.organization_id}&statusPage=${statusPage.id}`}
+                      variant="outlined"
+                      size="small"
+                    >
+                      Manage
+                    </Button>
+                    <Button
+                      component={MuiLink}
+                      href={`/status/${statusPage.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      variant="contained"
+                      size="small"
+                      endIcon={<OpenInNewIcon />}
+                    >
+                      View Public Page
+                    </Button>
+                  </CardActions>
+                </Card>
+              </Grid>
+            );
+          })}
         </Grid>
       )}
     </Box>
   );
-} 
+}

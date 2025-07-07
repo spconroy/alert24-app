@@ -8,13 +8,17 @@ import bcrypt from 'bcryptjs';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-const handler = NextAuth({
+export const authOptions = {
   adapter: PrismaAdapter(pool), // Adapter is still required for NextAuth, but not used for login
   providers: [
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
-        email: { label: 'Email', type: 'email', placeholder: 'user@example.com' },
+        email: {
+          label: 'Email',
+          type: 'email',
+          placeholder: 'user@example.com',
+        },
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
@@ -30,7 +34,10 @@ const handler = NextAuth({
         if (!user || !user.password) {
           throw new Error('No user found');
         }
-        const isValid = await bcrypt.compare(credentials.password, user.password);
+        const isValid = await bcrypt.compare(
+          credentials.password,
+          user.password
+        );
         if (!isValid) {
           throw new Error('Invalid password');
         }
@@ -53,6 +60,8 @@ const handler = NextAuth({
       return session;
     },
   },
-});
+};
 
-export { handler as GET, handler as POST }; 
+const handler = NextAuth(authOptions);
+
+export { handler as GET, handler as POST };

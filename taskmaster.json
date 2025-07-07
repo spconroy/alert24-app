@@ -15,8 +15,8 @@
     "username": "alert24",
     "password": "Sg47^kLm9@wPz!rT",
     "port": 5432,
-    "schema": "alert24_schema",
-    "connectionString": "postgresql://alert24:Sg47^kLm9@wPz!rT@34.223.13.196:5432/alert24?options=-csearch_path%3Dalert24_schema"
+    "schema": "public",
+    "connectionString": "postgresql://alert24:Sg47^kLm9@wPz!rT@34.223.13.196:5432/alert24"
   },
   "techStack": {
     "frontend": {
@@ -221,7 +221,7 @@
   "environment": {
     "development": {
       "NODE_ENV": "development",
-      "DATABASE_URL": "postgresql://alert24:Sg47^kLm9@wPz!rT@34.223.13.196:5432/alert24?options=-csearch_path%3Dalert24_schema",
+      "DATABASE_URL": "postgresql://alert24:Sg47^kLm9@wPz!rT@34.223.13.196:5432/alert24",
       "NEXTAUTH_URL": "http://localhost:3000",
       "NEXTAUTH_SECRET": "your-development-secret",
       "GOOGLE_CLIENT_ID": "your-google-client-id",
@@ -239,7 +239,7 @@
     },
     "production": {
       "NODE_ENV": "production",
-      "DATABASE_URL": "postgresql://alert24:Sg47^kLm9@wPz!rT@34.223.13.196:5432/alert24?options=-csearch_path%3Dalert24_schema",
+      "DATABASE_URL": "postgresql://alert24:Sg47^kLm9@wPz!rT@34.223.13.196:5432/alert24",
       "NEXTAUTH_URL": "https://your-domain.com",
       "NEXTAUTH_SECRET": "your-production-secret",
       "GOOGLE_CLIENT_ID": "your-google-client-id",

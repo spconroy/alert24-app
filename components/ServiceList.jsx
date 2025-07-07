@@ -1,31 +1,60 @@
-import React, { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
-import CircularProgress from '@mui/material/CircularProgress';
-import Alert from '@mui/material/Alert';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemText from '@mui/material/ListItemText';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
-import Chip from '@mui/material/Chip';
+import React, {
+  useEffect,
+  useState,
+  forwardRef,
+  useImperativeHandle,
+} from 'react';
+import {
+  CircularProgress,
+  Alert,
+  List,
+  ListItem,
+  ListItemText,
+  Typography,
+  Box,
+  Chip,
+  IconButton,
+  Button,
+  Collapse,
+  Divider,
+  Tooltip,
+  Paper,
+} from '@mui/material';
+import {
+  ExpandMore,
+  ExpandLess,
+  Edit,
+  Link as LinkIcon,
+  MonitorHeart,
+  Warning,
+} from '@mui/icons-material';
+import ServiceMonitoringConfig from './ServiceMonitoringConfig';
+import EditServiceForm from './EditServiceForm';
+import ServiceUptimeTimeline from './ServiceUptimeTimeline';
+import ServiceUptimeStats from './ServiceUptimeStats';
 
 const statusColors = {
   operational: 'success',
-  degraded: 'warning', 
+  degraded: 'warning',
   down: 'error',
-  maintenance: 'info'
+  maintenance: 'info',
 };
 
 const statusLabels = {
   operational: 'Operational',
   degraded: 'Degraded',
   down: 'Down',
-  maintenance: 'Maintenance'
+  maintenance: 'Maintenance',
 };
 
 const ServiceList = forwardRef(function ServiceList({ statusPageId }, ref) {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [expandedServices, setExpandedServices] = useState(new Set());
+  const [configModalOpen, setConfigModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState(null);
 
   const fetchServices = async () => {
     setLoading(true);
@@ -36,7 +65,9 @@ const ServiceList = forwardRef(function ServiceList({ statusPageId }, ref) {
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
         console.error('Services API error:', errorData);
-        throw new Error(errorData.error || `HTTP ${res.status}: ${res.statusText}`);
+        throw new Error(
+          errorData.error || `HTTP ${res.status}: ${res.statusText}`
+        );
       }
       const data = await res.json();
       console.log('Services data:', data);
@@ -49,14 +80,66 @@ const ServiceList = forwardRef(function ServiceList({ statusPageId }, ref) {
     }
   };
 
-  useImperativeHandle(ref, () => ({ 
+  useImperativeHandle(ref, () => ({
     fetchServices,
-    getServices: () => services 
+    getServices: () => services,
   }));
 
   useEffect(() => {
     if (statusPageId) fetchServices();
   }, [statusPageId]);
+
+  // Auto-refresh services every 30 seconds to stay in sync with database
+  useEffect(() => {
+    if (!statusPageId) return;
+
+    const interval = setInterval(() => {
+      fetchServices();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [statusPageId]);
+
+  const handleExpandService = serviceId => {
+    const newExpanded = new Set(expandedServices);
+    if (newExpanded.has(serviceId)) {
+      newExpanded.delete(serviceId);
+    } else {
+      newExpanded.add(serviceId);
+    }
+    setExpandedServices(newExpanded);
+  };
+
+  const handleConfigureMonitoring = service => {
+    setSelectedService(service);
+    setConfigModalOpen(true);
+  };
+
+  const handleEditService = service => {
+    setSelectedService(service);
+    setEditModalOpen(true);
+  };
+
+  const handleServiceUpdated = updatedService => {
+    setServices(prevServices =>
+      prevServices.map(service =>
+        service.id === updatedService.id
+          ? { ...service, ...updatedService }
+          : service
+      )
+    );
+  };
+
+  const getMonitoringCheckCount = service => {
+    return service.monitoring_checks?.length || 0;
+  };
+
+  const getFailingChecksCount = service => {
+    if (!service.monitoring_checks) return 0;
+    return service.monitoring_checks.filter(
+      check => check.current_status === 'down'
+    ).length;
+  };
 
   return (
     <Box>
@@ -68,29 +151,212 @@ const ServiceList = forwardRef(function ServiceList({ statusPageId }, ref) {
         </Typography>
       )}
       {!loading && !error && services.length > 0 && (
-        <List>
-          {services.map((service) => (
-            <ListItem key={service.id} divider>
-              <ListItemText
-                primary={
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {services.map(service => {
+            const isExpanded = expandedServices.has(service.id);
+            const monitoringCount = getMonitoringCheckCount(service);
+            const failingCount = getFailingChecksCount(service);
+
+            return (
+              <Paper
+                key={service.id}
+                elevation={1}
+                sx={{
+                  p: 3,
+                  '&:hover': {
+                    elevation: 2,
+                    backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                  },
+                }}
+              >
+                {/* Service Header */}
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="space-between"
+                  mb={2}
+                >
                   <Box display="flex" alignItems="center" gap={1}>
-                    <Typography variant="body1">{service.name}</Typography>
-                    <Chip 
-                      label={statusLabels[service.status]} 
+                    <Typography variant="h6" fontWeight="medium">
+                      {service.name}
+                    </Typography>
+                    <Chip
+                      label={statusLabels[service.status]}
                       color={statusColors[service.status]}
                       size="small"
                     />
+                    {monitoringCount > 0 && (
+                      <Chip
+                        icon={<MonitorHeart />}
+                        label={`${monitoringCount} checks`}
+                        size="small"
+                        variant="outlined"
+                        color={failingCount > 0 ? 'error' : 'success'}
+                      />
+                    )}
+                    {failingCount > 0 && (
+                      <Chip
+                        icon={<Warning />}
+                        label={`${failingCount} failing`}
+                        size="small"
+                        color="error"
+                      />
+                    )}
                   </Box>
-                }
-                secondary={service.description}
-              />
-              {/* TODO: Add edit/delete buttons */}
-            </ListItem>
-          ))}
-        </List>
+
+                  {/* Action Buttons */}
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Tooltip title="Configure Monitoring">
+                      <IconButton
+                        onClick={() => handleConfigureMonitoring(service)}
+                        color="primary"
+                        size="small"
+                      >
+                        <LinkIcon />
+                      </IconButton>
+                    </Tooltip>
+
+                    <Tooltip title="Edit Service">
+                      <IconButton
+                        onClick={() => handleEditService(service)}
+                        color="primary"
+                        size="small"
+                      >
+                        <Edit />
+                      </IconButton>
+                    </Tooltip>
+
+                    {monitoringCount > 0 && (
+                      <IconButton
+                        onClick={() => handleExpandService(service.id)}
+                        size="small"
+                      >
+                        {isExpanded ? <ExpandLess /> : <ExpandMore />}
+                      </IconButton>
+                    )}
+                  </Box>
+                </Box>
+
+                {/* Service Description */}
+                {service.description && (
+                  <Typography variant="body2" color="text.secondary" mb={2}>
+                    {service.description}
+                  </Typography>
+                )}
+
+                {/* SLA Section */}
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="space-between"
+                  gap={3}
+                >
+                  {/* Timeline Visualization */}
+                  <Box flex={1}>
+                    <Typography
+                      variant="subtitle2"
+                      color="text.secondary"
+                      mb={1}
+                    >
+                      Last 30 days
+                    </Typography>
+                    <ServiceUptimeTimeline serviceId={service.id} days={30} />
+                  </Box>
+
+                  {/* Uptime Stats */}
+                  <Box>
+                    <ServiceUptimeStats serviceId={service.id} compact={true} />
+                  </Box>
+                </Box>
+
+                {/* Expanded Monitoring Details */}
+                {monitoringCount > 0 && (
+                  <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                    <Box pt={3}>
+                      <Divider sx={{ mb: 2 }} />
+                      <Typography
+                        variant="subtitle2"
+                        gutterBottom
+                        color="text.secondary"
+                      >
+                        Associated Monitoring Checks
+                      </Typography>
+                      <List dense>
+                        {service.monitoring_checks?.map(check => (
+                          <ListItem key={check.id} sx={{ py: 0.5, pl: 0 }}>
+                            <ListItemText
+                              primary={
+                                <Box display="flex" alignItems="center" gap={1}>
+                                  <Typography variant="body2">
+                                    {check.name}
+                                  </Typography>
+                                  <Chip
+                                    label={check.current_status || 'unknown'}
+                                    size="small"
+                                    color={
+                                      check.current_status === 'up'
+                                        ? 'success'
+                                        : check.current_status === 'down'
+                                          ? 'error'
+                                          : 'default'
+                                    }
+                                    variant="outlined"
+                                  />
+                                </Box>
+                              }
+                              secondary={
+                                <Box>
+                                  <Typography variant="caption" display="block">
+                                    Threshold: {check.failure_threshold || 5}{' '}
+                                    minutes
+                                  </Typography>
+                                  {check.failure_message && (
+                                    <Typography
+                                      variant="caption"
+                                      display="block"
+                                      color="text.secondary"
+                                    >
+                                      Message: {check.failure_message}
+                                    </Typography>
+                                  )}
+                                </Box>
+                              }
+                            />
+                          </ListItem>
+                        ))}
+                      </List>
+                    </Box>
+                  </Collapse>
+                )}
+              </Paper>
+            );
+          })}
+        </Box>
       )}
+
+      {/* Service Monitoring Configuration Modal */}
+      <ServiceMonitoringConfig
+        open={configModalOpen}
+        onClose={() => {
+          setConfigModalOpen(false);
+          setSelectedService(null);
+        }}
+        service={selectedService}
+        onConfigUpdated={fetchServices}
+      />
+
+      {/* Edit Service Modal */}
+      <EditServiceForm
+        open={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+          setSelectedService(null);
+        }}
+        service={selectedService}
+        onServiceUpdated={handleServiceUpdated}
+      />
     </Box>
   );
 });
 
-export default ServiceList; 
+export default ServiceList;

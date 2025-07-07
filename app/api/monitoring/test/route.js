@@ -1,0 +1,96 @@
+import { Pool } from 'pg';
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+export async function POST(req) {
+  try {
+    const body = await req.json();
+    const { check_id } = body;
+
+    if (!check_id) {
+      return new Response(
+        JSON.stringify({ error: 'check_id is required for testing' }),
+        { status: 400 }
+      );
+    }
+
+    // Call the execution API
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const executeResponse = await fetch(`${baseUrl}/api/monitoring/execute`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        check_id: check_id,
+      }),
+    });
+
+    if (executeResponse.ok) {
+      const result = await executeResponse.json();
+      return new Response(
+        JSON.stringify({
+          message: 'Test execution completed',
+          result: result,
+        }),
+        { status: 200 }
+      );
+    } else {
+      const errorText = await executeResponse.text();
+      return new Response(
+        JSON.stringify({
+          error: 'Execution failed',
+          details: errorText,
+        }),
+        { status: 500 }
+      );
+    }
+  } catch (error) {
+    console.error('Test execution error:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+    });
+  }
+}
+
+// GET endpoint to list all active checks for testing
+export async function GET(req) {
+  try {
+    const checks = await pool.query(`
+      SELECT 
+        id, 
+        name, 
+        check_type, 
+        target_url, 
+        check_interval,
+        status,
+        created_at,
+        (
+          SELECT COUNT(*) 
+          FROM public.check_results cr 
+          WHERE cr.monitoring_check_id = mc.id
+        ) as total_checks,
+        (
+          SELECT MAX(cr.created_at) 
+          FROM public.check_results cr 
+          WHERE cr.monitoring_check_id = mc.id
+        ) as last_check_at
+      FROM public.monitoring_checks mc
+      WHERE mc.status = 'active'
+      ORDER BY mc.created_at DESC
+    `);
+
+    return new Response(
+      JSON.stringify({
+        message: 'Active monitoring checks',
+        checks: checks.rows,
+      }),
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('Test listing error:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+    });
+  }
+}

@@ -20,7 +20,7 @@ import {
   Alert,
   CircularProgress,
   IconButton,
-  Divider
+  Divider,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -31,21 +31,21 @@ import {
   Error as ErrorIcon,
   Build as BuildIcon,
   Announcement as AnnouncementIcon,
-  OpenInNew as OpenInNewIcon
+  OpenInNew as OpenInNewIcon,
 } from '@mui/icons-material';
 
 export default function ServiceStatusManager({ statusPageId, onRefresh }) {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   // Service status update modal
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [selectedService, setSelectedService] = useState(null);
   const [newStatus, setNewStatus] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
   const [statusUpdateLoading, setStatusUpdateLoading] = useState(false);
-  
+
   // Status update post modal
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
   const [updateForm, setUpdateForm] = useState({
@@ -53,10 +53,10 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
     message: '',
     update_type: 'general',
     status: '',
-    service_id: ''
+    service_id: '',
   });
   const [postUpdateLoading, setPostUpdateLoading] = useState(false);
-  
+
   // Status page info for public link
   const [statusPage, setStatusPage] = useState(null);
 
@@ -70,7 +70,9 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
   const fetchServices = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/services?status_page_id=${statusPageId}`);
+      const response = await fetch(
+        `/api/services?status_page_id=${statusPageId}`
+      );
       if (!response.ok) throw new Error('Failed to fetch services');
       const data = await response.json();
       setServices(data.services || []);
@@ -97,12 +99,12 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
 
     try {
       setStatusUpdateLoading(true);
-      
+
       // Update the service status
       const response = await fetch(`/api/services/${selectedService.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify({ status: newStatus }),
       });
 
       if (!response.ok) throw new Error('Failed to update service status');
@@ -112,7 +114,7 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
         // Map service status to appropriate update status
         let updateStatus = 'operational';
         let updateType = 'general';
-        
+
         if (newStatus === 'down') {
           updateStatus = 'investigating';
           updateType = 'incident';
@@ -124,8 +126,16 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
           updateType = 'maintenance';
         } else if (newStatus === 'operational') {
           // If changing to operational, it might be resolving an incident
-          updateStatus = selectedService.status === 'down' || selectedService.status === 'degraded' ? 'resolved' : 'operational';
-          updateType = selectedService.status === 'down' || selectedService.status === 'degraded' ? 'incident' : 'general';
+          updateStatus =
+            selectedService.status === 'down' ||
+            selectedService.status === 'degraded'
+              ? 'resolved'
+              : 'operational';
+          updateType =
+            selectedService.status === 'down' ||
+            selectedService.status === 'degraded'
+              ? 'incident'
+              : 'general';
         }
 
         const statusUpdatePayload = {
@@ -134,19 +144,21 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
           update_type: updateType,
           status: updateStatus,
           status_page_id: statusPageId,
-          service_id: selectedService.id
+          service_id: selectedService.id,
         };
-        
+
         console.log('Posting status update with payload:', statusUpdatePayload);
-        
+
         const statusUpdateResponse = await fetch('/api/status-updates', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(statusUpdatePayload)
+          body: JSON.stringify(statusUpdatePayload),
         });
 
         if (!statusUpdateResponse.ok) {
-          console.warn('Failed to post status update message, but service status was updated');
+          console.warn(
+            'Failed to post status update message, but service status was updated'
+          );
         }
       }
 
@@ -168,19 +180,19 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
 
     try {
       setPostUpdateLoading(true);
-      
+
       const payload = {
         ...updateForm,
         status_page_id: statusPageId,
-        service_id: updateForm.service_id || null
+        service_id: updateForm.service_id || null,
       };
-      
+
       console.log('Posting general status update with payload:', payload);
-      
+
       const response = await fetch('/api/status-updates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) throw new Error('Failed to post status update');
@@ -191,7 +203,7 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
         message: '',
         update_type: 'general',
         status: '',
-        service_id: ''
+        service_id: '',
       });
       if (onRefresh) onRefresh();
     } catch (err) {
@@ -201,7 +213,7 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
     }
   };
 
-  const openStatusModal = (service) => {
+  const openStatusModal = service => {
     setSelectedService(service);
     setNewStatus(service.status);
     setStatusMessage('');
@@ -212,7 +224,7 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
     // If a specific service is selected, set appropriate status and update type based on current service status
     let defaultStatus = '';
     let defaultUpdateType = 'general';
-    
+
     if (service) {
       // Map service status to appropriate update status and type
       if (service.status === 'down') {
@@ -229,44 +241,59 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
         defaultUpdateType = 'general';
       }
     }
-    
+
     setUpdateForm({
       title: '',
       message: '',
       update_type: defaultUpdateType,
       status: defaultStatus,
-      service_id: service?.id || ''
+      service_id: service?.id || '',
     });
     setUpdateModalOpen(true);
   };
 
-  const getStatusIcon = (status) => {
+  const getStatusIcon = status => {
     switch (status) {
-      case 'operational': return <CheckCircleIcon sx={{ color: 'success.main' }} />;
-      case 'degraded': return <WarningIcon sx={{ color: 'warning.main' }} />;
-      case 'down': return <ErrorIcon sx={{ color: 'error.main' }} />;
-      case 'maintenance': return <BuildIcon sx={{ color: 'info.main' }} />;
-      default: return <CheckCircleIcon sx={{ color: 'success.main' }} />;
+      case 'operational':
+        return <CheckCircleIcon sx={{ color: 'success.main' }} />;
+      case 'degraded':
+        return <WarningIcon sx={{ color: 'warning.main' }} />;
+      case 'down':
+        return <ErrorIcon sx={{ color: 'error.main' }} />;
+      case 'maintenance':
+        return <BuildIcon sx={{ color: 'info.main' }} />;
+      default:
+        return <CheckCircleIcon sx={{ color: 'success.main' }} />;
     }
   };
 
-  const getStatusColor = (status) => {
+  const getStatusColor = status => {
     switch (status) {
-      case 'operational': return 'success';
-      case 'degraded': return 'warning';
-      case 'down': return 'error';
-      case 'maintenance': return 'info';
-      default: return 'default';
+      case 'operational':
+        return 'success';
+      case 'degraded':
+        return 'warning';
+      case 'down':
+        return 'error';
+      case 'maintenance':
+        return 'info';
+      default:
+        return 'default';
     }
   };
 
-  const getStatusText = (status) => {
+  const getStatusText = status => {
     switch (status) {
-      case 'operational': return 'Operational';
-      case 'degraded': return 'Degraded';
-      case 'down': return 'Down';
-      case 'maintenance': return 'Maintenance';
-      default: return 'Unknown';
+      case 'operational':
+        return 'Operational';
+      case 'degraded':
+        return 'Degraded';
+      case 'down':
+        return 'Down';
+      case 'maintenance':
+        return 'Maintenance';
+      default:
+        return 'Unknown';
     }
   };
 
@@ -280,11 +307,21 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
 
   return (
     <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
+      >
         <Typography variant="h5" component="h3">
           Service Status Management
         </Typography>
-        <Box display="flex" flexDirection="column" alignItems="flex-end" gap={1}>
+        <Box
+          display="flex"
+          flexDirection="column"
+          alignItems="flex-end"
+          gap={1}
+        >
           <Button
             variant="contained"
             startIcon={<AnnouncementIcon />}
@@ -298,13 +335,15 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
               size="small"
               variant="text"
               startIcon={<OpenInNewIcon />}
-              onClick={() => window.open(`/status/${statusPage.slug}`, '_blank')}
-              sx={{ 
+              onClick={() =>
+                window.open(`/status/${statusPage.slug}`, '_blank')
+              }
+              sx={{
                 fontSize: '0.75rem',
                 color: 'text.secondary',
                 '&:hover': {
-                  color: 'primary.main'
-                }
+                  color: 'primary.main',
+                },
               }}
             >
               View Public Status Page
@@ -332,17 +371,26 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
         </Card>
       ) : (
         <Grid container spacing={2}>
-          {services.map((service) => (
+          {services.map(service => (
             <Grid item xs={12} md={6} key={service.id}>
               <Card elevation={1}>
                 <CardContent>
-                  <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
+                  <Box
+                    display="flex"
+                    justifyContent="space-between"
+                    alignItems="flex-start"
+                    mb={2}
+                  >
                     <Box flex={1}>
                       <Typography variant="h6" gutterBottom>
                         {service.name}
                       </Typography>
                       {service.description && (
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ mb: 2 }}
+                        >
                           {service.description}
                         </Typography>
                       )}
@@ -354,7 +402,7 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
                       size="small"
                     />
                   </Box>
-                  
+
                   <Box display="flex" gap={1}>
                     <Button
                       size="small"
@@ -381,9 +429,18 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
       )}
 
       {/* Service Status Update Modal */}
-      <Dialog open={statusModalOpen} onClose={() => setStatusModalOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={statusModalOpen}
+        onClose={() => setStatusModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+          >
             <Typography variant="h6">Update Service Status</Typography>
             <IconButton onClick={() => setStatusModalOpen(false)} size="small">
               <CloseIcon />
@@ -396,30 +453,34 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
               <Typography variant="body1" sx={{ mb: 3 }}>
                 Update the status for <strong>{selectedService.name}</strong>
               </Typography>
-              
+
               <FormControl fullWidth sx={{ mb: 3 }}>
                 <InputLabel>Service Status</InputLabel>
                 <Select
                   value={newStatus}
-                  onChange={(e) => setNewStatus(e.target.value)}
+                  onChange={e => setNewStatus(e.target.value)}
                   label="Service Status"
                 >
                   <MenuItem value="operational">
                     <Box display="flex" alignItems="center" gap={1}>
-                      <CheckCircleIcon sx={{ color: 'success.main', fontSize: 20 }} />
+                      <CheckCircleIcon
+                        sx={{ color: 'success.main', fontSize: 20 }}
+                      />
                       Operational
                     </Box>
                   </MenuItem>
                   <MenuItem value="degraded">
                     <Box display="flex" alignItems="center" gap={1}>
-                      <WarningIcon sx={{ color: 'warning.main', fontSize: 20 }} />
+                      <WarningIcon
+                        sx={{ color: 'warning.main', fontSize: 20 }}
+                      />
                       Degraded Performance
                     </Box>
                   </MenuItem>
                   <MenuItem value="down">
                     <Box display="flex" alignItems="center" gap={1}>
                       <ErrorIcon sx={{ color: 'error.main', fontSize: 20 }} />
-                      Major Outage
+                      Outage
                     </Box>
                   </MenuItem>
                   <MenuItem value="maintenance">
@@ -437,7 +498,7 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
                 rows={3}
                 label="Status Update Message (Optional)"
                 value={statusMessage}
-                onChange={(e) => setStatusMessage(e.target.value)}
+                onChange={e => setStatusMessage(e.target.value)}
                 placeholder="Provide details about this status change..."
                 helperText="This message will be posted as a status update if provided"
               />
@@ -445,14 +506,23 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
           )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3 }}>
-          <Button onClick={() => setStatusModalOpen(false)} disabled={statusUpdateLoading}>
+          <Button
+            onClick={() => setStatusModalOpen(false)}
+            disabled={statusUpdateLoading}
+          >
             Cancel
           </Button>
           <Button
             onClick={handleStatusUpdate}
             variant="contained"
             disabled={statusUpdateLoading || !newStatus}
-            startIcon={statusUpdateLoading ? <CircularProgress size={16} /> : <EditIcon />}
+            startIcon={
+              statusUpdateLoading ? (
+                <CircularProgress size={16} />
+              ) : (
+                <EditIcon />
+              )
+            }
           >
             {statusUpdateLoading ? 'Updating...' : 'Update Status'}
           </Button>
@@ -460,9 +530,18 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
       </Dialog>
 
       {/* Post Status Update Modal */}
-      <Dialog open={updateModalOpen} onClose={() => setUpdateModalOpen(false)} maxWidth="md" fullWidth>
+      <Dialog
+        open={updateModalOpen}
+        onClose={() => setUpdateModalOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
         <DialogTitle>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+          >
             <Typography variant="h6">Post Status Update</Typography>
             <IconButton onClick={() => setUpdateModalOpen(false)} size="small">
               <CloseIcon />
@@ -477,30 +556,55 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
                   fullWidth
                   label="Update Title"
                   value={updateForm.title}
-                  onChange={(e) => setUpdateForm({ ...updateForm, title: e.target.value })}
+                  onChange={e =>
+                    setUpdateForm({ ...updateForm, title: e.target.value })
+                  }
                   placeholder="Brief description of the update"
                 />
               </Grid>
-              
+
               <Grid item xs={12} md={6}>
                 <FormControl fullWidth>
                   <InputLabel>Update Type</InputLabel>
                   <Select
                     value={updateForm.update_type}
-                    onChange={(e) => {
+                    onChange={e => {
                       const newType = e.target.value;
                       let newStatus = updateForm.status;
-                      
+
                       // Reset status to appropriate default when type changes
-                      if (newType === 'incident' && !['investigating', 'identified', 'monitoring', 'resolved'].includes(newStatus)) {
+                      if (
+                        newType === 'incident' &&
+                        ![
+                          'investigating',
+                          'identified',
+                          'monitoring',
+                          'resolved',
+                        ].includes(newStatus)
+                      ) {
                         newStatus = 'investigating';
-                      } else if (newType === 'maintenance' && !['maintenance', 'operational'].includes(newStatus)) {
+                      } else if (
+                        newType === 'maintenance' &&
+                        !['maintenance', 'operational'].includes(newStatus)
+                      ) {
                         newStatus = 'maintenance';
-                      } else if (newType === 'general' && !['operational', 'degraded', 'down', 'maintenance'].includes(newStatus)) {
+                      } else if (
+                        newType === 'general' &&
+                        ![
+                          'operational',
+                          'degraded',
+                          'down',
+                          'maintenance',
+                        ].includes(newStatus)
+                      ) {
                         newStatus = 'operational';
                       }
-                      
-                      setUpdateForm({ ...updateForm, update_type: newType, status: newStatus });
+
+                      setUpdateForm({
+                        ...updateForm,
+                        update_type: newType,
+                        status: newStatus,
+                      });
                     }}
                     label="Update Type"
                   >
@@ -516,11 +620,16 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
                   <InputLabel>Related Service (Optional)</InputLabel>
                   <Select
                     value={updateForm.service_id}
-                    onChange={(e) => setUpdateForm({ ...updateForm, service_id: e.target.value })}
+                    onChange={e =>
+                      setUpdateForm({
+                        ...updateForm,
+                        service_id: e.target.value,
+                      })
+                    }
                     label="Related Service (Optional)"
                   >
                     <MenuItem value="">All Services</MenuItem>
-                    {services.map((service) => (
+                    {services.map(service => (
                       <MenuItem key={service.id} value={service.id}>
                         {service.name}
                       </MenuItem>
@@ -534,7 +643,9 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
                   <InputLabel>Status</InputLabel>
                   <Select
                     value={updateForm.status}
-                    onChange={(e) => setUpdateForm({ ...updateForm, status: e.target.value })}
+                    onChange={e =>
+                      setUpdateForm({ ...updateForm, status: e.target.value })
+                    }
                     label="Status"
                   >
                     {updateForm.update_type === 'incident' && (
@@ -570,7 +681,9 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
                   rows={4}
                   label="Update Message"
                   value={updateForm.message}
-                  onChange={(e) => setUpdateForm({ ...updateForm, message: e.target.value })}
+                  onChange={e =>
+                    setUpdateForm({ ...updateForm, message: e.target.value })
+                  }
                   placeholder="Detailed information about this update..."
                 />
               </Grid>
@@ -578,14 +691,25 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3 }}>
-          <Button onClick={() => setUpdateModalOpen(false)} disabled={postUpdateLoading}>
+          <Button
+            onClick={() => setUpdateModalOpen(false)}
+            disabled={postUpdateLoading}
+          >
             Cancel
           </Button>
           <Button
             onClick={handlePostUpdate}
             variant="contained"
-            disabled={postUpdateLoading || !updateForm.title || !updateForm.message}
-            startIcon={postUpdateLoading ? <CircularProgress size={16} /> : <AnnouncementIcon />}
+            disabled={
+              postUpdateLoading || !updateForm.title || !updateForm.message
+            }
+            startIcon={
+              postUpdateLoading ? (
+                <CircularProgress size={16} />
+              ) : (
+                <AnnouncementIcon />
+              )
+            }
           >
             {postUpdateLoading ? 'Posting...' : 'Post Update'}
           </Button>
@@ -593,4 +717,4 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
       </Dialog>
     </Box>
   );
-} 
+}
