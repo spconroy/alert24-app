@@ -1,16 +1,15 @@
 {
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "regions": ["iad1"],
   "functions": {
-    "app/api/monitoring/scheduler/route.js": {
-      "maxDuration": 300
-    },
-    "app/api/monitoring/execute/route.js": {
-      "maxDuration": 60
+    "app/api/**/*.js": {
+      "maxDuration": 30
     }
   },
-  "crons": [
-    {
-      "path": "/api/monitoring/scheduler",
-      "schedule": "*/2 * * * *"
-    }
-  ]
+  "env": {
+    "NODE_ENV": "production"
+  }
 }
