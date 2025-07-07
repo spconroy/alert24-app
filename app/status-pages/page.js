@@ -17,6 +17,13 @@ export default function StatusPagesPage() {
   const { selectedOrganization } = useOrganization();
   const { data: session } = useSession();
 
+  const handleStatusPageUpdated = updatedStatusPage => {
+    // Update the selected status page with the new data
+    setSelectedStatusPage(updatedStatusPage);
+    // Also refresh the status page list to show updated info
+    statusPageListRef.current?.fetchStatusPages();
+  };
+
   if (!session) {
     return (
       <Box
@@ -104,7 +111,10 @@ export default function StatusPagesPage() {
               >
                 ← Back to Status Pages
               </Button>
-              <StatusPageServices statusPage={selectedStatusPage} />
+              <StatusPageServices
+                statusPage={selectedStatusPage}
+                onStatusPageUpdated={handleStatusPageUpdated}
+              />
             </Box>
           )}
         </Box>

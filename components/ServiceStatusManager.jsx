@@ -30,7 +30,6 @@ import {
   Warning as WarningIcon,
   Error as ErrorIcon,
   Build as BuildIcon,
-  Announcement as AnnouncementIcon,
   OpenInNew as OpenInNewIcon,
 } from '@mui/icons-material';
 
@@ -45,17 +44,6 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
   const [newStatus, setNewStatus] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
   const [statusUpdateLoading, setStatusUpdateLoading] = useState(false);
-
-  // Status update post modal
-  const [updateModalOpen, setUpdateModalOpen] = useState(false);
-  const [updateForm, setUpdateForm] = useState({
-    title: '',
-    message: '',
-    update_type: 'general',
-    status: '',
-    service_id: '',
-  });
-  const [postUpdateLoading, setPostUpdateLoading] = useState(false);
 
   // Status page info for public link
   const [statusPage, setStatusPage] = useState(null);
@@ -175,81 +163,11 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
     }
   };
 
-  const handlePostUpdate = async () => {
-    if (!updateForm.title || !updateForm.message) return;
-
-    try {
-      setPostUpdateLoading(true);
-
-      const payload = {
-        ...updateForm,
-        status_page_id: statusPageId,
-        service_id: updateForm.service_id || null,
-      };
-
-      console.log('Posting general status update with payload:', payload);
-
-      const response = await fetch('/api/status-updates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) throw new Error('Failed to post status update');
-
-      setUpdateModalOpen(false);
-      setUpdateForm({
-        title: '',
-        message: '',
-        update_type: 'general',
-        status: '',
-        service_id: '',
-      });
-      if (onRefresh) onRefresh();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setPostUpdateLoading(false);
-    }
-  };
-
   const openStatusModal = service => {
     setSelectedService(service);
     setNewStatus(service.status);
     setStatusMessage('');
     setStatusModalOpen(true);
-  };
-
-  const openUpdateModal = (service = null) => {
-    // If a specific service is selected, set appropriate status and update type based on current service status
-    let defaultStatus = '';
-    let defaultUpdateType = 'general';
-
-    if (service) {
-      // Map service status to appropriate update status and type
-      if (service.status === 'down') {
-        defaultStatus = 'investigating';
-        defaultUpdateType = 'incident';
-      } else if (service.status === 'degraded') {
-        defaultStatus = 'identified';
-        defaultUpdateType = 'incident';
-      } else if (service.status === 'maintenance') {
-        defaultStatus = 'maintenance';
-        defaultUpdateType = 'maintenance';
-      } else if (service.status === 'operational') {
-        defaultStatus = 'operational';
-        defaultUpdateType = 'general';
-      }
-    }
-
-    setUpdateForm({
-      title: '',
-      message: '',
-      update_type: defaultUpdateType,
-      status: defaultStatus,
-      service_id: service?.id || '',
-    });
-    setUpdateModalOpen(true);
   };
 
   const getStatusIcon = status => {
@@ -322,14 +240,6 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
           alignItems="flex-end"
           gap={1}
         >
-          <Button
-            variant="contained"
-            startIcon={<AnnouncementIcon />}
-            onClick={() => openUpdateModal()}
-            sx={{ borderRadius: 2 }}
-          >
-            Post Update
-          </Button>
           {statusPage && statusPage.is_public && (
             <Button
               size="small"
@@ -411,14 +321,6 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
                       onClick={() => openStatusModal(service)}
                     >
                       Update Status
-                    </Button>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      startIcon={<AnnouncementIcon />}
-                      onClick={() => openUpdateModal(service)}
-                    >
-                      Post Update
                     </Button>
                   </Box>
                 </CardContent>
@@ -525,193 +427,6 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
             }
           >
             {statusUpdateLoading ? 'Updating...' : 'Update Status'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Post Status Update Modal */}
-      <Dialog
-        open={updateModalOpen}
-        onClose={() => setUpdateModalOpen(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box
-            display="flex"
-            justifyContent="space-between"
-            alignItems="center"
-          >
-            <Typography variant="h6">Post Status Update</Typography>
-            <IconButton onClick={() => setUpdateModalOpen(false)} size="small">
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 1 }}>
-            <Grid container spacing={3}>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Update Title"
-                  value={updateForm.title}
-                  onChange={e =>
-                    setUpdateForm({ ...updateForm, title: e.target.value })
-                  }
-                  placeholder="Brief description of the update"
-                />
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Update Type</InputLabel>
-                  <Select
-                    value={updateForm.update_type}
-                    onChange={e => {
-                      const newType = e.target.value;
-                      let newStatus = updateForm.status;
-
-                      // Reset status to appropriate default when type changes
-                      if (
-                        newType === 'incident' &&
-                        ![
-                          'investigating',
-                          'identified',
-                          'monitoring',
-                          'resolved',
-                        ].includes(newStatus)
-                      ) {
-                        newStatus = 'investigating';
-                      } else if (
-                        newType === 'maintenance' &&
-                        !['maintenance', 'operational'].includes(newStatus)
-                      ) {
-                        newStatus = 'maintenance';
-                      } else if (
-                        newType === 'general' &&
-                        ![
-                          'operational',
-                          'degraded',
-                          'down',
-                          'maintenance',
-                        ].includes(newStatus)
-                      ) {
-                        newStatus = 'operational';
-                      }
-
-                      setUpdateForm({
-                        ...updateForm,
-                        update_type: newType,
-                        status: newStatus,
-                      });
-                    }}
-                    label="Update Type"
-                  >
-                    <MenuItem value="general">General Update</MenuItem>
-                    <MenuItem value="incident">Incident</MenuItem>
-                    <MenuItem value="maintenance">Maintenance</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Related Service (Optional)</InputLabel>
-                  <Select
-                    value={updateForm.service_id}
-                    onChange={e =>
-                      setUpdateForm({
-                        ...updateForm,
-                        service_id: e.target.value,
-                      })
-                    }
-                    label="Related Service (Optional)"
-                  >
-                    <MenuItem value="">All Services</MenuItem>
-                    {services.map(service => (
-                      <MenuItem key={service.id} value={service.id}>
-                        {service.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Status</InputLabel>
-                  <Select
-                    value={updateForm.status}
-                    onChange={e =>
-                      setUpdateForm({ ...updateForm, status: e.target.value })
-                    }
-                    label="Status"
-                  >
-                    {updateForm.update_type === 'incident' && (
-                      <>
-                        <MenuItem value="investigating">Investigating</MenuItem>
-                        <MenuItem value="identified">Identified</MenuItem>
-                        <MenuItem value="monitoring">Monitoring</MenuItem>
-                        <MenuItem value="resolved">Resolved</MenuItem>
-                      </>
-                    )}
-                    {updateForm.update_type === 'maintenance' && (
-                      <>
-                        <MenuItem value="maintenance">Maintenance</MenuItem>
-                        <MenuItem value="operational">Operational</MenuItem>
-                      </>
-                    )}
-                    {updateForm.update_type === 'general' && (
-                      <>
-                        <MenuItem value="operational">Operational</MenuItem>
-                        <MenuItem value="degraded">Degraded</MenuItem>
-                        <MenuItem value="down">Down</MenuItem>
-                        <MenuItem value="maintenance">Maintenance</MenuItem>
-                      </>
-                    )}
-                  </Select>
-                </FormControl>
-              </Grid>
-
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={4}
-                  label="Update Message"
-                  value={updateForm.message}
-                  onChange={e =>
-                    setUpdateForm({ ...updateForm, message: e.target.value })
-                  }
-                  placeholder="Detailed information about this update..."
-                />
-              </Grid>
-            </Grid>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3 }}>
-          <Button
-            onClick={() => setUpdateModalOpen(false)}
-            disabled={postUpdateLoading}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handlePostUpdate}
-            variant="contained"
-            disabled={
-              postUpdateLoading || !updateForm.title || !updateForm.message
-            }
-            startIcon={
-              postUpdateLoading ? (
-                <CircularProgress size={16} />
-              ) : (
-                <AnnouncementIcon />
-              )
-            }
-          >
-            {postUpdateLoading ? 'Posting...' : 'Post Update'}
           </Button>
         </DialogActions>
       </Dialog>

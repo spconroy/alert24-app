@@ -15,6 +15,8 @@ import {
   Alert,
   CircularProgress,
   IconButton,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import { Close } from '@mui/icons-material';
 
@@ -29,6 +31,7 @@ export default function EditServiceForm({
     description: '',
     status: 'operational',
     sort_order: 0,
+    auto_recovery: true,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -41,15 +44,16 @@ export default function EditServiceForm({
         description: service.description || '',
         status: service.status || 'operational',
         sort_order: service.sort_order || 0,
+        auto_recovery: service.auto_recovery ?? true,
       });
     }
   }, [service]);
 
   const handleInputChange = e => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value,
+      [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
@@ -215,6 +219,27 @@ export default function EditServiceForm({
             helperText="Lower numbers appear first in the list"
             inputProps={{ min: 0 }}
           />
+
+          <FormControlLabel
+            control={
+              <Checkbox
+                name="auto_recovery"
+                checked={formData.auto_recovery}
+                onChange={handleInputChange}
+                disabled={loading}
+              />
+            }
+            label="Auto-recovery"
+            sx={{ mt: 2, display: 'block' }}
+          />
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ mt: 1, mb: 2 }}
+          >
+            Automatically set service status to operational when all monitoring
+            checks recover
+          </Typography>
         </Box>
       </DialogContent>
 
