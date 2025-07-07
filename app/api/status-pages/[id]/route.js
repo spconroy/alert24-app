@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { getServerSession } from 'next-auth/next';
 import { Pool } from 'pg';
 
@@ -7,7 +9,7 @@ async function getStatusPageAndCheckOrg(id, userEmail) {
   // Get user ID from email
   const userQuery = `SELECT id FROM public.users WHERE email = $1`;
   const { rows: userRows } = await pool.query(userQuery, [userEmail]);
-  
+
   if (userRows.length === 0) {
     return null;
   }
@@ -28,16 +30,22 @@ export async function GET(req, { params }) {
   try {
     const session = await getServerSession();
     if (!session || !session.user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+      });
     }
     const { id } = params;
     const statusPage = await getStatusPageAndCheckOrg(id, session.user.email);
     if (!statusPage) {
-      return new Response(JSON.stringify({ error: 'Not found or forbidden' }), { status: 404 });
+      return new Response(JSON.stringify({ error: 'Not found or forbidden' }), {
+        status: 404,
+      });
     }
     return new Response(JSON.stringify({ statusPage }), { status: 200 });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+    });
   }
 }
 
@@ -45,12 +53,16 @@ export async function PUT(req, { params }) {
   try {
     const session = await getServerSession();
     if (!session || !session.user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+      });
     }
     const { id } = params;
     const statusPage = await getStatusPageAndCheckOrg(id, session.user.email);
     if (!statusPage) {
-      return new Response(JSON.stringify({ error: 'Not found or forbidden' }), { status: 404 });
+      return new Response(JSON.stringify({ error: 'Not found or forbidden' }), {
+        status: 404,
+      });
     }
     const body = await req.json();
     const { name, slug, description, is_public } = body;
@@ -65,14 +77,23 @@ export async function PUT(req, { params }) {
       slug || statusPage.slug,
       description || statusPage.description,
       typeof is_public === 'boolean' ? is_public : statusPage.is_public,
-      id
+      id,
     ]);
-    return new Response(JSON.stringify({ statusPage: rows[0] }), { status: 200 });
+    return new Response(JSON.stringify({ statusPage: rows[0] }), {
+      status: 200,
+    });
   } catch (err) {
     if (err.code === '23505') {
-      return new Response(JSON.stringify({ error: 'Slug must be unique within the organization.' }), { status: 409 });
+      return new Response(
+        JSON.stringify({
+          error: 'Slug must be unique within the organization.',
+        }),
+        { status: 409 }
+      );
     }
-    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+    });
   }
 }
 
@@ -80,12 +101,16 @@ export async function DELETE(req, { params }) {
   try {
     const session = await getServerSession();
     if (!session || !session.user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+      });
     }
     const { id } = params;
     const statusPage = await getStatusPageAndCheckOrg(id, session.user.email);
     if (!statusPage) {
-      return new Response(JSON.stringify({ error: 'Not found or forbidden' }), { status: 404 });
+      return new Response(JSON.stringify({ error: 'Not found or forbidden' }), {
+        status: 404,
+      });
     }
     await pool.query(
       'UPDATE public.status_pages SET deleted_at = NOW() WHERE id = $1',
@@ -93,6 +118,8 @@ export async function DELETE(req, { params }) {
     );
     return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+    });
   }
-} 
+}

@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
 
@@ -19,7 +21,10 @@ export async function POST(req) {
     }
     console.log('Raw body:', body);
     if (!body || !body.email || !body.name || !body.password) {
-      return new Response(JSON.stringify({ error: 'All fields are required.' }), { status: 400 });
+      return new Response(
+        JSON.stringify({ error: 'All fields are required.' }),
+        { status: 400 }
+      );
     }
     const { email, name, password } = body;
     // Check for existing user
@@ -28,7 +33,9 @@ export async function POST(req) {
       [email]
     );
     if (existing.rows.length > 0) {
-      return new Response(JSON.stringify({ error: 'Email already in use.' }), { status: 409 });
+      return new Response(JSON.stringify({ error: 'Email already in use.' }), {
+        status: 409,
+      });
     }
     // Hash password and insert
     const hashed = await bcrypt.hash(password, 10);
@@ -36,8 +43,10 @@ export async function POST(req) {
       'INSERT INTO public.users (email, name, password) VALUES ($1, $2, $3) RETURNING id, email, name',
       [email, name, hashed]
     );
-    return new Response(JSON.stringify({ user: result.rows[0] }), { status: 201 });
+    return new Response(JSON.stringify({ user: result.rows[0] }), {
+      status: 201,
+    });
   } catch (e) {
     return new Response(JSON.stringify({ error: e.message }), { status: 500 });
   }
-} 
+}

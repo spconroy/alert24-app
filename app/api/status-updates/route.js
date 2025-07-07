@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { Pool } from 'pg';
 import { getServerSession } from 'next-auth';
 
@@ -9,9 +11,12 @@ export async function GET(req) {
     const statusPageId = searchParams.get('status_page_id');
     const limit = parseInt(searchParams.get('limit')) || 10;
     const since = searchParams.get('since'); // Optional date filter
-    
+
     if (!statusPageId) {
-      return new Response(JSON.stringify({ error: 'Missing status_page_id parameter' }), { status: 400 });
+      return new Response(
+        JSON.stringify({ error: 'Missing status_page_id parameter' }),
+        { status: 400 }
+      );
     }
 
     // Build the query with optional date filter
@@ -26,24 +31,29 @@ export async function GET(req) {
       WHERE su.status_page_id = $1 
         AND su.deleted_at IS NULL
     `;
-    
+
     const queryParams = [statusPageId];
-    
+
     // Add date filter if provided
     if (since) {
       statusUpdatesQuery += ` AND su.created_at >= $${queryParams.length + 1}`;
       queryParams.push(since);
     }
-    
+
     statusUpdatesQuery += ` ORDER BY su.created_at DESC LIMIT $${queryParams.length + 1}`;
     queryParams.push(limit);
-    
-    const { rows: statusUpdates } = await pool.query(statusUpdatesQuery, queryParams);
-    
+
+    const { rows: statusUpdates } = await pool.query(
+      statusUpdatesQuery,
+      queryParams
+    );
+
     return new Response(JSON.stringify({ statusUpdates }), { status: 200 });
   } catch (err) {
     console.error('Status updates GET error:', err);
-    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+    });
   }
 }
 
@@ -51,28 +61,42 @@ export async function POST(req) {
   try {
     const session = await getServerSession();
     if (!session) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+      });
     }
 
     const body = await req.json();
-    const { status_page_id, service_id, title, message, update_type, status } = body;
+    const { status_page_id, service_id, title, message, update_type, status } =
+      body;
 
     if (!status_page_id || !title || !message) {
-      return new Response(JSON.stringify({ error: 'Missing required fields: status_page_id, title, message' }), { status: 400 });
+      return new Response(
+        JSON.stringify({
+          error: 'Missing required fields: status_page_id, title, message',
+        }),
+        { status: 400 }
+      );
     }
 
     // Validate update_type
     const validUpdateTypes = ['general', 'incident', 'maintenance'];
     if (update_type && !validUpdateTypes.includes(update_type)) {
-      return new Response(JSON.stringify({ error: 'Invalid update_type' }), { status: 400 });
+      return new Response(JSON.stringify({ error: 'Invalid update_type' }), {
+        status: 400,
+      });
     }
 
     // Get user ID and verify access to the status page
     const userQuery = `SELECT id FROM public.users WHERE email = $1`;
-    const { rows: userRows } = await pool.query(userQuery, [session.user.email]);
-    
+    const { rows: userRows } = await pool.query(userQuery, [
+      session.user.email,
+    ]);
+
     if (userRows.length === 0) {
-      return new Response(JSON.stringify({ error: 'User not found' }), { status: 403 });
+      return new Response(JSON.stringify({ error: 'User not found' }), {
+        status: 403,
+      });
     }
 
     const userId = userRows[0].id;
@@ -84,10 +108,16 @@ export async function POST(req) {
       JOIN public.organization_members om ON sp.organization_id = om.organization_id
       WHERE sp.id = $1 AND om.user_id = $2 AND om.is_active = true AND sp.deleted_at IS NULL
     `;
-    const { rows: accessRows } = await pool.query(accessQuery, [status_page_id, userId]);
+    const { rows: accessRows } = await pool.query(accessQuery, [
+      status_page_id,
+      userId,
+    ]);
 
     if (accessRows.length === 0) {
-      return new Response(JSON.stringify({ error: 'Access denied to this status page' }), { status: 403 });
+      return new Response(
+        JSON.stringify({ error: 'Access denied to this status page' }),
+        { status: 403 }
+      );
     }
 
     // If service_id is provided, verify it belongs to this status page
@@ -96,10 +126,16 @@ export async function POST(req) {
         SELECT id FROM public.services 
         WHERE id = $1 AND status_page_id = $2 AND deleted_at IS NULL
       `;
-      const { rows: serviceRows } = await pool.query(serviceQuery, [service_id, status_page_id]);
+      const { rows: serviceRows } = await pool.query(serviceQuery, [
+        service_id,
+        status_page_id,
+      ]);
 
       if (serviceRows.length === 0) {
-        return new Response(JSON.stringify({ error: 'Invalid service_id for this status page' }), { status: 400 });
+        return new Response(
+          JSON.stringify({ error: 'Invalid service_id for this status page' }),
+          { status: 400 }
+        );
       }
     }
 
@@ -125,25 +161,29 @@ export async function POST(req) {
       message,
       update_type || 'general',
       finalStatus,
-      userId
+      userId,
     ]);
 
     const statusUpdate = newUpdates[0];
 
-    return new Response(JSON.stringify({
-      message: 'Status update posted successfully',
-      statusUpdate: {
-        id: statusUpdate.id,
-        title: statusUpdate.title,
-        message: statusUpdate.message,
-        update_type: statusUpdate.update_type,
-        status: statusUpdate.status,
-        created_at: statusUpdate.created_at
-      }
-    }), { status: 201 });
-
+    return new Response(
+      JSON.stringify({
+        message: 'Status update posted successfully',
+        statusUpdate: {
+          id: statusUpdate.id,
+          title: statusUpdate.title,
+          message: statusUpdate.message,
+          update_type: statusUpdate.update_type,
+          status: statusUpdate.status,
+          created_at: statusUpdate.created_at,
+        },
+      }),
+      { status: 201 }
+    );
   } catch (err) {
     console.error('Status updates POST error:', err);
-    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+    });
   }
-} 
+}

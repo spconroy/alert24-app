@@ -32,7 +32,7 @@ import {
   List,
   ListItem,
   ListItemText,
-  ListItemIcon
+  ListItemIcon,
 } from '@mui/material';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -64,17 +64,17 @@ export default function IncidentDetailPage() {
   const [error, setError] = useState(null);
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
   const [statusUpdateDialogOpen, setStatusUpdateDialogOpen] = useState(false);
-  
+
   // Form state for incident update
   const [updateForm, setUpdateForm] = useState({
     message: '',
-    update_type: 'update'
+    update_type: 'update',
   });
 
   // Form state for status change
   const [statusForm, setStatusForm] = useState({
     status: '',
-    resolution_notes: ''
+    resolution_notes: '',
   });
 
   const [submitting, setSubmitting] = useState(false);
@@ -94,7 +94,7 @@ export default function IncidentDetailPage() {
         setIncident(data.incident);
         setStatusForm(prev => ({
           ...prev,
-          status: data.incident.status
+          status: data.incident.status,
         }));
       } else if (response.status === 404) {
         setError('Incident not found');
@@ -160,9 +160,10 @@ export default function IncidentDetailPage() {
     try {
       const updateData = {
         status: statusForm.status,
-        ...(statusForm.status === 'resolved' && statusForm.resolution_notes && {
-          resolution_notes: statusForm.resolution_notes
-        })
+        ...(statusForm.status === 'resolved' &&
+          statusForm.resolution_notes && {
+            resolution_notes: statusForm.resolution_notes,
+          }),
       };
 
       const response = await fetch(`/api/incidents/${incidentId}`, {
@@ -189,32 +190,46 @@ export default function IncidentDetailPage() {
     }
   };
 
-  const getSeverityColor = (severity) => {
+  const getSeverityColor = severity => {
     switch (severity) {
-      case 'critical': return 'error';
-      case 'high': return 'warning';
-      case 'medium': return 'info';
-      case 'low': return 'success';
-      default: return 'default';
+      case 'critical':
+        return 'error';
+      case 'high':
+        return 'warning';
+      case 'medium':
+        return 'info';
+      case 'low':
+        return 'success';
+      default:
+        return 'default';
     }
   };
 
-  const getStatusColor = (status) => {
+  const getStatusColor = status => {
     switch (status) {
-      case 'open': return 'error';
-      case 'investigating': return 'warning';
-      case 'monitoring': return 'info';
-      case 'resolved': return 'success';
-      default: return 'default';
+      case 'open':
+        return 'error';
+      case 'investigating':
+        return 'warning';
+      case 'monitoring':
+        return 'info';
+      case 'resolved':
+        return 'success';
+      default:
+        return 'default';
     }
   };
 
-  const getUpdateIcon = (updateType) => {
+  const getUpdateIcon = updateType => {
     switch (updateType) {
-      case 'status_change': return <CheckCircleIcon />;
-      case 'escalation': return <NotificationsIcon />;
-      case 'assignment': return <PersonIcon />;
-      default: return <InfoIcon />;
+      case 'status_change':
+        return <CheckCircleIcon />;
+      case 'escalation':
+        return <NotificationsIcon />;
+      case 'assignment':
+        return <PersonIcon />;
+      default:
+        return <InfoIcon />;
     }
   };
 
@@ -222,7 +237,7 @@ export default function IncidentDetailPage() {
     const start = dayjs(startDate);
     const end = endDate ? dayjs(endDate) : dayjs();
     const diffMinutes = end.diff(start, 'minute');
-    
+
     if (diffMinutes < 60) {
       return `${diffMinutes}m`;
     } else if (diffMinutes < 1440) {
@@ -238,7 +253,12 @@ export default function IncidentDetailPage() {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="400px"
+      >
         <CircularProgress />
       </Box>
     );
@@ -310,18 +330,23 @@ export default function IncidentDetailPage() {
         <Grid item xs={12} lg={8}>
           <Card sx={{ mb: 3 }}>
             <CardContent>
-              <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="flex-start"
+                mb={2}
+              >
                 <Typography variant="h5" gutterBottom>
                   {incident.title}
                 </Typography>
                 <Box display="flex" gap={1}>
-                  <Chip 
-                    label={incident.severity.toUpperCase()} 
+                  <Chip
+                    label={incident.severity.toUpperCase()}
                     color={getSeverityColor(incident.severity)}
                     size="small"
                   />
-                  <Chip 
-                    label={incident.status.toUpperCase()} 
+                  <Chip
+                    label={incident.status.toUpperCase()}
                     color={getStatusColor(incident.status)}
                     size="small"
                   />
@@ -359,7 +384,12 @@ export default function IncidentDetailPage() {
           {/* Timeline */}
           <Card>
             <CardContent>
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                mb={3}
+              >
                 <Typography variant="h6">Incident Timeline</Typography>
                 <Button
                   startIcon={<AddIcon />}
@@ -374,10 +404,18 @@ export default function IncidentDetailPage() {
                 {incidentUpdates.map((update, index) => (
                   <TimelineItem key={update.id}>
                     <TimelineSeparator>
-                      <TimelineDot color={update.update_type === 'status_change' ? 'primary' : 'grey'}>
+                      <TimelineDot
+                        color={
+                          update.update_type === 'status_change'
+                            ? 'primary'
+                            : 'grey'
+                        }
+                      >
                         {getUpdateIcon(update.update_type)}
                       </TimelineDot>
-                      {index < incidentUpdates.length - 1 && <TimelineConnector />}
+                      {index < incidentUpdates.length - 1 && (
+                        <TimelineConnector />
+                      )}
                     </TimelineSeparator>
                     <TimelineContent>
                       <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
@@ -385,11 +423,14 @@ export default function IncidentDetailPage() {
                           {update.message}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {dayjs(update.created_at).format('MMM D, YYYY h:mm A')} • {update.created_by_name || 'System'}
+                          {dayjs(update.created_at).format(
+                            'MMM D, YYYY h:mm A'
+                          )}{' '}
+                          • {update.created_by_name || 'System'}
                           {update.update_type && (
-                            <Chip 
-                              label={update.update_type.replace('_', ' ')} 
-                              size="small" 
+                            <Chip
+                              label={update.update_type.replace('_', ' ')}
+                              size="small"
                               sx={{ ml: 1 }}
                             />
                           )}
@@ -398,7 +439,7 @@ export default function IncidentDetailPage() {
                     </TimelineContent>
                   </TimelineItem>
                 ))}
-                
+
                 {/* Incident Created */}
                 <TimelineItem>
                   <TimelineSeparator>
@@ -412,7 +453,10 @@ export default function IncidentDetailPage() {
                         Incident created
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {dayjs(incident.created_at).format('MMM D, YYYY h:mm A')} • {incident.created_by_name || 'System'}
+                        {dayjs(incident.created_at).format(
+                          'MMM D, YYYY h:mm A'
+                        )}{' '}
+                        • {incident.created_by_name || 'System'}
                       </Typography>
                     </Paper>
                   </TimelineContent>
@@ -431,27 +475,30 @@ export default function IncidentDetailPage() {
                 Quick Actions
               </Typography>
               <Box display="flex" flexDirection="column" gap={1}>
-                <Button 
-                  variant="outlined" 
-                  fullWidth 
+                <Button
+                  variant="outlined"
+                  fullWidth
                   onClick={() => setStatusUpdateDialogOpen(true)}
                 >
                   Update Status
                 </Button>
-                <Button 
-                  variant="outlined" 
-                  fullWidth 
+                <Button
+                  variant="outlined"
+                  fullWidth
                   onClick={() => setUpdateDialogOpen(true)}
                 >
                   Add Update
                 </Button>
                 {incident.status !== 'resolved' && (
-                  <Button 
-                    variant="contained" 
-                    color="success" 
+                  <Button
+                    variant="contained"
+                    color="success"
                     fullWidth
                     onClick={() => {
-                      setStatusForm({ status: 'resolved', resolution_notes: '' });
+                      setStatusForm({
+                        status: 'resolved',
+                        resolution_notes: '',
+                      });
                       setStatusUpdateDialogOpen(true);
                     }}
                   >
@@ -475,7 +522,10 @@ export default function IncidentDetailPage() {
                   </ListItemIcon>
                   <ListItemText
                     primary="Duration"
-                    secondary={formatDuration(incident.created_at, incident.resolved_at)}
+                    secondary={formatDuration(
+                      incident.created_at,
+                      incident.resolved_at
+                    )}
                   />
                 </ListItem>
                 <ListItem disablePadding>
@@ -501,14 +551,18 @@ export default function IncidentDetailPage() {
                 <ListItem disablePadding>
                   <ListItemText
                     primary="Created"
-                    secondary={dayjs(incident.created_at).format('MMM D, YYYY h:mm A')}
+                    secondary={dayjs(incident.created_at).format(
+                      'MMM D, YYYY h:mm A'
+                    )}
                   />
                 </ListItem>
                 {incident.resolved_at && (
                   <ListItem disablePadding>
                     <ListItemText
                       primary="Resolved"
-                      secondary={dayjs(incident.resolved_at).format('MMM D, YYYY h:mm A')}
+                      secondary={dayjs(incident.resolved_at).format(
+                        'MMM D, YYYY h:mm A'
+                      )}
                     />
                   </ListItem>
                 )}
@@ -517,31 +571,32 @@ export default function IncidentDetailPage() {
           </Card>
 
           {/* Affected Services */}
-          {incident.affected_services && incident.affected_services.length > 0 && (
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Affected Services
-                </Typography>
-                <Box display="flex" flexWrap="wrap" gap={1}>
-                  {incident.affected_services.map((service, index) => (
-                    <Chip 
-                      key={index} 
-                      label={service} 
-                      variant="outlined" 
-                      size="small"
-                    />
-                  ))}
-                </Box>
-              </CardContent>
-            </Card>
-          )}
+          {incident.affected_services &&
+            incident.affected_services.length > 0 && (
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Affected Services
+                  </Typography>
+                  <Box display="flex" flexWrap="wrap" gap={1}>
+                    {incident.affected_services.map((service, index) => (
+                      <Chip
+                        key={index}
+                        label={service}
+                        variant="outlined"
+                        size="small"
+                      />
+                    ))}
+                  </Box>
+                </CardContent>
+              </Card>
+            )}
         </Grid>
       </Grid>
 
       {/* Add Update Dialog */}
-      <Dialog 
-        open={updateDialogOpen} 
+      <Dialog
+        open={updateDialogOpen}
         onClose={() => setUpdateDialogOpen(false)}
         maxWidth="md"
         fullWidth
@@ -555,7 +610,12 @@ export default function IncidentDetailPage() {
                 <Select
                   value={updateForm.update_type}
                   label="Update Type"
-                  onChange={(e) => setUpdateForm(prev => ({ ...prev, update_type: e.target.value }))}
+                  onChange={e =>
+                    setUpdateForm(prev => ({
+                      ...prev,
+                      update_type: e.target.value,
+                    }))
+                  }
                 >
                   <MenuItem value="update">General Update</MenuItem>
                   <MenuItem value="investigation">Investigation</MenuItem>
@@ -571,7 +631,9 @@ export default function IncidentDetailPage() {
                 rows={4}
                 label="Update Message"
                 value={updateForm.message}
-                onChange={(e) => setUpdateForm(prev => ({ ...prev, message: e.target.value }))}
+                onChange={e =>
+                  setUpdateForm(prev => ({ ...prev, message: e.target.value }))
+                }
                 placeholder="Describe the current status, actions taken, or next steps..."
               />
             </Grid>
@@ -579,10 +641,12 @@ export default function IncidentDetailPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setUpdateDialogOpen(false)}>Cancel</Button>
-          <Button 
+          <Button
             onClick={handleAddUpdate}
             disabled={submitting || !updateForm.message.trim()}
-            startIcon={submitting ? <CircularProgress size={20} /> : <SaveIcon />}
+            startIcon={
+              submitting ? <CircularProgress size={20} /> : <SaveIcon />
+            }
           >
             Add Update
           </Button>
@@ -590,8 +654,8 @@ export default function IncidentDetailPage() {
       </Dialog>
 
       {/* Status Update Dialog */}
-      <Dialog 
-        open={statusUpdateDialogOpen} 
+      <Dialog
+        open={statusUpdateDialogOpen}
         onClose={() => setStatusUpdateDialogOpen(false)}
         maxWidth="sm"
         fullWidth
@@ -605,7 +669,9 @@ export default function IncidentDetailPage() {
                 <Select
                   value={statusForm.status}
                   label="Status"
-                  onChange={(e) => setStatusForm(prev => ({ ...prev, status: e.target.value }))}
+                  onChange={e =>
+                    setStatusForm(prev => ({ ...prev, status: e.target.value }))
+                  }
                 >
                   <MenuItem value="open">Open</MenuItem>
                   <MenuItem value="investigating">Investigating</MenuItem>
@@ -622,7 +688,12 @@ export default function IncidentDetailPage() {
                   rows={3}
                   label="Resolution Notes"
                   value={statusForm.resolution_notes}
-                  onChange={(e) => setStatusForm(prev => ({ ...prev, resolution_notes: e.target.value }))}
+                  onChange={e =>
+                    setStatusForm(prev => ({
+                      ...prev,
+                      resolution_notes: e.target.value,
+                    }))
+                  }
                   placeholder="Describe how the incident was resolved..."
                 />
               </Grid>
@@ -630,11 +701,15 @@ export default function IncidentDetailPage() {
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setStatusUpdateDialogOpen(false)}>Cancel</Button>
-          <Button 
+          <Button onClick={() => setStatusUpdateDialogOpen(false)}>
+            Cancel
+          </Button>
+          <Button
             onClick={handleStatusUpdate}
             disabled={submitting}
-            startIcon={submitting ? <CircularProgress size={20} /> : <SaveIcon />}
+            startIcon={
+              submitting ? <CircularProgress size={20} /> : <SaveIcon />
+            }
             color={statusForm.status === 'resolved' ? 'success' : 'primary'}
           >
             Update Status
@@ -643,4 +718,4 @@ export default function IncidentDetailPage() {
       </Dialog>
     </Box>
   );
-} 
+}

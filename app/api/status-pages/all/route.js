@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { getServerSession } from 'next-auth/next';
 import { Pool } from 'pg';
 
@@ -7,7 +9,9 @@ export async function GET(req) {
   try {
     const session = await getServerSession();
     if (!session || !session.user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+      });
     }
 
     // First, get the user ID from the database using the email
@@ -15,11 +19,14 @@ export async function GET(req) {
       'SELECT id, email FROM public.users WHERE email = $1',
       [session.user.email]
     );
-    
+
     if (userRows.length === 0) {
-      return new Response(JSON.stringify({ error: 'User not found in database' }), { status: 404 });
+      return new Response(
+        JSON.stringify({ error: 'User not found in database' }),
+        { status: 404 }
+      );
     }
-    
+
     const userId = userRows[0].id;
 
     // Get all status pages from organizations the user is a member of
@@ -37,12 +44,12 @@ export async function GET(req) {
         AND o.deleted_at IS NULL
       ORDER BY o.name ASC, sp.name ASC
     `;
-    
+
     const { rows: statusPages } = await pool.query(statusPagesQuery, [userId]);
 
     // For each status page, get service summary
     const statusPagesWithServices = await Promise.all(
-      statusPages.map(async (statusPage) => {
+      statusPages.map(async statusPage => {
         const servicesQuery = `
           SELECT 
             COUNT(*) as total_services,
@@ -53,9 +60,11 @@ export async function GET(req) {
           FROM public.services 
           WHERE status_page_id = $1 AND deleted_at IS NULL
         `;
-        
-        const { rows: serviceSummary } = await pool.query(servicesQuery, [statusPage.id]);
-        
+
+        const { rows: serviceSummary } = await pool.query(servicesQuery, [
+          statusPage.id,
+        ]);
+
         return {
           ...statusPage,
           service_summary: {
@@ -63,15 +72,20 @@ export async function GET(req) {
             operational: parseInt(serviceSummary[0].operational) || 0,
             degraded: parseInt(serviceSummary[0].degraded) || 0,
             down: parseInt(serviceSummary[0].down) || 0,
-            maintenance: parseInt(serviceSummary[0].maintenance) || 0
-          }
+            maintenance: parseInt(serviceSummary[0].maintenance) || 0,
+          },
         };
       })
     );
 
-    return new Response(JSON.stringify({ statusPages: statusPagesWithServices }), { status: 200 });
+    return new Response(
+      JSON.stringify({ statusPages: statusPagesWithServices }),
+      { status: 200 }
+    );
   } catch (err) {
     console.error('Status pages all GET error:', err);
-    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+    });
   }
-} 
+}

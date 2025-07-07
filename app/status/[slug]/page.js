@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { Pool } from 'pg';
 import { notFound } from 'next/navigation';
 import PublicStatusPage from '../../../components/PublicStatusPage';
@@ -19,15 +21,15 @@ async function getStatusPageData(slug) {
         AND o.deleted_at IS NULL
         AND sp.is_public = true
     `;
-    
+
     const { rows: statusPageRows } = await pool.query(statusPageQuery, [slug]);
-    
+
     if (statusPageRows.length === 0) {
       return null;
     }
-    
+
     const statusPage = statusPageRows[0];
-    
+
     // Get all services for this status page
     const servicesQuery = `
       SELECT *
@@ -36,12 +38,12 @@ async function getStatusPageData(slug) {
         AND deleted_at IS NULL
       ORDER BY sort_order ASC, name ASC
     `;
-    
+
     const { rows: services } = await pool.query(servicesQuery, [statusPage.id]);
-    
+
     return {
       statusPage,
-      services
+      services,
     };
   } catch (error) {
     console.error('Error fetching status page data:', error);
@@ -51,37 +53,41 @@ async function getStatusPageData(slug) {
 
 export default async function StatusPagePublic({ params }) {
   const { slug } = params;
-  
+
   const data = await getStatusPageData(slug);
-  
+
   if (!data) {
     notFound();
   }
-  
-  return <PublicStatusPage statusPage={data.statusPage} services={data.services} />;
+
+  return (
+    <PublicStatusPage statusPage={data.statusPage} services={data.services} />
+  );
 }
 
 export async function generateMetadata({ params }) {
   const { slug } = params;
-  
+
   try {
     const data = await getStatusPageData(slug);
-    
+
     if (!data) {
       return {
         title: 'Status Page Not Found',
       };
     }
-    
+
     const { statusPage } = data;
-    
+
     return {
       title: `${statusPage.name} - Status`,
-      description: statusPage.description || `Current status of ${statusPage.name} services`,
+      description:
+        statusPage.description ||
+        `Current status of ${statusPage.name} services`,
     };
   } catch (error) {
     return {
       title: 'Status Page',
     };
   }
-} 
+}

@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { getServerSession } from 'next-auth/next';
 import { Pool } from 'pg';
 
@@ -6,7 +8,9 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 export async function PUT(req, { params }) {
   const session = await getServerSession();
   if (!session || !session.user?.email) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+    });
   }
 
   const { id } = params;
@@ -15,17 +19,27 @@ export async function PUT(req, { params }) {
 
   try {
     // Check if user is owner or admin of the organization
-    const userRes = await pool.query('SELECT id FROM public.users WHERE email = $1', [session.user.email]);
+    const userRes = await pool.query(
+      'SELECT id FROM public.users WHERE email = $1',
+      [session.user.email]
+    );
     const user = userRes.rows[0];
     if (!user) {
-      return new Response(JSON.stringify({ error: 'User not found' }), { status: 404 });
+      return new Response(JSON.stringify({ error: 'User not found' }), {
+        status: 404,
+      });
     }
     const membershipRes = await pool.query(
       'SELECT * FROM public.organization_members WHERE organization_id = $1 AND user_id = $2',
       [id, user.id]
     );
     if (membershipRes.rows.length === 0) {
-      return new Response(JSON.stringify({ error: 'Forbidden - Not a member of this organization' }), { status: 403 });
+      return new Response(
+        JSON.stringify({
+          error: 'Forbidden - Not a member of this organization',
+        }),
+        { status: 403 }
+      );
     }
 
     // Update organization
@@ -44,7 +58,9 @@ export async function DELETE(req, { params }) {
   try {
     const session = await getServerSession();
     if (!session || !session.user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+      });
     }
 
     const orgId = params.id;
@@ -55,7 +71,9 @@ export async function DELETE(req, { params }) {
       [session.user.email]
     );
     if (userRows.length === 0) {
-      return new Response(JSON.stringify({ error: 'User not found' }), { status: 404 });
+      return new Response(JSON.stringify({ error: 'User not found' }), {
+        status: 404,
+      });
     }
     const userId = userRows[0].id;
 
@@ -65,7 +83,12 @@ export async function DELETE(req, { params }) {
       [orgId, userId]
     );
     if (memberRows.length === 0 || memberRows[0].role !== 'owner') {
-      return new Response(JSON.stringify({ error: 'Only organization owners can delete organizations' }), { status: 403 });
+      return new Response(
+        JSON.stringify({
+          error: 'Only organization owners can delete organizations',
+        }),
+        { status: 403 }
+      );
     }
 
     // Get organization details before deletion for logging
@@ -74,87 +97,109 @@ export async function DELETE(req, { params }) {
       [orgId]
     );
     if (orgRows.length === 0) {
-      return new Response(JSON.stringify({ error: 'Organization not found' }), { status: 404 });
+      return new Response(JSON.stringify({ error: 'Organization not found' }), {
+        status: 404,
+      });
     }
     const orgName = orgRows[0].name;
 
     // Delete organization (CASCADE will handle related data)
     // Order matters: services -> status_pages -> organization_members -> organizations
     await pool.query('BEGIN');
-    
+
     try {
       // Delete services (via status pages CASCADE)
       await pool.query(
         'DELETE FROM public.services WHERE status_page_id IN (SELECT id FROM public.status_pages WHERE organization_id = $1)',
         [orgId]
       );
-      
+
       // Delete status pages
       await pool.query(
         'DELETE FROM public.status_pages WHERE organization_id = $1',
         [orgId]
       );
-      
+
       // Delete organization members
       await pool.query(
         'DELETE FROM public.organization_members WHERE organization_id = $1',
         [orgId]
       );
-      
+
       // Delete organization
       const { rowCount } = await pool.query(
         'DELETE FROM public.organizations WHERE id = $1',
         [orgId]
       );
-      
+
       if (rowCount === 0) {
         throw new Error('Organization not found or already deleted');
       }
 
       await pool.query('COMMIT');
-      
-      console.log(`Organization "${orgName}" (${orgId}) deleted by user ${session.user.email}`);
-      
-      return new Response(JSON.stringify({ 
-        message: 'Organization deleted successfully',
-        deletedOrganization: { id: orgId, name: orgName }
-      }), { status: 200 });
-      
+
+      console.log(
+        `Organization "${orgName}" (${orgId}) deleted by user ${session.user.email}`
+      );
+
+      return new Response(
+        JSON.stringify({
+          message: 'Organization deleted successfully',
+          deletedOrganization: { id: orgId, name: orgName },
+        }),
+        { status: 200 }
+      );
     } catch (err) {
       await pool.query('ROLLBACK');
       throw err;
     }
-    
   } catch (err) {
     console.error('DELETE organization error:', err);
-    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+    });
   }
 }
 
 export async function GET(req, { params }) {
   const session = await getServerSession();
   if (!session || !session.user?.email) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+    });
   }
 
   const orgId = params.id;
   if (!orgId) {
-    return new Response(JSON.stringify({ error: 'Organization ID is required' }), { status: 400 });
+    return new Response(
+      JSON.stringify({ error: 'Organization ID is required' }),
+      { status: 400 }
+    );
   }
 
   try {
     // Check if user is a member of the org
-    const userRes = await pool.query('SELECT id FROM public.users WHERE email = $1', [session.user.email]);
+    const userRes = await pool.query(
+      'SELECT id FROM public.users WHERE email = $1',
+      [session.user.email]
+    );
     const user = userRes.rows[0];
     if (!user) {
-      return new Response(JSON.stringify({ error: 'User not found' }), { status: 404 });
+      return new Response(JSON.stringify({ error: 'User not found' }), {
+        status: 404,
+      });
     }
     const membershipRes = await pool.query(
       'SELECT * FROM public.organization_members WHERE organization_id = $1 AND user_id = $2',
       [orgId, user.id]
     );
     if (membershipRes.rows.length === 0) {
-      return new Response(JSON.stringify({ error: 'Forbidden - Not a member of this organization' }), { status: 403 });
+      return new Response(
+        JSON.stringify({
+          error: 'Forbidden - Not a member of this organization',
+        }),
+        { status: 403 }
+      );
     }
 
     // Get organization details
@@ -164,7 +209,9 @@ export async function GET(req, { params }) {
     );
     const organization = orgRes.rows[0];
     if (!organization) {
-      return new Response(JSON.stringify({ error: 'Organization not found' }), { status: 404 });
+      return new Response(JSON.stringify({ error: 'Organization not found' }), {
+        status: 404,
+      });
     }
 
     // Get all active members and their roles
@@ -181,11 +228,14 @@ export async function GET(req, { params }) {
     );
     console.log('Members found:', membersRes.rows);
 
-    return new Response(JSON.stringify({ 
-      organization: organization,
-      members: membersRes.rows 
-    }), { status: 200 });
+    return new Response(
+      JSON.stringify({
+        organization: organization,
+        members: membersRes.rows,
+      }),
+      { status: 200 }
+    );
   } catch (e) {
     return new Response(JSON.stringify({ error: e.message }), { status: 500 });
   }
-} 
+}
