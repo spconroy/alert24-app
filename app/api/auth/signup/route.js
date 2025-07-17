@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import { SupabaseClient } from '../../../../lib/db-supabase.js';
-import bcrypt from 'bcrypt';
+import { hashPassword } from '../../../../lib/password-edge.js';
 
 const db = new SupabaseClient();
+
+export const runtime = 'edge';
 
 export async function POST(request) {
   try {
@@ -25,14 +27,15 @@ export async function POST(request) {
       );
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Hash password using Edge Runtime compatible utility
+    const hashedPassword = await hashPassword(password);
 
     // Create user
     const user = await db.createUser({
       email,
       name,
       password: hashedPassword,
+      provider: 'credentials', // Mark as credentials for distinction from OAuth
     });
 
     // Create organization if provided
@@ -59,6 +62,8 @@ export async function POST(request) {
         success: true,
         user: userWithoutPassword,
         organization,
+        message:
+          'Account created successfully. Please sign in with Google OAuth for future logins.',
       },
       { status: 201 }
     );

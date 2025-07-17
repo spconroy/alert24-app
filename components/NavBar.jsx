@@ -88,7 +88,7 @@ export default function NavBar() {
                   minWidth: 'auto',
                   px: 2,
                   py: 1,
-                  fontSize: '0.875rem',
+                  fontSize: '0.75rem',
                   fontWeight: isActivePath(item.href) ? 600 : 400,
                   '&:hover': {
                     backgroundColor: isActivePath(item.href)

@@ -187,19 +187,127 @@ export async function PUT(request, { params }) {
     }
 
     // Update monitoring configuration
-    const updatedMonitoring = await db.updateServiceMonitoringByServiceId(
-      serviceId,
-      {
-        ...body,
-        updated_at: new Date().toISOString(),
-      }
-    );
+    // Extract associations from body
+    const { associations } = body;
 
-    return NextResponse.json({
-      success: true,
-      monitoring: updatedMonitoring,
-      message: 'Service monitoring updated successfully',
-    });
+    try {
+      // Process each association by updating the monitoring check data
+      // This follows the established pattern of storing linked_service_id in monitoring check data
+
+      // First, clear any existing associations for this service
+      await clearExistingAssociations(serviceId);
+
+      // Then create new associations
+      for (const association of associations || []) {
+        await createMonitoringAssociation(
+          association.monitoring_check_id,
+          serviceId,
+          association
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: 'Service monitoring associations updated successfully',
+        associations_count: associations?.length || 0,
+      });
+    } catch (error) {
+      console.error('Error updating service monitoring associations:', error);
+      throw error;
+    }
+
+    // Helper function to clear existing associations for a service
+    async function clearExistingAssociations(serviceId) {
+      // Get all monitoring checks that are currently linked to this service
+      const { data: monitoringChecks, error } = await db.client
+        .from('services')
+        .select('*')
+        .like('name', '[MONITORING]%');
+
+      if (error) throw error;
+
+      for (const check of monitoringChecks || []) {
+        try {
+          const checkData = JSON.parse(check.description);
+          if (checkData.linked_service_id === serviceId) {
+            // Remove the association
+            delete checkData.linked_service_id;
+
+            const dbData = {
+              description: JSON.stringify(checkData),
+              updated_at: new Date().toISOString(),
+            };
+
+            await db.client.from('services').update(dbData).eq('id', check.id);
+          }
+        } catch (parseError) {
+          console.warn('Error parsing monitoring check data:', parseError);
+        }
+      }
+    }
+
+    // Helper function to create a monitoring association
+    async function createMonitoringAssociation(
+      monitoringCheckId,
+      serviceId,
+      config
+    ) {
+      // Get the monitoring check data
+      const { data: monitoringCheck, error: fetchError } = await db.client
+        .from('services')
+        .select('*')
+        .eq('id', monitoringCheckId)
+        .like('name', '[MONITORING]%')
+        .single();
+
+      if (fetchError) {
+        console.warn(
+          `Monitoring check ${monitoringCheckId} not found:`,
+          fetchError
+        );
+        return;
+      }
+
+      try {
+        // Parse and update the stored monitoring data
+        const checkData = JSON.parse(monitoringCheck.description);
+
+        // Set the association
+        checkData.linked_service_id = serviceId;
+
+        // Store additional configuration if provided
+        if (config.failure_threshold_minutes) {
+          checkData.failure_threshold_minutes =
+            config.failure_threshold_minutes;
+        }
+        if (config.failure_message) {
+          checkData.failure_message = config.failure_message;
+        }
+
+        const dbData = {
+          description: JSON.stringify(checkData),
+          updated_at: new Date().toISOString(),
+        };
+
+        const { error: updateError } = await db.client
+          .from('services')
+          .update(dbData)
+          .eq('id', monitoringCheckId);
+
+        if (updateError) {
+          console.error(
+            `Error updating monitoring check ${monitoringCheckId}:`,
+            updateError
+          );
+        } else {
+          console.log(
+            `✅ Associated monitoring check ${monitoringCheckId} with service ${serviceId}`
+          );
+        }
+      } catch (parseError) {
+        console.error('Error parsing monitoring check data:', parseError);
+      }
+    }
   } catch (error) {
     console.error('Error updating service monitoring:', error);
     return NextResponse.json(

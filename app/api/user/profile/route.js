@@ -5,7 +5,8 @@ import { SupabaseClient } from '../../../../lib/db-supabase.js';
 
 const db = new SupabaseClient();
 
-export const runtime = 'edge';
+// TODO: Re-enable Edge Runtime after upgrading to NextAuth v5
+// export const runtime = 'edge';
 
 export async function GET(request) {
   try {

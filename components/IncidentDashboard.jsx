@@ -288,7 +288,20 @@ export default function IncidentDashboard() {
 
         {/* Monitoring Status */}
         <Grid item xs={12} md={3}>
-          <Card>
+          <Card
+            component={Link}
+            href="/monitoring"
+            sx={{
+              textDecoration: 'none',
+              cursor: 'pointer',
+              '&:hover': {
+                backgroundColor: 'action.hover',
+                transform: 'translateY(-1px)',
+                boxShadow: 2,
+              },
+              transition: 'all 0.2s ease-in-out',
+            }}
+          >
             <CardContent>
               <Typography variant="h6" color="text.secondary" gutterBottom>
                 Monitoring
@@ -307,7 +320,7 @@ export default function IncidentDashboard() {
                 </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary">
-                Services Up
+                Services Up • Click to view details
               </Typography>
             </CardContent>
           </Card>

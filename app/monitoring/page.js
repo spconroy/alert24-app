@@ -50,6 +50,7 @@ import { useRouter } from 'next/navigation';
 
 export default function MonitoringPage() {
   const [monitoringChecks, setMonitoringChecks] = useState([]);
+  const [activeIncidents, setActiveIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [executing, setExecuting] = useState(false);
@@ -113,6 +114,7 @@ export default function MonitoringPage() {
         params.append('organization_id', selectedOrganization.id);
       }
 
+      // Fetch monitoring checks
       const response = await fetch(`/api/monitoring?${params.toString()}`);
       if (!response.ok) {
         throw new Error('Failed to fetch monitoring checks');
@@ -120,6 +122,26 @@ export default function MonitoringPage() {
 
       const data = await response.json();
       setMonitoringChecks(data.monitoring_checks || []);
+
+      // Fetch active incidents
+      const incidentParams = new URLSearchParams();
+      if (selectedOrganization?.id) {
+        incidentParams.append('organization_id', selectedOrganization.id);
+      }
+      incidentParams.append('status', 'open');
+      incidentParams.append('status', 'investigating');
+      incidentParams.append('status', 'identified');
+      incidentParams.append('status', 'monitoring');
+
+      const incidentsResponse = await fetch(
+        `/api/incidents?${incidentParams.toString()}`
+      );
+      if (incidentsResponse.ok) {
+        const incidentsData = await incidentsResponse.json();
+        setActiveIncidents(incidentsData.incidents || []);
+      } else {
+        setActiveIncidents([]);
+      }
     } catch (err) {
       console.error('Error fetching monitoring data:', err);
       setError(err.message);
@@ -515,7 +537,7 @@ export default function MonitoringPage() {
         <>
           {/* Stats Cards */}
           <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={12} md={3}>
+            <Grid item xs={12} md={2.4}>
               <Card>
                 <CardContent>
                   <Typography variant="h6" color="text.secondary" gutterBottom>
@@ -527,7 +549,7 @@ export default function MonitoringPage() {
                 </CardContent>
               </Card>
             </Grid>
-            <Grid item xs={12} md={3}>
+            <Grid item xs={12} md={2.4}>
               <Card>
                 <CardContent>
                   <Typography variant="h6" color="text.secondary" gutterBottom>
@@ -539,7 +561,7 @@ export default function MonitoringPage() {
                 </CardContent>
               </Card>
             </Grid>
-            <Grid item xs={12} md={3}>
+            <Grid item xs={12} md={2.4}>
               <Card>
                 <CardContent>
                   <Typography variant="h6" color="text.secondary" gutterBottom>
@@ -551,7 +573,7 @@ export default function MonitoringPage() {
                 </CardContent>
               </Card>
             </Grid>
-            <Grid item xs={12} md={3}>
+            <Grid item xs={12} md={2.4}>
               <Card>
                 <CardContent>
                   <Typography variant="h6" color="text.secondary" gutterBottom>
@@ -559,6 +581,39 @@ export default function MonitoringPage() {
                   </Typography>
                   <Typography variant="h3" color="warning.main">
                     {stats.warning}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={2.4}>
+              <Card
+                component={Link}
+                href="/incidents"
+                sx={{
+                  textDecoration: 'none',
+                  cursor: 'pointer',
+                  '&:hover': {
+                    backgroundColor: 'action.hover',
+                    transform: 'translateY(-1px)',
+                    boxShadow: 2,
+                  },
+                  transition: 'all 0.2s ease-in-out',
+                }}
+              >
+                <CardContent>
+                  <Typography variant="h6" color="text.secondary" gutterBottom>
+                    Active Incidents
+                  </Typography>
+                  <Typography
+                    variant="h3"
+                    color={
+                      activeIncidents.length > 0 ? 'error.main' : 'success.main'
+                    }
+                  >
+                    {activeIncidents.length}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Click to view details
                   </Typography>
                 </CardContent>
               </Card>

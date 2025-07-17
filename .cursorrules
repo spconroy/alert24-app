@@ -1,9 +1,11 @@
 # Alert24 App - Cursor Rules
 
 ## Project Overview
+
 This is a Next.js SaaS application for multi-tenant organization management with real-time features, billing, and custom branding.
 
 ## Technology Stack
+
 - **Framework**: Next.js 14+ with App Router
 - **Language**: JavaScript (NOT TypeScript)
 - **Styling**: Tailwind CSS + Material UI
@@ -15,6 +17,7 @@ This is a Next.js SaaS application for multi-tenant organization management with
 - **Email**: SendGrid
 
 ## Code Style & Standards
+
 - Use JavaScript (.js/.jsx files), NOT TypeScript
 - Follow Prettier formatting rules (single quotes, 80 char width, semicolons)
 - Use ESLint with Next.js and Prettier integration
@@ -23,6 +26,7 @@ This is a Next.js SaaS application for multi-tenant organization management with
 - Follow Next.js 13+ App Router conventions
 
 ## Project Structure
+
 ```
 app/                    # Next.js App Router pages
 ├── (auth)/            # Authentication routes
@@ -39,6 +43,7 @@ docs/                  # Documentation
 ```
 
 ## Database Schema
+
 - Uses PostgreSQL with `alert24_schema` schema
 - Multi-tenant architecture with organization-based data isolation
 - Comprehensive audit logging and activity tracking
@@ -46,6 +51,7 @@ docs/                  # Documentation
 - Subscription and billing management
 
 ## Key Features to Implement
+
 1. Multi-tenant organization management
 2. Google OAuth authentication
 3. Real-time notifications and collaboration
@@ -55,6 +61,7 @@ docs/                  # Documentation
 7. Activity history and audit logging
 
 ## Development Guidelines
+
 - Always consider multi-tenant data isolation
 - Implement proper error handling and loading states
 - Use Material UI components for consistent UI
@@ -64,12 +71,14 @@ docs/                  # Documentation
 - Write clean, readable, and maintainable code
 
 ## File Naming Conventions
+
 - Use kebab-case for file names
 - Use PascalCase for component names
 - Use camelCase for functions and variables
 - Use UPPER_SNAKE_CASE for constants
 
 ## Import Organization
+
 1. React and Next.js imports
 2. Third-party library imports
 3. Internal component imports
@@ -77,12 +86,14 @@ docs/                  # Documentation
 5. Type imports (if any)
 
 ## Testing Strategy
+
 - Unit tests for utility functions
 - Component testing for UI components
 - Integration tests for API routes
 - E2E tests for critical user flows
 
 ## Performance Considerations
+
 - Implement proper caching strategies
 - Use Next.js Image component for optimization
 - Lazy load components when appropriate
@@ -90,6 +101,7 @@ docs/                  # Documentation
 - Implement proper error boundaries
 
 ## Security Requirements
+
 - Validate all user inputs
 - Implement proper authentication checks
 - Use HTTPS in production
@@ -98,16 +110,21 @@ docs/                  # Documentation
 - Follow OWASP security guidelines
 
 ## Deployment Notes
+
 - Configure environment variables in Cloudflare Pages
 - Set up proper database connections
 - Configure domain and SSL certificates
 - Set up monitoring and error tracking
 - Implement proper logging
 
-Remember: This project uses JavaScript, not TypeScript. All code should be written in .js/.jsx files with proper JSDoc comments for documentation. 
+Remember: This project uses JavaScript, not TypeScript. All code should be written in .js/.jsx files with proper JSDoc comments for documentation.
 
 Dont ask me to make changes you can make
 
 Postgres MCP is read only. If you need to write to the database, use the psql cli tool
 
 when running cli commands make sure you properly escape passwords
+
+After any major feature is completed, do a git commit and a git push
+
+Make sure to document things as you go. And update the help page when the user UI changes

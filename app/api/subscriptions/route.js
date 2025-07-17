@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db-supabase.js';
-import crypto from 'crypto';
 
 export async function POST(req) {
   try {
@@ -53,8 +52,12 @@ export async function POST(req) {
       );
     }
 
-    // Generate unsubscribe token
-    const unsubscribeToken = crypto.randomBytes(32).toString('hex');
+    // Generate unsubscribe token using Web Crypto API
+    const tokenBuffer = new Uint8Array(32);
+    crypto.getRandomValues(tokenBuffer);
+    const unsubscribeToken = Array.from(tokenBuffer)
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
 
     // Create subscription
     const subscription = await db.createSubscription({
