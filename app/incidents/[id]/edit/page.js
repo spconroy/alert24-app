@@ -24,6 +24,7 @@ import Link from 'next/link';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SaveIcon from '@mui/icons-material/Save';
 import { useSession } from 'next-auth/react';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 export default function EditIncidentPage() {
   const params = useParams();
@@ -227,356 +228,345 @@ export default function EditIncidentPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="400px"
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (error && !originalIncident) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-        <Button
-          component={Link}
-          href="/incidents"
-          startIcon={<ArrowBackIcon />}
-          variant="outlined"
-        >
-          Back to Incidents
-        </Button>
-      </Box>
-    );
-  }
-
-  if (!session) {
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="400px"
-      >
-        <Typography>Please sign in to edit incidents.</Typography>
-      </Box>
-    );
-  }
-
-  if (success) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="success" sx={{ mb: 2 }}>
-          Incident updated successfully! Redirecting to incident details...
-        </Alert>
-      </Box>
-    );
-  }
-
   return (
-    <Box sx={{ p: 3 }}>
-      {/* Header */}
-      <Box display="flex" alignItems="center" gap={2} mb={4}>
-        <Button
-          component={Link}
-          href={`/incidents/${incidentId}`}
-          startIcon={<ArrowBackIcon />}
-          variant="outlined"
+    <ProtectedRoute>
+      {loading ? (
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          minHeight="400px"
         >
-          Back to Incident
-        </Button>
-        <Typography variant="h4" component="h1">
-          Edit Incident #{originalIncident?.incident_number}
-        </Typography>
-      </Box>
+          <CircularProgress />
+        </Box>
+      ) : error && !originalIncident ? (
+        <Box sx={{ p: 3 }}>
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+          <Button
+            component={Link}
+            href="/incidents"
+            startIcon={<ArrowBackIcon />}
+            variant="outlined"
+          >
+            Back to Incidents
+          </Button>
+        </Box>
+      ) : success ? (
+        <Box sx={{ p: 3 }}>
+          <Alert severity="success" sx={{ mb: 2 }}>
+            Incident updated successfully! Redirecting to incident details...
+          </Alert>
+        </Box>
+      ) : (
+        <Box sx={{ p: 3 }}>
+          {/* Header */}
+          <Box display="flex" alignItems="center" gap={2} mb={4}>
+            <Button
+              component={Link}
+              href={`/incidents/${incidentId}`}
+              startIcon={<ArrowBackIcon />}
+              variant="outlined"
+            >
+              Back to Incident
+            </Button>
+            <Typography variant="h4" component="h1">
+              Edit Incident #{originalIncident?.incident_number}
+            </Typography>
+          </Box>
 
-      {/* Error Alert */}
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
+          {/* Error Alert */}
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
 
-      {/* Form */}
-      <Card>
-        <CardContent>
-          <form onSubmit={handleSubmit}>
-            <Grid container spacing={3}>
-              {/* Title */}
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Incident Title *"
-                  value={formData.title}
-                  onChange={e => handleInputChange('title', e.target.value)}
-                  error={!!formErrors.title}
-                  helperText={
-                    formErrors.title ||
-                    'A clear, concise description of the incident'
-                  }
-                  placeholder="e.g., API service experiencing high latency"
-                />
-              </Grid>
-
-              {/* Description */}
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={4}
-                  label="Description *"
-                  value={formData.description}
-                  onChange={e =>
-                    handleInputChange('description', e.target.value)
-                  }
-                  error={!!formErrors.description}
-                  helperText={
-                    formErrors.description ||
-                    'Detailed description of the incident and its impact'
-                  }
-                  placeholder="Describe the incident, when it started, symptoms, and any initial investigation findings..."
-                />
-              </Grid>
-
-              {/* Severity and Status */}
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Severity</InputLabel>
-                  <Select
-                    value={formData.severity}
-                    label="Severity"
-                    onChange={e =>
-                      handleInputChange('severity', e.target.value)
-                    }
-                  >
-                    <MenuItem value="low">Low</MenuItem>
-                    <MenuItem value="medium">Medium</MenuItem>
-                    <MenuItem value="high">High</MenuItem>
-                    <MenuItem value="critical">Critical</MenuItem>
-                  </Select>
-                  <FormHelperText>
-                    {formData.severity === 'critical' &&
-                      'Service completely unavailable'}
-                    {formData.severity === 'high' &&
-                      'Major functionality impacted'}
-                    {formData.severity === 'medium' &&
-                      'Some functionality impacted'}
-                    {formData.severity === 'low' &&
-                      'Minor impact or cosmetic issue'}
-                  </FormHelperText>
-                </FormControl>
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Status</InputLabel>
-                  <Select
-                    value={formData.status}
-                    label="Status"
-                    onChange={e => handleInputChange('status', e.target.value)}
-                  >
-                    <MenuItem value="open">Open</MenuItem>
-                    <MenuItem value="investigating">Investigating</MenuItem>
-                    <MenuItem value="monitoring">Monitoring</MenuItem>
-                    <MenuItem value="resolved">Resolved</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-
-              {/* Impact Description */}
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={2}
-                  label="Impact Description"
-                  value={formData.impact_description}
-                  onChange={e =>
-                    handleInputChange('impact_description', e.target.value)
-                  }
-                  helperText="Describe the customer or business impact"
-                  placeholder="e.g., Users unable to login, checkout process failing for 25% of customers"
-                />
-              </Grid>
-
-              {/* Resolution Notes (only show if resolved) */}
-              {formData.status === 'resolved' && (
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    multiline
-                    rows={3}
-                    label="Resolution Notes"
-                    value={formData.resolution_notes}
-                    onChange={e =>
-                      handleInputChange('resolution_notes', e.target.value)
-                    }
-                    helperText="Describe how the incident was resolved"
-                    placeholder="Explain the root cause and steps taken to resolve the incident..."
-                  />
-                </Grid>
-              )}
-
-              <Grid item xs={12}>
-                <Divider sx={{ my: 2 }} />
-                <Typography variant="h6" gutterBottom>
-                  Assignment & Escalation
-                </Typography>
-              </Grid>
-
-              {/* Assigned To */}
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Assign To</InputLabel>
-                  <Select
-                    value={formData.assigned_to}
-                    label="Assign To"
-                    onChange={e =>
-                      handleInputChange('assigned_to', e.target.value)
-                    }
-                  >
-                    <MenuItem value="">Unassigned</MenuItem>
-                    {organizationMembers.map(member => (
-                      <MenuItem key={member.id} value={member.id}>
-                        {member.name || member.email}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-
-              {/* Escalation Policy */}
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Escalation Policy</InputLabel>
-                  <Select
-                    value={formData.escalation_policy_id}
-                    label="Escalation Policy"
-                    onChange={e =>
-                      handleInputChange('escalation_policy_id', e.target.value)
-                    }
-                  >
-                    <MenuItem value="">No escalation policy</MenuItem>
-                    {escalationPolicies.map(policy => (
-                      <MenuItem key={policy.id} value={policy.id}>
-                        {policy.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-
-              {/* Affected Services */}
-              <Grid item xs={12}>
-                <Autocomplete
-                  multiple
-                  options={services}
-                  getOptionLabel={option => option.name || option}
-                  value={formData.affected_services}
-                  onChange={(e, newValue) =>
-                    handleInputChange('affected_services', newValue)
-                  }
-                  renderInput={params => (
+          {/* Form */}
+          <Card>
+            <CardContent>
+              <form onSubmit={handleSubmit}>
+                <Grid container spacing={3}>
+                  {/* Title */}
+                  <Grid item xs={12}>
                     <TextField
-                      {...params}
-                      label="Affected Services"
-                      helperText="Select services affected by this incident"
+                      fullWidth
+                      label="Incident Title *"
+                      value={formData.title}
+                      onChange={e => handleInputChange('title', e.target.value)}
+                      error={!!formErrors.title}
+                      helperText={
+                        formErrors.title ||
+                        'A clear, concise description of the incident'
+                      }
+                      placeholder="e.g., API service experiencing high latency"
                     />
-                  )}
-                  renderTags={(value, getTagProps) =>
-                    value.map((option, index) => (
-                      <Chip
-                        variant="outlined"
-                        label={option.name || option}
-                        {...getTagProps({ index })}
-                        key={index}
+                  </Grid>
+
+                  {/* Description */}
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={4}
+                      label="Description *"
+                      value={formData.description}
+                      onChange={e =>
+                        handleInputChange('description', e.target.value)
+                      }
+                      error={!!formErrors.description}
+                      helperText={
+                        formErrors.description ||
+                        'Detailed description of the incident and its impact'
+                      }
+                      placeholder="Describe the incident, when it started, symptoms, and any initial investigation findings..."
+                    />
+                  </Grid>
+
+                  {/* Severity and Status */}
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>Severity</InputLabel>
+                      <Select
+                        value={formData.severity}
+                        label="Severity"
+                        onChange={e =>
+                          handleInputChange('severity', e.target.value)
+                        }
+                      >
+                        <MenuItem value="low">Low</MenuItem>
+                        <MenuItem value="medium">Medium</MenuItem>
+                        <MenuItem value="high">High</MenuItem>
+                        <MenuItem value="critical">Critical</MenuItem>
+                      </Select>
+                      <FormHelperText>
+                        {formData.severity === 'critical' &&
+                          'Service completely unavailable'}
+                        {formData.severity === 'high' &&
+                          'Major functionality impacted'}
+                        {formData.severity === 'medium' &&
+                          'Some functionality impacted'}
+                        {formData.severity === 'low' &&
+                          'Minor impact or cosmetic issue'}
+                      </FormHelperText>
+                    </FormControl>
+                  </Grid>
+
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>Status</InputLabel>
+                      <Select
+                        value={formData.status}
+                        label="Status"
+                        onChange={e =>
+                          handleInputChange('status', e.target.value)
+                        }
+                      >
+                        <MenuItem value="open">Open</MenuItem>
+                        <MenuItem value="investigating">Investigating</MenuItem>
+                        <MenuItem value="monitoring">Monitoring</MenuItem>
+                        <MenuItem value="resolved">Resolved</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+
+                  {/* Impact Description */}
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={2}
+                      label="Impact Description"
+                      value={formData.impact_description}
+                      onChange={e =>
+                        handleInputChange('impact_description', e.target.value)
+                      }
+                      helperText="Describe the customer or business impact"
+                      placeholder="e.g., Users unable to login, checkout process failing for 25% of customers"
+                    />
+                  </Grid>
+
+                  {/* Resolution Notes (only show if resolved) */}
+                  {formData.status === 'resolved' && (
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        multiline
+                        rows={3}
+                        label="Resolution Notes"
+                        value={formData.resolution_notes}
+                        onChange={e =>
+                          handleInputChange('resolution_notes', e.target.value)
+                        }
+                        helperText="Describe how the incident was resolved"
+                        placeholder="Explain the root cause and steps taken to resolve the incident..."
                       />
-                    ))
-                  }
-                />
-              </Grid>
-
-              {/* Tags */}
-              <Grid item xs={12}>
-                <Box>
-                  <TextField
-                    fullWidth
-                    label="Add Tags"
-                    value={newTag}
-                    onChange={e => setNewTag(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    helperText="Press Enter to add tags for categorization"
-                    InputProps={{
-                      endAdornment: (
-                        <Button
-                          onClick={handleAddTag}
-                          disabled={!newTag.trim()}
-                        >
-                          Add
-                        </Button>
-                      ),
-                    }}
-                  />
-
-                  {formData.tags.length > 0 && (
-                    <Box
-                      sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: 1 }}
-                    >
-                      {formData.tags.map(tag => (
-                        <Chip
-                          key={tag}
-                          label={tag}
-                          onDelete={() => handleRemoveTag(tag)}
-                          color="primary"
-                          variant="outlined"
-                        />
-                      ))}
-                    </Box>
+                    </Grid>
                   )}
-                </Box>
-              </Grid>
 
-              {/* Submit Buttons */}
-              <Grid item xs={12}>
-                <Box
-                  display="flex"
-                  gap={2}
-                  justifyContent="flex-end"
-                  sx={{ mt: 2 }}
-                >
-                  <Button
-                    component={Link}
-                    href={`/incidents/${incidentId}`}
-                    variant="outlined"
-                    disabled={saving}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    startIcon={
-                      saving ? <CircularProgress size={20} /> : <SaveIcon />
-                    }
-                    disabled={saving}
-                    color="primary"
-                  >
-                    {saving ? 'Saving...' : 'Save Changes'}
-                  </Button>
-                </Box>
-              </Grid>
-            </Grid>
-          </form>
-        </CardContent>
-      </Card>
-    </Box>
+                  <Grid item xs={12}>
+                    <Divider sx={{ my: 2 }} />
+                    <Typography variant="h6" gutterBottom>
+                      Assignment & Escalation
+                    </Typography>
+                  </Grid>
+
+                  {/* Assigned To */}
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>Assign To</InputLabel>
+                      <Select
+                        value={formData.assigned_to}
+                        label="Assign To"
+                        onChange={e =>
+                          handleInputChange('assigned_to', e.target.value)
+                        }
+                      >
+                        <MenuItem value="">Unassigned</MenuItem>
+                        {organizationMembers.map(member => (
+                          <MenuItem key={member.id} value={member.id}>
+                            {member.name || member.email}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+
+                  {/* Escalation Policy */}
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>Escalation Policy</InputLabel>
+                      <Select
+                        value={formData.escalation_policy_id}
+                        label="Escalation Policy"
+                        onChange={e =>
+                          handleInputChange(
+                            'escalation_policy_id',
+                            e.target.value
+                          )
+                        }
+                      >
+                        <MenuItem value="">No escalation policy</MenuItem>
+                        {escalationPolicies.map(policy => (
+                          <MenuItem key={policy.id} value={policy.id}>
+                            {policy.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+
+                  {/* Affected Services */}
+                  <Grid item xs={12}>
+                    <Autocomplete
+                      multiple
+                      options={services}
+                      getOptionLabel={option => option.name || option}
+                      value={formData.affected_services}
+                      onChange={(e, newValue) =>
+                        handleInputChange('affected_services', newValue)
+                      }
+                      renderInput={params => (
+                        <TextField
+                          {...params}
+                          label="Affected Services"
+                          helperText="Select services affected by this incident"
+                        />
+                      )}
+                      renderTags={(value, getTagProps) =>
+                        value.map((option, index) => (
+                          <Chip
+                            variant="outlined"
+                            label={option.name || option}
+                            {...getTagProps({ index })}
+                            key={index}
+                          />
+                        ))
+                      }
+                    />
+                  </Grid>
+
+                  {/* Tags */}
+                  <Grid item xs={12}>
+                    <Box>
+                      <TextField
+                        fullWidth
+                        label="Add Tags"
+                        value={newTag}
+                        onChange={e => setNewTag(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        helperText="Press Enter to add tags for categorization"
+                        InputProps={{
+                          endAdornment: (
+                            <Button
+                              onClick={handleAddTag}
+                              disabled={!newTag.trim()}
+                            >
+                              Add
+                            </Button>
+                          ),
+                        }}
+                      />
+
+                      {formData.tags.length > 0 && (
+                        <Box
+                          sx={{
+                            mt: 1,
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: 1,
+                          }}
+                        >
+                          {formData.tags.map(tag => (
+                            <Chip
+                              key={tag}
+                              label={tag}
+                              onDelete={() => handleRemoveTag(tag)}
+                              color="primary"
+                              variant="outlined"
+                            />
+                          ))}
+                        </Box>
+                      )}
+                    </Box>
+                  </Grid>
+
+                  {/* Submit Buttons */}
+                  <Grid item xs={12}>
+                    <Box
+                      display="flex"
+                      gap={2}
+                      justifyContent="flex-end"
+                      sx={{ mt: 2 }}
+                    >
+                      <Button
+                        component={Link}
+                        href={`/incidents/${incidentId}`}
+                        variant="outlined"
+                        disabled={saving}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        variant="contained"
+                        startIcon={
+                          saving ? <CircularProgress size={20} /> : <SaveIcon />
+                        }
+                        disabled={saving}
+                        color="primary"
+                      >
+                        {saving ? 'Saving...' : 'Save Changes'}
+                      </Button>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </form>
+            </CardContent>
+          </Card>
+        </Box>
+      )}
+    </ProtectedRoute>
   );
 }

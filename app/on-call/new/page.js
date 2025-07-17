@@ -54,6 +54,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useSession } from 'next-auth/react';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import dayjs from 'dayjs';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 const steps = [
   {
@@ -315,624 +316,121 @@ export default function CreateOnCallSchedulePage() {
     }
   };
 
-  if (!session) {
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="400px"
-      >
-        <Typography>Please sign in to create on-call schedules.</Typography>
-      </Box>
-    );
-  }
-
-  if (success) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Paper sx={{ p: 4, textAlign: 'center', maxWidth: 600, mx: 'auto' }}>
-          <CheckCircleIcon
-            sx={{ fontSize: 64, color: 'success.main', mb: 2 }}
-          />
-          <Typography variant="h5" gutterBottom>
-            Schedule Created Successfully!
-          </Typography>
-          <Typography variant="body1" color="text.secondary" mb={3}>
-            Your on-call schedule has been created and is now active.
-            Redirecting to the on-call dashboard...
-          </Typography>
-          <CircularProgress />
-        </Paper>
-      </Box>
-    );
-  }
-
-  const renderStepContent = step => {
-    switch (step) {
-      case 0:
-        return (
-          <Stack spacing={3}>
-            {!selectedOrganization && (
-              <Alert severity="warning">
-                Please select an organization from the dropdown in the
-                navigation bar.
-              </Alert>
-            )}
-            {selectedOrganization && (
-              <Alert severity="success" icon={<CheckCircleIcon />}>
-                Creating schedule for:{' '}
-                <strong>{selectedOrganization.name}</strong>
-              </Alert>
-            )}
-
-            <TextField
-              fullWidth
-              label="Schedule Name"
-              value={formData.name}
-              onChange={e => handleInputChange('name', e.target.value)}
-              error={!!formErrors.name}
-              helperText={
-                formErrors.name ||
-                'A descriptive name for this on-call schedule'
-              }
-              placeholder="e.g., Engineering Team Primary On-Call"
-              required
-            />
-
-            <TextField
-              fullWidth
-              multiline
-              rows={3}
-              label="Description"
-              value={formData.description}
-              onChange={e => handleInputChange('description', e.target.value)}
-              helperText="Describe the purpose and scope of this on-call schedule"
-              placeholder="Primary on-call rotation for critical production incidents..."
-            />
-          </Stack>
-        );
-
-      case 1:
-        return (
-          <Stack spacing={3}>
-            <Typography variant="h6" color="primary">
-              📅 Schedule Timing
-            </Typography>
-
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
-                <DateTimePicker
-                  label="Start Date & Time"
-                  value={formData.start_date}
-                  onChange={newValue =>
-                    handleInputChange('start_date', newValue)
-                  }
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      error: !!formErrors.start_date,
-                      helperText:
-                        formErrors.start_date ||
-                        'When this schedule becomes active',
-                      required: true,
-                    },
-                  }}
-                />
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <DateTimePicker
-                  label="End Date & Time (optional)"
-                  value={formData.end_date}
-                  onChange={newValue => handleInputChange('end_date', newValue)}
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      error: !!formErrors.end_date,
-                      helperText:
-                        formErrors.end_date ||
-                        'Leave empty for ongoing schedule',
-                    },
-                  }}
-                />
-              </Grid>
-            </Grid>
-
-            <Divider />
-
-            <Typography variant="h6" color="primary">
-              🔄 Rotation Settings
-            </Typography>
-
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Rotation Type</InputLabel>
-                  <Select
-                    value={formData.rotation_type}
-                    label="Rotation Type"
-                    onChange={e =>
-                      handleInputChange('rotation_type', e.target.value)
-                    }
-                  >
-                    <MenuItem value="daily">Daily</MenuItem>
-                    <MenuItem value="weekly">Weekly</MenuItem>
-                    <MenuItem value="biweekly">Bi-weekly</MenuItem>
-                    <MenuItem value="monthly">Monthly</MenuItem>
-                    <MenuItem value="custom">Custom</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-
-              {['weekly', 'biweekly'].includes(formData.rotation_type) && (
-                <Grid item xs={12} md={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Rotation Day</InputLabel>
-                    <Select
-                      value={formData.rotation_day}
-                      label="Rotation Day"
-                      onChange={e =>
-                        handleInputChange('rotation_day', e.target.value)
-                      }
-                    >
-                      {[
-                        'Sunday',
-                        'Monday',
-                        'Tuesday',
-                        'Wednesday',
-                        'Thursday',
-                        'Friday',
-                        'Saturday',
-                      ].map((day, index) => (
-                        <MenuItem key={index} value={index}>
-                          {day}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-              )}
-
-              {formData.rotation_type !== 'custom' && (
-                <Grid item xs={12} md={6}>
-                  <TimePicker
-                    label="Rotation Time"
-                    value={formData.rotation_time}
-                    onChange={newValue =>
-                      handleInputChange('rotation_time', newValue)
-                    }
-                    slotProps={{
-                      textField: {
-                        fullWidth: true,
-                        helperText: 'Time of day when rotation occurs',
-                      },
-                    }}
-                  />
-                </Grid>
-              )}
-
-              {formData.rotation_type === 'custom' && (
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    type="number"
-                    label="Rotation Interval (hours)"
-                    value={formData.rotation_interval_hours}
-                    onChange={e =>
-                      handleInputChange(
-                        'rotation_interval_hours',
-                        parseInt(e.target.value)
-                      )
-                    }
-                    helperText="How often to rotate in hours"
-                    inputProps={{ min: 1, max: 8760 }}
-                  />
-                </Grid>
-              )}
-            </Grid>
-
-            <Paper
-              sx={{
-                p: 3,
-                bgcolor: 'primary.light',
-                color: 'primary.contrastText',
-              }}
+  return (
+    <ProtectedRoute>
+      <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <Box sx={{ p: 3 }}>
+          {/* Header */}
+          <Box display="flex" alignItems="center" gap={2} mb={4}>
+            <Button
+              component={Link}
+              href="/on-call"
+              startIcon={<ArrowBackIcon />}
+              variant="outlined"
             >
-              <Typography
-                variant="subtitle1"
-                sx={{ fontWeight: 'bold', mb: 1 }}
-              >
-                📋 Rotation Schedule
-              </Typography>
-              <Typography variant="body2">
-                {getRotationDescription()}
-              </Typography>
-            </Paper>
-          </Stack>
-        );
-
-      case 2:
-        return (
-          <Stack spacing={3}>
-            <Typography variant="h6" color="primary">
-              👥 On-Call Team Members
+              Back to On-Call
+            </Button>
+            <Typography variant="h4" component="h1">
+              Create On-Call Schedule
             </Typography>
+          </Box>
 
-            <Paper sx={{ p: 3, bgcolor: 'grey.50' }}>
-              <Typography
-                variant="subtitle1"
-                gutterBottom
-                sx={{ fontWeight: 'bold' }}
-              >
-                Add Team Members
-              </Typography>
+          {/* Error Alert */}
+          {error && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {error}
+            </Alert>
+          )}
 
-              <Stack
-                direction={{ xs: 'column', sm: 'row' }}
-                spacing={2}
-                alignItems="flex-end"
-              >
-                <Autocomplete
-                  fullWidth
-                  options={organizationMembers.filter(
-                    member =>
-                      !formData.participants.find(p => p.id === member.id)
-                  )}
-                  getOptionLabel={option => option.name || option.email}
-                  value={selectedMember}
-                  onChange={(event, newValue) => setSelectedMember(newValue)}
-                  renderInput={params => (
-                    <TextField
-                      {...params}
-                      label="Select Team Member"
-                      placeholder="Choose a team member..."
-                    />
-                  )}
-                  renderOption={(props, option) => (
-                    <li {...props}>
-                      <Avatar sx={{ mr: 2, width: 32, height: 32 }}>
-                        {(option.name || option.email).charAt(0).toUpperCase()}
-                      </Avatar>
-                      <Box>
-                        <Typography variant="body1">
-                          {option.name || option.email}
+          {/* Main Content */}
+          <Grid container spacing={4}>
+            {/* Stepper Sidebar */}
+            <Grid item xs={12} md={4} lg={3}>
+              <Paper sx={{ p: 3, position: 'sticky', top: 20 }}>
+                <Stepper activeStep={activeStep} orientation="vertical">
+                  {steps.map((step, index) => (
+                    <Step key={step.label}>
+                      <StepLabel
+                        icon={step.icon}
+                        optional={
+                          index < activeStep ? (
+                            <CheckCircleIcon
+                              sx={{ color: 'success.main', fontSize: 16 }}
+                            />
+                          ) : null
+                        }
+                      >
+                        <Typography variant="subtitle2">
+                          {step.label}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {option.role === 'owner'
-                            ? 'Owner'
-                            : option.role === 'admin'
-                              ? 'Admin'
-                              : 'Member'}
+                          {step.description}
                         </Typography>
-                      </Box>
-                    </li>
-                  )}
-                  noOptionsText="No available team members"
-                />
-
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={handleAddParticipant}
-                  disabled={!selectedMember}
-                  sx={{ whiteSpace: 'nowrap' }}
-                >
-                  Add
-                </Button>
-              </Stack>
-            </Paper>
-
-            {formErrors.participants && (
-              <Alert severity="error">{formErrors.participants}</Alert>
-            )}
-
-            {formData.participants.length === 0 ? (
-              <Paper
-                sx={{
-                  p: 4,
-                  textAlign: 'center',
-                  border: '2px dashed',
-                  borderColor: 'primary.main',
-                }}
-              >
-                <PersonIcon
-                  sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }}
-                />
-                <Typography variant="h6" gutterBottom>
-                  No Team Members Added
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Add at least one team member to create the on-call rotation.
-                </Typography>
+                      </StepLabel>
+                    </Step>
+                  ))}
+                </Stepper>
               </Paper>
-            ) : (
-              <Paper sx={{ p: 0, overflow: 'hidden' }}>
+            </Grid>
+
+            {/* Form Content */}
+            <Grid item xs={12} md={8} lg={9}>
+              <Paper sx={{ p: 4 }}>
+                {renderStepContent(activeStep)}
+
+                {/* Navigation Buttons */}
                 <Box
                   sx={{
-                    p: 2,
-                    bgcolor: 'primary.main',
-                    color: 'primary.contrastText',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    mt: 4,
                   }}
                 >
-                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                    Rotation Order ({formData.participants.length} members)
-                  </Typography>
-                </Box>
-
-                <List>
-                  {formData.participants.map((participant, index) => (
-                    <ListItem
-                      key={participant.id}
-                      divider={index < formData.participants.length - 1}
-                    >
-                      <ListItemAvatar>
-                        <Avatar>
-                          {(participant.name || participant.email)
-                            .charAt(0)
-                            .toUpperCase()}
-                        </Avatar>
-                      </ListItemAvatar>
-
-                      <ListItemText
-                        primary={
-                          <Box display="flex" alignItems="center" gap={1}>
-                            <Chip
-                              label={`#${index + 1}`}
-                              size="small"
-                              color="primary"
-                            />
-                            <Typography variant="body1">
-                              {participant.name || participant.email}
-                            </Typography>
-                          </Box>
-                        }
-                        secondary={participant.role || 'Member'}
-                      />
-
-                      <ListItemSecondaryAction>
-                        <Tooltip title="Remove from rotation">
-                          <IconButton
-                            edge="end"
-                            onClick={() =>
-                              handleRemoveParticipant(participant.id)
-                            }
-                            color="error"
-                            size="small"
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </ListItemSecondaryAction>
-                    </ListItem>
-                  ))}
-                </List>
-
-                {formData.participants.length > 0 && (
-                  <Box sx={{ p: 2, bgcolor: 'success.light' }}>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{ fontWeight: 'bold', mb: 1 }}
-                    >
-                      🎯 Rotation Preview
-                    </Typography>
-                    <Typography variant="body2">
-                      <strong>Starting on-call:</strong>{' '}
-                      {formData.participants[0]?.name ||
-                        formData.participants[0]?.email}
-                      <br />
-                      <strong>Rotation:</strong> {getRotationDescription()}
-                      {formData.participants.length === 1 && (
-                        <>
-                          <br />
-                          <em>
-                            ⚠️ Single person schedule - no rotation will occur
-                          </em>
-                        </>
-                      )}
-                    </Typography>
-                  </Box>
-                )}
-              </Paper>
-            )}
-          </Stack>
-        );
-
-      case 3:
-        return (
-          <Stack spacing={3}>
-            <Typography variant="h6" color="primary">
-              ⚙️ Final Settings
-            </Typography>
-
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={formData.is_active}
-                  onChange={e =>
-                    handleInputChange('is_active', e.target.checked)
-                  }
-                  color="primary"
-                />
-              }
-              label="Activate this schedule immediately"
-            />
-
-            <TextField
-              fullWidth
-              label="Timezone"
-              value={formData.timezone}
-              disabled
-              helperText="Schedule timezone (auto-detected)"
-            />
-
-            <Divider />
-
-            <Typography variant="h6" color="primary">
-              📋 Review Summary
-            </Typography>
-
-            <Paper sx={{ p: 3, bgcolor: 'grey.50' }}>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Schedule Name
-                  </Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                    {formData.name || 'Unnamed Schedule'}
-                  </Typography>
-                </Grid>
-
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Organization
-                  </Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                    {selectedOrganization?.name || 'Not selected'}
-                  </Typography>
-                </Grid>
-
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Rotation Type
-                  </Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                    {getRotationDescription()}
-                  </Typography>
-                </Grid>
-
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Team Members
-                  </Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                    {formData.participants.length} members
-                  </Typography>
-                </Grid>
-
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Start Date
-                  </Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                    {formData.start_date
-                      ? formData.start_date.format('MMMM D, YYYY [at] h:mm A')
-                      : 'Not set'}
-                  </Typography>
-                </Grid>
-              </Grid>
-            </Paper>
-          </Stack>
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <Box sx={{ p: 3 }}>
-        {/* Header */}
-        <Box display="flex" alignItems="center" gap={2} mb={4}>
-          <Button
-            component={Link}
-            href="/on-call"
-            startIcon={<ArrowBackIcon />}
-            variant="outlined"
-          >
-            Back
-          </Button>
-          <Typography variant="h4" component="h1">
-            Create On-Call Schedule
-          </Typography>
-        </Box>
-
-        {/* Error Alert */}
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-        )}
-
-        {/* Main Content */}
-        <Grid container spacing={4}>
-          {/* Stepper Sidebar */}
-          <Grid item xs={12} md={4} lg={3}>
-            <Paper sx={{ p: 3, position: 'sticky', top: 20 }}>
-              <Stepper activeStep={activeStep} orientation="vertical">
-                {steps.map((step, index) => (
-                  <Step key={step.label}>
-                    <StepLabel
-                      icon={step.icon}
-                      optional={
-                        index < activeStep ? (
-                          <CheckCircleIcon
-                            sx={{ color: 'success.main', fontSize: 16 }}
-                          />
-                        ) : null
-                      }
-                    >
-                      <Typography variant="subtitle2">{step.label}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {step.description}
-                      </Typography>
-                    </StepLabel>
-                  </Step>
-                ))}
-              </Stepper>
-            </Paper>
-          </Grid>
-
-          {/* Form Content */}
-          <Grid item xs={12} md={8} lg={9}>
-            <Paper sx={{ p: 4 }}>
-              {renderStepContent(activeStep)}
-
-              {/* Navigation Buttons */}
-              <Box
-                sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}
-              >
-                <Button
-                  disabled={activeStep === 0}
-                  onClick={handleBack}
-                  variant="outlined"
-                >
-                  Back
-                </Button>
-
-                <Box display="flex" gap={2}>
                   <Button
-                    component={Link}
-                    href="/on-call"
+                    disabled={activeStep === 0}
+                    onClick={handleBack}
                     variant="outlined"
-                    color="inherit"
                   >
-                    Cancel
+                    Back
                   </Button>
 
-                  {activeStep === steps.length - 1 ? (
+                  <Box display="flex" gap={2}>
                     <Button
-                      variant="contained"
-                      onClick={handleSubmit}
-                      disabled={loading}
-                      startIcon={
-                        loading ? <CircularProgress size={20} /> : <SaveIcon />
-                      }
+                      component={Link}
+                      href="/on-call"
+                      variant="outlined"
+                      color="inherit"
                     >
-                      {loading ? 'Creating...' : 'Create Schedule'}
+                      Cancel
                     </Button>
-                  ) : (
-                    <Button variant="contained" onClick={handleNext}>
-                      Next
-                    </Button>
-                  )}
+
+                    {activeStep === steps.length - 1 ? (
+                      <Button
+                        variant="contained"
+                        onClick={handleSubmit}
+                        disabled={loading}
+                        startIcon={
+                          loading ? (
+                            <CircularProgress size={20} />
+                          ) : (
+                            <SaveIcon />
+                          )
+                        }
+                      >
+                        {loading ? 'Creating...' : 'Create Schedule'}
+                      </Button>
+                    ) : (
+                      <Button variant="contained" onClick={handleNext}>
+                        Next
+                      </Button>
+                    )}
+                  </Box>
                 </Box>
-              </Box>
-            </Paper>
+              </Paper>
+            </Grid>
           </Grid>
-        </Grid>
-      </Box>
-    </LocalizationProvider>
+        </Box>
+      </LocalizationProvider>
+    </ProtectedRoute>
   );
 }

@@ -41,6 +41,7 @@ import ClearIcon from '@mui/icons-material/Clear';
 import { useSession } from 'next-auth/react';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import dayjs from 'dayjs';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 export default function EditOnCallSchedulePage() {
   const router = useRouter();
@@ -285,298 +286,285 @@ export default function EditOnCallSchedulePage() {
     }));
   };
 
-  if (!session) {
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="400px"
-      >
-        <Typography>Please sign in to edit on-call schedules.</Typography>
-      </Box>
-    );
-  }
-
-  if (loading) {
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="400px"
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
-
   return (
-    <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <Box sx={{ p: 3 }}>
-        {/* Header */}
-        <Box display="flex" alignItems="center" gap={2} mb={4}>
-          <IconButton component={Link} href="/on-call" color="primary">
-            <ArrowBackIcon />
-          </IconButton>
-          <Box>
-            <Typography variant="h4" component="h1" gutterBottom>
+    <ProtectedRoute>
+      {loading ? (
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          minHeight="400px"
+        >
+          <CircularProgress />
+        </Box>
+      ) : (
+        <Box sx={{ p: 3 }}>
+          {/* Header */}
+          <Box display="flex" alignItems="center" gap={2} mb={4}>
+            <Button
+              component={Link}
+              href="/on-call"
+              startIcon={<ArrowBackIcon />}
+              variant="outlined"
+            >
+              Back to On-Call
+            </Button>
+            <Typography variant="h4" component="h1">
               Edit On-Call Schedule
             </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Update schedule details and rotation settings
-            </Typography>
           </Box>
-        </Box>
 
-        {/* Alerts */}
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-        {success && (
-          <Alert severity="success" sx={{ mb: 2 }}>
-            Schedule updated successfully! Redirecting...
-          </Alert>
-        )}
+          {/* Alerts */}
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+          {success && (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              Schedule updated successfully! Redirecting...
+            </Alert>
+          )}
 
-        {/* Form */}
-        <Card>
-          <CardContent>
-            <form onSubmit={handleSubmit}>
-              <Grid container spacing={3}>
-                {/* Basic Information */}
-                <Grid item xs={12}>
-                  <Typography variant="h6" gutterBottom>
-                    Basic Information
-                  </Typography>
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    label="Schedule Name"
-                    value={formData.name}
-                    onChange={e => handleInputChange('name', e.target.value)}
-                    error={!!formErrors.name}
-                    helperText={formErrors.name}
-                    required
-                  />
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={formData.is_active}
-                        onChange={e =>
-                          handleInputChange('is_active', e.target.checked)
-                        }
-                        color="primary"
-                      />
-                    }
-                    label="Active"
-                  />
-                </Grid>
-
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Description"
-                    value={formData.description}
-                    onChange={e =>
-                      handleInputChange('description', e.target.value)
-                    }
-                    multiline
-                    rows={3}
-                  />
-                </Grid>
-
-                {/* Rotation Settings */}
-                <Grid item xs={12}>
-                  <Divider sx={{ my: 2 }} />
-                  <Typography variant="h6" gutterBottom>
-                    Rotation Settings
-                  </Typography>
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Rotation Type</InputLabel>
-                    <Select
-                      value={formData.rotation_type}
-                      onChange={e =>
-                        handleInputChange('rotation_type', e.target.value)
-                      }
-                      label="Rotation Type"
-                    >
-                      <MenuItem value="daily">Daily</MenuItem>
-                      <MenuItem value="weekly">Weekly</MenuItem>
-                      <MenuItem value="biweekly">Bi-weekly</MenuItem>
-                      <MenuItem value="monthly">Monthly</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    label="Rotation Interval (hours)"
-                    type="number"
-                    value={formData.rotation_interval_hours}
-                    onChange={e =>
-                      handleInputChange(
-                        'rotation_interval_hours',
-                        parseInt(e.target.value) || 0
-                      )
-                    }
-                    error={!!formErrors.rotation_interval_hours}
-                    helperText={formErrors.rotation_interval_hours}
-                    inputProps={{ min: 1 }}
-                  />
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                  <DateTimePicker
-                    label="Start Date"
-                    value={formData.start_date}
-                    onChange={value => handleInputChange('start_date', value)}
-                    renderInput={params => (
-                      <TextField
-                        {...params}
-                        fullWidth
-                        error={!!formErrors.start_date}
-                        helperText={formErrors.start_date}
-                      />
-                    )}
-                  />
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                  <DateTimePicker
-                    label="End Date (Optional)"
-                    value={formData.end_date}
-                    onChange={value => handleInputChange('end_date', value)}
-                    renderInput={params => (
-                      <TextField
-                        {...params}
-                        fullWidth
-                        error={!!formErrors.end_date}
-                        helperText={formErrors.end_date}
-                      />
-                    )}
-                  />
-                </Grid>
-
-                {/* Participants */}
-                <Grid item xs={12}>
-                  <Divider sx={{ my: 2 }} />
-                  <Typography variant="h6" gutterBottom>
-                    Participants
-                  </Typography>
-                </Grid>
-
-                <Grid item xs={12} md={8}>
-                  <Autocomplete
-                    options={organizationMembers}
-                    getOptionLabel={option =>
-                      `${option.name || option.email} (${option.email})`
-                    }
-                    value={selectedMember}
-                    onChange={(event, newValue) => setSelectedMember(newValue)}
-                    renderInput={params => (
-                      <TextField
-                        {...params}
-                        label="Add Team Member"
-                        placeholder="Select a team member to add to rotation"
-                      />
-                    )}
-                  />
-                </Grid>
-
-                <Grid item xs={12} md={4}>
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    onClick={handleAddParticipant}
-                    disabled={!selectedMember}
-                    startIcon={<AddIcon />}
-                    sx={{ height: '56px' }}
-                  >
-                    Add Member
-                  </Button>
-                </Grid>
-
-                {formData.participants.length > 0 && (
+          {/* Form */}
+          <Card>
+            <CardContent>
+              <form onSubmit={handleSubmit}>
+                <Grid container spacing={3}>
+                  {/* Basic Information */}
                   <Grid item xs={12}>
-                    <Typography variant="subtitle1" gutterBottom>
-                      Rotation Order ({formData.participants.length} members)
+                    <Typography variant="h6" gutterBottom>
+                      Basic Information
                     </Typography>
-                    <List>
-                      {formData.participants.map((participant, index) => (
-                        <ListItem key={participant.id} divider>
-                          <ListItemText
-                            primary={
-                              <Box display="flex" alignItems="center" gap={1}>
-                                <Chip
-                                  label={index + 1}
-                                  size="small"
-                                  color="primary"
-                                  variant="outlined"
-                                />
-                                <PersonIcon color="action" />
-                                {participant.name || participant.email}
-                              </Box>
-                            }
-                            secondary={participant.email}
-                          />
-                          <ListItemSecondaryAction>
-                            <IconButton
-                              edge="end"
-                              onClick={() =>
-                                handleRemoveParticipant(participant.id)
-                              }
-                              color="error"
-                            >
-                              <DeleteIcon />
-                            </IconButton>
-                          </ListItemSecondaryAction>
-                        </ListItem>
-                      ))}
-                    </List>
                   </Grid>
-                )}
 
-                {/* Actions */}
-                <Grid item xs={12}>
-                  <Divider sx={{ my: 2 }} />
-                  <Box display="flex" gap={2} justifyContent="flex-end">
-                    <Button
-                      component={Link}
-                      href="/on-call"
-                      variant="outlined"
-                      disabled={saving}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      variant="contained"
-                      disabled={saving}
-                      startIcon={
-                        saving ? <CircularProgress size={20} /> : <SaveIcon />
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Schedule Name"
+                      value={formData.name}
+                      onChange={e => handleInputChange('name', e.target.value)}
+                      error={!!formErrors.name}
+                      helperText={formErrors.name}
+                      required
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} md={6}>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={formData.is_active}
+                          onChange={e =>
+                            handleInputChange('is_active', e.target.checked)
+                          }
+                          color="primary"
+                        />
                       }
+                      label="Active"
+                    />
+                  </Grid>
+
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      label="Description"
+                      value={formData.description}
+                      onChange={e =>
+                        handleInputChange('description', e.target.value)
+                      }
+                      multiline
+                      rows={3}
+                    />
+                  </Grid>
+
+                  {/* Rotation Settings */}
+                  <Grid item xs={12}>
+                    <Divider sx={{ my: 2 }} />
+                    <Typography variant="h6" gutterBottom>
+                      Rotation Settings
+                    </Typography>
+                  </Grid>
+
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>Rotation Type</InputLabel>
+                      <Select
+                        value={formData.rotation_type}
+                        onChange={e =>
+                          handleInputChange('rotation_type', e.target.value)
+                        }
+                        label="Rotation Type"
+                      >
+                        <MenuItem value="daily">Daily</MenuItem>
+                        <MenuItem value="weekly">Weekly</MenuItem>
+                        <MenuItem value="biweekly">Bi-weekly</MenuItem>
+                        <MenuItem value="monthly">Monthly</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Rotation Interval (hours)"
+                      type="number"
+                      value={formData.rotation_interval_hours}
+                      onChange={e =>
+                        handleInputChange(
+                          'rotation_interval_hours',
+                          parseInt(e.target.value) || 0
+                        )
+                      }
+                      error={!!formErrors.rotation_interval_hours}
+                      helperText={formErrors.rotation_interval_hours}
+                      inputProps={{ min: 1 }}
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} md={6}>
+                    <DateTimePicker
+                      label="Start Date"
+                      value={formData.start_date}
+                      onChange={value => handleInputChange('start_date', value)}
+                      renderInput={params => (
+                        <TextField
+                          {...params}
+                          fullWidth
+                          error={!!formErrors.start_date}
+                          helperText={formErrors.start_date}
+                        />
+                      )}
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} md={6}>
+                    <DateTimePicker
+                      label="End Date (Optional)"
+                      value={formData.end_date}
+                      onChange={value => handleInputChange('end_date', value)}
+                      renderInput={params => (
+                        <TextField
+                          {...params}
+                          fullWidth
+                          error={!!formErrors.end_date}
+                          helperText={formErrors.end_date}
+                        />
+                      )}
+                    />
+                  </Grid>
+
+                  {/* Participants */}
+                  <Grid item xs={12}>
+                    <Divider sx={{ my: 2 }} />
+                    <Typography variant="h6" gutterBottom>
+                      Participants
+                    </Typography>
+                  </Grid>
+
+                  <Grid item xs={12} md={8}>
+                    <Autocomplete
+                      options={organizationMembers}
+                      getOptionLabel={option =>
+                        `${option.name || option.email} (${option.email})`
+                      }
+                      value={selectedMember}
+                      onChange={(event, newValue) =>
+                        setSelectedMember(newValue)
+                      }
+                      renderInput={params => (
+                        <TextField
+                          {...params}
+                          label="Add Team Member"
+                          placeholder="Select a team member to add to rotation"
+                        />
+                      )}
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} md={4}>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      onClick={handleAddParticipant}
+                      disabled={!selectedMember}
+                      startIcon={<AddIcon />}
+                      sx={{ height: '56px' }}
                     >
-                      {saving ? 'Updating...' : 'Update Schedule'}
+                      Add Member
                     </Button>
-                  </Box>
+                  </Grid>
+
+                  {formData.participants.length > 0 && (
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle1" gutterBottom>
+                        Rotation Order ({formData.participants.length} members)
+                      </Typography>
+                      <List>
+                        {formData.participants.map((participant, index) => (
+                          <ListItem key={participant.id} divider>
+                            <ListItemText
+                              primary={
+                                <Box display="flex" alignItems="center" gap={1}>
+                                  <Chip
+                                    label={index + 1}
+                                    size="small"
+                                    color="primary"
+                                    variant="outlined"
+                                  />
+                                  <PersonIcon color="action" />
+                                  {participant.name || participant.email}
+                                </Box>
+                              }
+                              secondary={participant.email}
+                            />
+                            <ListItemSecondaryAction>
+                              <IconButton
+                                edge="end"
+                                onClick={() =>
+                                  handleRemoveParticipant(participant.id)
+                                }
+                                color="error"
+                              >
+                                <DeleteIcon />
+                              </IconButton>
+                            </ListItemSecondaryAction>
+                          </ListItem>
+                        ))}
+                      </List>
+                    </Grid>
+                  )}
+
+                  {/* Actions */}
+                  <Grid item xs={12}>
+                    <Divider sx={{ my: 2 }} />
+                    <Box display="flex" gap={2} justifyContent="flex-end">
+                      <Button
+                        component={Link}
+                        href="/on-call"
+                        variant="outlined"
+                        disabled={saving}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        variant="contained"
+                        disabled={saving}
+                        startIcon={
+                          saving ? <CircularProgress size={20} /> : <SaveIcon />
+                        }
+                      >
+                        {saving ? 'Updating...' : 'Update Schedule'}
+                      </Button>
+                    </Box>
+                  </Grid>
                 </Grid>
-              </Grid>
-            </form>
-          </CardContent>
-        </Card>
-      </Box>
-    </LocalizationProvider>
+              </form>
+            </CardContent>
+          </Card>
+        </Box>
+      )}
+    </ProtectedRoute>
   );
 }
