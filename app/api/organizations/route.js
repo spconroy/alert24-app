@@ -1,113 +1,126 @@
+import { NextResponse } from 'next/server';
+import { SupabaseClient } from '../../../lib/db-supabase.js';
 
-import { getServerSession } from 'next-auth/next';
-import { Pool } from 'pg';
+const db = new SupabaseClient();
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+// Remove edge runtime for now to avoid Supabase compatibility issues
+// export const runtime = 'edge';
 
-export async function GET(req) {
-  const session = await getServerSession();
-  if (!session || !session.user?.email) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-    });
-  }
-
-  // Find organizations where user is a member
-  const userRes = await pool.query(
-    'SELECT id FROM public.users WHERE email = $1',
-    [session.user.email]
-  );
-  const user = userRes.rows[0];
-  if (!user) {
-    return new Response(JSON.stringify({ organizations: [] }), { status: 200 });
-  }
-  const orgsRes = await pool.query(
-    `
-    SELECT o.*,
-           m.role
-      FROM public.organizations o
-      JOIN public.organization_members m ON o.id = m.organization_id
-     WHERE m.user_id = $1
-  `,
-    [user.id]
-  );
-  return new Response(JSON.stringify({ organizations: orgsRes.rows }), {
-    status: 200,
-  });
-}
-
-export async function POST(req) {
-  const session = await getServerSession();
-  if (!session || !session.user?.email) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-    });
-  }
-
-  const body = await req.json();
-  const { name, slug, domain } = body;
-  if (!name || !slug) {
-    return new Response(
-      JSON.stringify({ error: 'Name and slug are required' }),
-      { status: 400 }
-    );
-  }
-
+export async function GET(request) {
   try {
-    // Find user
-    const userRes = await pool.query(
-      'SELECT id FROM public.users WHERE email = $1',
-      [session.user.email]
-    );
-    const user = userRes.rows[0];
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'User not found' }), {
-        status: 404,
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+
+    if (userId) {
+      // Get organizations for specific user
+      const organizations = await db.getOrganizations(userId);
+      return NextResponse.json({
+        success: true,
+        organizations: organizations,
+        count: organizations.length,
+      });
+    } else {
+      // For now, return all organizations using generic select method
+      const organizations = await db.select('organizations');
+      return NextResponse.json({
+        success: true,
+        organizations: organizations,
+        count: organizations.length,
       });
     }
-    // Create organization
-    const orgRes = await pool.query(
-      'INSERT INTO public.organizations (name, slug, domain) VALUES ($1, $2, $3) RETURNING *',
-      [name, slug, domain || null]
+  } catch (error) {
+    console.error('Get organizations error:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to fetch organizations',
+        details: error.message,
+      },
+      { status: 500 }
     );
-    const org = orgRes.rows[0];
-    // Add user as owner
-    await pool.query(
-      'INSERT INTO public.organization_members (organization_id, user_id, role, is_active) VALUES ($1, $2, $3, $4)',
-      [org.id, user.id, 'owner', true]
-    );
-    return new Response(JSON.stringify({ organization: org }), { status: 201 });
-  } catch (e) {
-    // Unique constraint violation
-    if (e.code === '23505') {
-      if (e.constraint === 'organizations_slug_key') {
-        return new Response(
-          JSON.stringify({
-            error:
-              'That organization slug is already taken. Please choose another.',
-          }),
-          { status: 409 }
-        );
-      }
-      if (e.constraint === 'organizations_name_key') {
-        return new Response(
-          JSON.stringify({
-            error:
-              'That organization name is already taken. Please choose another.',
-          }),
-          { status: 409 }
-        );
-      }
-      if (e.constraint === 'organizations_domain_key') {
-        return new Response(
-          JSON.stringify({
-            error:
-              'That organization domain is already in use. Please choose another.',
-          }),
-          { status: 409 }
-        );
-      }
+  }
+}
+
+export async function POST(request) {
+  try {
+    const body = await request.json();
+    const { name, slug, userId } = body;
+
+    if (!name || !slug) {
+      return NextResponse.json(
+        { error: 'name and slug are required' },
+        { status: 400 }
+      );
     }
-    return new Response(JSON.stringify({ error: e.message }), { status: 500 });
+
+    // Check if slug already exists using generic select
+    const existingOrgs = await db.select('organizations', '*', { slug });
+    if (existingOrgs.length > 0) {
+      return NextResponse.json(
+        { error: 'Organization slug already exists' },
+        { status: 409 }
+      );
+    }
+
+    if (userId) {
+      // Use the existing createOrganization method which handles membership
+      const organization = await db.createOrganization(
+        {
+          name,
+          slug,
+          subscription_plan: 'free',
+          max_team_members: 3,
+          max_projects: 5,
+        },
+        userId
+      );
+
+      return NextResponse.json({
+        success: true,
+        organization: organization,
+        message: 'Organization created successfully',
+      });
+    } else {
+      // Just create organization without membership
+      const organization = await db.insert('organizations', {
+        name,
+        slug,
+        subscription_plan: 'free',
+        max_team_members: 3,
+        max_projects: 5,
+      });
+
+      return NextResponse.json({
+        success: true,
+        organization: organization,
+        message: 'Organization created successfully',
+      });
+    }
+  } catch (error) {
+    console.error('Create organization error:', error);
+
+    // Handle duplicate slug error
+    if (
+      error.message.includes('duplicate key') ||
+      error.message.includes('already exists')
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Organization slug already exists',
+          details: error.message,
+        },
+        { status: 409 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to create organization',
+        details: error.message,
+      },
+      { status: 500 }
+    );
   }
 }

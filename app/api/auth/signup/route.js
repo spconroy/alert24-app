@@ -1,51 +1,72 @@
+import { NextResponse } from 'next/server';
+import { SupabaseClient } from '../../../../lib/db-supabase.js';
+import bcrypt from 'bcrypt';
 
-import { Pool } from 'pg';
-import bcrypt from 'bcryptjs';
+const db = new SupabaseClient();
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-
-export async function POST(req) {
+export async function POST(request) {
   try {
-    console.log('Using connection string:', process.env.DATABASE_URL);
-    const searchPathResult = await pool.query('SHOW search_path');
-    console.log('Current search_path:', searchPathResult.rows);
-    const currentSchema = await pool.query('SELECT current_schema()');
-    console.log('Current schema:', currentSchema.rows);
-    let body;
-    try {
-      body = await req.json();
-    } catch (e) {
-      console.log('Failed to parse JSON body:', e);
-      body = null;
-    }
-    console.log('Raw body:', body);
-    if (!body || !body.email || !body.name || !body.password) {
-      return new Response(
-        JSON.stringify({ error: 'All fields are required.' }),
+    const { email, password, name, organizationName } = await request.json();
+
+    // Validate required fields
+    if (!email || !password || !name) {
+      return NextResponse.json(
+        { error: 'Email, password, and name are required' },
         { status: 400 }
       );
     }
-    const { email, name, password } = body;
-    // Check for existing user
-    const existing = await pool.query(
-      'SELECT id FROM public.users WHERE email = $1',
-      [email]
-    );
-    if (existing.rows.length > 0) {
-      return new Response(JSON.stringify({ error: 'Email already in use.' }), {
-        status: 409,
-      });
+
+    // Check if user already exists
+    const existingUser = await db.getUserByEmail(email);
+    if (existingUser) {
+      return NextResponse.json(
+        { error: 'User with this email already exists' },
+        { status: 400 }
+      );
     }
-    // Hash password and insert
-    const hashed = await bcrypt.hash(password, 10);
-    const result = await pool.query(
-      'INSERT INTO public.users (email, name, password) VALUES ($1, $2, $3) RETURNING id, email, name',
-      [email, name, hashed]
-    );
-    return new Response(JSON.stringify({ user: result.rows[0] }), {
-      status: 201,
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create user
+    const user = await db.createUser({
+      email,
+      name,
+      password: hashedPassword,
     });
-  } catch (e) {
-    return new Response(JSON.stringify({ error: e.message }), { status: 500 });
+
+    // Create organization if provided
+    let organization = null;
+    if (organizationName) {
+      const slug = organizationName.toLowerCase().replace(/[^a-z0-9]/g, '-');
+      organization = await db.createOrganization(
+        {
+          name: organizationName,
+          slug,
+          created_by: user.id,
+        },
+        user.id
+      ); // Pass user.id as second parameter
+
+      // Organization creation already adds user as owner
+    }
+
+    // Return user data (without password)
+    const { password: _, ...userWithoutPassword } = user;
+
+    return NextResponse.json(
+      {
+        success: true,
+        user: userWithoutPassword,
+        organization,
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error('Signup error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

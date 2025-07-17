@@ -9,6 +9,7 @@ export function OrganizationProvider({ children }) {
   const [selectedOrganization, setSelectedOrganization] = useState(null);
   const [organizations, setOrganizations] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // Fetch organizations when user session is available
   useEffect(() => {
@@ -36,6 +37,7 @@ export function OrganizationProvider({ children }) {
   const fetchOrganizations = async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await fetch('/api/organizations');
       if (response.ok) {
         const data = await response.json();
@@ -71,10 +73,21 @@ export function OrganizationProvider({ children }) {
           setSelectedOrganization(null);
         }
         // For multiple orgs with no saved selection, let user choose
-        // For multiple orgs with no saved selection, let user choose
+      } else {
+        console.error(
+          'Failed to fetch organizations:',
+          response.status,
+          response.statusText
+        );
+        setError('Failed to fetch organizations');
+        // Don't break the app - set empty organizations
+        setOrganizations([]);
       }
     } catch (err) {
       console.error('Error fetching organizations:', err);
+      setError(err.message);
+      // Don't break the app - set empty organizations
+      setOrganizations([]);
     } finally {
       setLoading(false);
     }
@@ -97,6 +110,7 @@ export function OrganizationProvider({ children }) {
     selectedOrganization,
     organizations,
     loading,
+    error,
     selectOrganization,
     refreshOrganizations: fetchOrganizations,
   };

@@ -1,155 +1,137 @@
+import { NextResponse } from 'next/server';
+import { SupabaseClient } from '../../../lib/db-supabase.js';
 
-import { getServerSession } from 'next-auth/next';
-import { Pool } from 'pg';
+const db = new SupabaseClient();
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+export const runtime = 'edge';
 
-export async function GET(req) {
+export async function GET(request) {
   try {
-    const session = await getServerSession();
-    console.log('Session user:', session?.user);
-    if (!session || !session.user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-      });
-    }
-    // Get org_id from query param or session (for now, require ?org_id=...)
-    const { searchParams } = new URL(req.url);
-    const orgId = searchParams.get('org_id');
-    console.log('Requested org_id:', orgId);
-    if (!orgId) {
-      return new Response(JSON.stringify({ error: 'Missing org_id' }), {
-        status: 400,
-      });
-    }
-    // Check membership
-    // First, get the user ID from the database using the email
-    console.log('Looking up user with email:', session.user.email);
-    const { rows: userRows } = await pool.query(
-      'SELECT id, email FROM public.users WHERE email = $1',
-      [session.user.email]
-    );
-    console.log('User lookup result:', { email: session.user.email, userRows });
-    if (userRows.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'User not found in database' }),
-        { status: 404 }
-      );
-    }
-    const userId = userRows[0].id;
+    const { searchParams } = new URL(request.url);
+    const organizationId = searchParams.get('organizationId');
+    const isPublic = searchParams.get('public');
 
-    const { rows: memberRows } = await pool.query(
-      'SELECT * FROM public.organization_members WHERE user_id = $1 AND organization_id = $2 AND is_active = true',
-      [userId, orgId]
-    );
-    console.log('Membership check:', { userId, orgId, memberRows });
-    if (memberRows.length === 0) {
-      return new Response(
-        JSON.stringify({
-          error: 'Forbidden - Not a member of this organization',
-        }),
-        { status: 403 }
-      );
+    if (isPublic === 'true') {
+      // Get all public status pages
+      const statusPages = await db.statusPages.findPublic();
+      return NextResponse.json({ statusPages });
     }
-    // List status pages
-    const { rows } = await pool.query(
-      'SELECT * FROM public.status_pages WHERE organization_id = $1 AND deleted_at IS NULL ORDER BY created_at ASC',
-      [orgId]
+
+    if (organizationId) {
+      // Get status pages for a specific organization
+      const statusPages =
+        await db.statusPages.findByOrganizationId(organizationId);
+      return NextResponse.json({ statusPages });
+    }
+
+    // Get all status pages (with proper filtering)
+    const statusPages = await db.statusPages.findAll();
+    return NextResponse.json({ statusPages });
+  } catch (error) {
+    console.error('Error fetching status pages:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch status pages' },
+      { status: 500 }
     );
-    console.log('Status pages found:', rows.length);
-    return new Response(JSON.stringify({ statusPages: rows }), { status: 200 });
-  } catch (err) {
-    console.error('Status pages GET error:', err);
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-    });
   }
 }
 
-export async function POST(req) {
+export async function POST(request) {
   try {
-    const session = await getServerSession();
-    console.log('POST status-pages - Session user:', session?.user);
-    if (!session || !session.user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-      });
-    }
-    const body = await req.json();
-    console.log('POST status-pages - Request body:', body);
-    const { org_id, name, slug, description, is_public } = body;
-    if (!org_id || !name || !slug) {
-      return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
-        { status: 400 }
-      );
-    }
-    // Check membership
-    // First, get the user ID from the database using the email
-    console.log('Looking up user with email:', session.user.email);
-    const { rows: userRows } = await pool.query(
-      'SELECT id, email FROM public.users WHERE email = $1',
-      [session.user.email]
-    );
-    console.log('User lookup result:', { email: session.user.email, userRows });
-    if (userRows.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'User not found in database' }),
-        { status: 404 }
-      );
-    }
-    const userId = userRows[0].id;
-
-    const { rows: memberRows } = await pool.query(
-      'SELECT * FROM public.organization_members WHERE user_id = $1 AND organization_id = $2 AND is_active = true',
-      [userId, org_id]
-    );
-    console.log('Membership check:', { userId, org_id, memberRows });
-    if (memberRows.length === 0) {
-      return new Response(
-        JSON.stringify({
-          error: 'Forbidden - Not a member of this organization',
-        }),
-        { status: 403 }
-      );
-    }
-    // Insert status page
-    console.log('Attempting to insert status page:', {
-      org_id,
+    const {
+      organizationId,
       name,
       slug,
       description,
-      is_public,
-    });
-    const insertQuery = `
-      INSERT INTO public.status_pages (organization_id, name, slug, description, is_public)
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING *
-    `;
-    const { rows } = await pool.query(insertQuery, [
-      org_id,
-      name,
-      slug,
-      description || null,
-      is_public ?? true,
-    ]);
-    console.log('Status page created successfully:', rows[0]);
-    return new Response(JSON.stringify({ statusPage: rows[0] }), {
-      status: 201,
-    });
-  } catch (err) {
-    console.error('POST status-pages error:', err);
-    if (err.code === '23505') {
-      // Unique violation (slug)
-      return new Response(
-        JSON.stringify({
-          error: 'Slug must be unique within the organization.',
-        }),
-        { status: 409 }
+      isPublic = true,
+    } = await request.json();
+
+    // Validate required fields
+    if (!organizationId || !name || !slug) {
+      return NextResponse.json(
+        { error: 'Organization ID, name, and slug are required' },
+        { status: 400 }
       );
     }
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
+
+    // Check if slug is unique within the organization
+    const existingPage = await db.statusPages.findBySlug(organizationId, slug);
+    if (existingPage) {
+      return NextResponse.json(
+        {
+          error:
+            'A status page with this slug already exists in this organization',
+        },
+        { status: 400 }
+      );
+    }
+
+    // Create status page
+    const statusPage = await db.statusPages.create({
+      organization_id: organizationId,
+      name,
+      slug,
+      description,
+      is_public: isPublic,
     });
+
+    return NextResponse.json({ statusPage }, { status: 201 });
+  } catch (error) {
+    console.error('Error creating status page:', error);
+    return NextResponse.json(
+      { error: 'Failed to create status page' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request) {
+  try {
+    const { id, name, slug, description, isPublic } = await request.json();
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Status page ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const statusPage = await db.statusPages.update(id, {
+      name,
+      slug,
+      description,
+      is_public: isPublic,
+    });
+
+    return NextResponse.json({ statusPage });
+  } catch (error) {
+    console.error('Error updating status page:', error);
+    return NextResponse.json(
+      { error: 'Failed to update status page' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Status page ID is required' },
+        { status: 400 }
+      );
+    }
+
+    await db.statusPages.delete(id);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting status page:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete status page' },
+      { status: 500 }
+    );
   }
 }
