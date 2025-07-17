@@ -1,7 +1,9 @@
-
-
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { query, transaction } from '@/lib/db-http-cloudflare';
+import { SupabaseClient } from '../../../../../lib/db-supabase.js';
+import { authOptions } from '../../../auth/[...nextauth]/route.js';
+
+const db = new SupabaseClient();
 
 // Web Crypto API replacement for crypto.randomBytes in Edge Runtime
 function generateInvitationToken() {
@@ -10,281 +12,184 @@ function generateInvitationToken() {
   return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
 }
 
-
 // GET - List pending invitations for an organization
 export async function GET(req, { params }) {
-  const session = await getServerSession();
-  if (!session || !session.user?.email) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-    });
-  }
-
-  const orgId = params.id;
-  if (!orgId) {
-    return new Response(
-      JSON.stringify({ error: 'Organization ID is required' }),
-      { status: 400 }
-    );
-  }
-
   try {
-    // Check if user is admin/owner of the org
-    const userRes = await query(
-      'SELECT id FROM public.users WHERE email = $1',
-      [session.user.email]
-    );
-    const user = userRes.rows[0];
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'User not found' }), {
-        status: 404,
-      });
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const membershipRes = await query(
-      'SELECT role FROM public.organization_members WHERE organization_id = $1 AND user_id = $2 AND is_active = true',
-      [orgId, user.id]
-    );
+    const orgId = params.id;
+    if (!orgId) {
+      return NextResponse.json(
+        { error: 'Organization ID is required' },
+        { status: 400 }
+      );
+    }
 
-    if (
-      membershipRes.rows.length === 0 ||
-      !['owner', 'admin'].includes(membershipRes.rows[0].role)
-    ) {
-      return new Response(
-        JSON.stringify({ error: 'Forbidden - Admin access required' }),
+    // Get user
+    const user = await db.getUserByEmail(session.user.email);
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Check if user is admin/owner of the org
+    const membership = await db.getOrganizationMember(orgId, user.id);
+    if (!membership || !['owner', 'admin'].includes(membership.role)) {
+      return NextResponse.json(
+        { error: 'Forbidden - Admin access required' },
         { status: 403 }
       );
     }
 
     // Get pending invitations
-    const invitationsRes = await query(
-      `
-      SELECT 
-        om.id,
-        om.invitation_token,
-        om.invited_at,
-        om.invitation_expires_at,
-        om.role,
-        u.email,
-        u.name,
-        invited_by_user.name as invited_by_name
-      FROM public.organization_members om
-      LEFT JOIN public.users u ON om.user_id = u.id
-      LEFT JOIN public.users invited_by_user ON om.invited_by = invited_by_user.id
-      WHERE om.organization_id = $1 
-        AND om.accepted_at IS NULL 
-        AND om.invitation_token IS NOT NULL
-        AND om.invitation_expires_at > NOW()
-      ORDER BY om.invited_at DESC
-    `,
-      [orgId]
-    );
+    const invitations = await db.getPendingInvitations(orgId);
 
-    return new Response(JSON.stringify({ invitations: invitationsRes.rows }), {
-      status: 200,
-    });
+    // Transform the data to match expected format
+    const formattedInvitations = invitations.map(inv => ({
+      id: inv.id,
+      invitation_token: inv.invitation_token,
+      invited_at: inv.invited_at,
+      invitation_expires_at: inv.invitation_expires_at,
+      role: inv.role,
+      email: inv.users?.email,
+      name: inv.users?.name,
+      invited_by_name: inv.invited_by_user?.name,
+    }));
+
+    return NextResponse.json({ invitations: formattedInvitations });
   } catch (err) {
     console.error('Error fetching invitations:', err);
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-    });
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
 
 // POST - Send new invitation
 export async function POST(req, { params }) {
-  const session = await getServerSession();
-  if (!session || !session.user?.email) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-    });
-  }
-
-  const orgId = params.id;
-  if (!orgId) {
-    return new Response(
-      JSON.stringify({ error: 'Organization ID is required' }),
-      { status: 400 }
-    );
-  }
-
   try {
-    const body = await req.json();
-    const { email, role = 'responder' } = body;
-
-    if (!email) {
-      return new Response(JSON.stringify({ error: 'Email is required' }), {
-        status: 400,
-      });
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!['stakeholder', 'responder', 'admin'].includes(role)) {
-      return new Response(
-        JSON.stringify({
-          error: 'Invalid role. Must be stakeholder, responder, or admin',
-        }),
+    const orgId = params.id;
+    if (!orgId) {
+      return NextResponse.json(
+        { error: 'Organization ID is required' },
         { status: 400 }
       );
     }
 
-    // Check if user is admin/owner of the org
-    const userRes = await query(
-      'SELECT id FROM public.users WHERE email = $1',
-      [session.user.email]
-    );
-    const user = userRes.rows[0];
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'User not found' }), {
-        status: 404,
-      });
+    const body = await req.json();
+    const { email, role = 'responder' } = body;
+
+    if (!email) {
+      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
 
-    const membershipRes = await query(
-      'SELECT role FROM public.organization_members WHERE organization_id = $1 AND user_id = $2 AND is_active = true',
-      [orgId, user.id]
-    );
+    if (!['stakeholder', 'responder', 'admin'].includes(role)) {
+      return NextResponse.json(
+        {
+          error: 'Invalid role. Must be stakeholder, responder, or admin',
+        },
+        { status: 400 }
+      );
+    }
 
-    if (membershipRes.rows.length === 0) {
-      return new Response(
-        JSON.stringify({
+    // Get user
+    const user = await db.getUserByEmail(session.user.email);
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Check if user is admin/owner of the org
+    const membership = await db.getOrganizationMember(orgId, user.id);
+    if (!membership) {
+      return NextResponse.json(
+        {
           error: 'Forbidden - Not a member of this organization',
-        }),
+        },
         { status: 403 }
       );
     }
 
-    const userRole = membershipRes.rows[0].role;
+    const userRole = membership.role;
 
     // Check permission to invite this role type
     if (!['owner', 'admin'].includes(userRole)) {
-      return new Response(
-        JSON.stringify({
+      return NextResponse.json(
+        {
           error: 'Forbidden - Admin access required to invite members',
-        }),
+        },
         { status: 403 }
       );
     }
 
     // Only owners can invite admins
     if (role === 'admin' && userRole !== 'owner') {
-      return new Response(
-        JSON.stringify({ error: 'Forbidden - Only owners can invite admins' }),
+      return NextResponse.json(
+        { error: 'Forbidden - Only owners can invite admins' },
         { status: 403 }
       );
     }
 
     // Get organization details
-    const orgRes = await query(
-      'SELECT name FROM public.organizations WHERE id = $1',
-      [orgId]
-    );
-    const organization = orgRes.rows[0];
+    const organization = await db.getOrganizationById(orgId);
     if (!organization) {
-      return new Response(JSON.stringify({ error: 'Organization not found' }), {
-        status: 404,
-      });
+      return NextResponse.json(
+        { error: 'Organization not found' },
+        { status: 404 }
+      );
     }
 
     // Check if user already exists
-    let invitedUser = null;
-    const existingUserRes = await query(
-      'SELECT id FROM public.users WHERE email = $1',
-      [email]
-    );
-    if (existingUserRes.rows.length > 0) {
-      invitedUser = existingUserRes.rows[0];
+    let invitedUser = await db.getUserByEmail(email);
 
+    if (invitedUser) {
       // Check if already a member
-      const existingMemberRes = await query(
-        'SELECT id, accepted_at, invitation_token FROM public.organization_members WHERE organization_id = $1 AND user_id = $2',
-        [orgId, invitedUser.id]
+      const existingMember = await db.getOrganizationMember(
+        orgId,
+        invitedUser.id
       );
 
-      if (existingMemberRes.rows.length > 0) {
-        const existingMember = existingMemberRes.rows[0];
-        if (existingMember.accepted_at) {
-          return new Response(
-            JSON.stringify({
-              error: 'User is already a member of this organization',
-            }),
-            { status: 409 }
-          );
-        } else if (existingMember.invitation_token) {
-          return new Response(
-            JSON.stringify({ error: 'User already has a pending invitation' }),
-            { status: 409 }
-          );
-        }
+      if (existingMember && existingMember.accepted_at) {
+        return NextResponse.json(
+          {
+            error: 'User is already a member of this organization',
+          },
+          { status: 409 }
+        );
+      } else if (existingMember && existingMember.invitation_token) {
+        return NextResponse.json(
+          { error: 'User already has a pending invitation' },
+          { status: 409 }
+        );
       }
+    } else {
+      // Create placeholder user
+      invitedUser = await db.createUser({
+        email: email,
+        name: email, // Use email as name initially
+      });
     }
 
-    // Generate invitation token
+    // Generate invitation token and expiry
     const invitationToken = generateInvitationToken();
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
 
-    let invitationId;
-
-    if (invitedUser) {
-      // User exists, create/update invitation
-      const invitationRes = await query(
-        `
-        INSERT INTO public.organization_members 
-        (organization_id, user_id, role, invited_by, invitation_token, invitation_expires_at, is_active)
-        VALUES ($1, $2, $3, $4, $5, $6, false)
-        ON CONFLICT (organization_id, user_id) 
-        DO UPDATE SET 
-          role = EXCLUDED.role,
-          invited_by = EXCLUDED.invited_by,
-          invitation_token = EXCLUDED.invitation_token,
-          invitation_expires_at = EXCLUDED.invitation_expires_at,
-          invited_at = NOW(),
-          accepted_at = NULL,
-          is_active = false
-        RETURNING id
-      `,
-        [orgId, invitedUser.id, role, user.id, invitationToken, expiresAt]
-      );
-
-      invitationId = invitationRes.rows[0].id;
-    } else {
-      // User doesn't exist, create placeholder user and invitation
-      const client = await pool.connect();
-      try {
-        await client.query('BEGIN');
-
-        // Create placeholder user
-        const newUserRes = await client.query(
-          `
-          INSERT INTO public.users (email, name) 
-          VALUES ($1, $2) 
-          RETURNING id
-        `,
-          [email, email]
-        ); // Use email as name initially
-
-        const newUserId = newUserRes.rows[0].id;
-
-        // Create invitation
-        const invitationRes = await client.query(
-          `
-          INSERT INTO public.organization_members 
-          (organization_id, user_id, role, invited_by, invitation_token, invitation_expires_at, is_active)
-          VALUES ($1, $2, $3, $4, $5, $6, false)
-          RETURNING id
-        `,
-          [orgId, newUserId, role, user.id, invitationToken, expiresAt]
-        );
-
-        invitationId = invitationRes.rows[0].id;
-
-        await client.query('COMMIT');
-      } catch (err) {
-        await client.query('ROLLBACK');
-        throw err;
-      } finally {
-        client.release();
-      }
-    }
+    // Create/update invitation
+    const invitation = await db.createInvitation({
+      organization_id: orgId,
+      user_id: invitedUser.id,
+      role: role,
+      invited_by: user.id,
+      invitation_token: invitationToken,
+      invitation_expires_at: expiresAt.toISOString(),
+      invited_at: new Date().toISOString(),
+      accepted_at: null,
+      is_active: false,
+    });
 
     // Create invitation link
     const invitationLink = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/accept-invitation?token=${invitationToken}`;
@@ -296,19 +201,41 @@ export async function POST(req, { params }) {
     console.log(`Invitation Link: ${invitationLink}`);
     console.log(`Expires: ${expiresAt}`);
 
-    return new Response(
-      JSON.stringify({
+    return NextResponse.json(
+      {
+        success: true,
         message: 'Invitation sent successfully',
-        invitationId,
+        invitationId: invitation.id,
         invitationLink, // For testing - remove in production
         expiresAt,
-      }),
+      },
       { status: 201 }
     );
   } catch (err) {
     console.error('Error sending invitation:', err);
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-    });
+
+    // Handle duplicate slug error
+    if (
+      err.message.includes('duplicate key') ||
+      err.message.includes('already exists')
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Organization slug already exists',
+          details: err.message,
+        },
+        { status: 409 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to send invitation',
+        details: err.message,
+      },
+      { status: 500 }
+    );
   }
 }
