@@ -99,54 +99,6 @@ export default function StatusPageView() {
   );
 }
 
-export async function generateMetadata({ params }) {
-  const { slug } = params;
-
-  try {
-    // For metadata generation, we need to use fetch with the full URL
-    const baseUrl =
-      process.env.NEXT_PUBLIC_APP_URL ||
-      process.env.NEXTAUTH_URL ||
-      'http://localhost:3000';
-    const response = await fetch(`${baseUrl}/api/status-pages/public/${slug}`);
-
-    if (!response.ok) {
-      return {
-        title: 'Status Page Not Found',
-      };
-    }
-
-    const data = await response.json();
-
-    if (!data.success || !data.statusPage) {
-      return {
-        title: 'Status Page Not Found',
-      };
-    }
-
-    const { statusPage } = data;
-
-    return {
-      title: `${statusPage.name} - Status`,
-      description:
-        statusPage.description ||
-        `Current status of ${statusPage.name} services`,
-      openGraph: {
-        title: `${statusPage.name} - Status`,
-        description:
-          statusPage.description ||
-          `Current status of ${statusPage.name} services`,
-        type: 'website',
-      },
-      robots: {
-        index: statusPage.is_public,
-        follow: statusPage.is_public,
-      },
-    };
-  } catch (error) {
-    console.error('Error generating metadata:', error);
-    return {
-      title: 'Status Page',
-    };
-  }
-}
+// Note: generateMetadata removed due to "use client" conflict
+// Client components cannot export generateMetadata in Next.js
+// The page will use default metadata from the layout
