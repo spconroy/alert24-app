@@ -16,9 +16,9 @@ export default function AuthStatus() {
     setAnchorEl(null);
   };
 
-  const handleSignOut = async () => {
+  const handleSignOut = () => {
     handleMenuClose();
-    await window.location.href = '/api/auth/signout';
+    window.location.href = '/api/auth/signout';
   };
 
   if (status === 'loading') {
