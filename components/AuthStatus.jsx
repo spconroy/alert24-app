@@ -1,68 +1,84 @@
 'use client';
-import React, { useState } from 'react';
-import { useSession, signIn } from 'next-auth/react';
-import Button from '@mui/material/Button';
-import TextField from '@mui/material/TextField';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
+
+import { useState } from 'react';
+import { useSession, signIn, signOut } from 'next-auth/react';
+import { Box, Button, Avatar, Typography, Menu, MenuItem } from '@mui/material';
 
 export default function AuthStatus() {
   const { data: session, status } = useSession();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [anchorEl, setAnchorEl] = useState(null);
+
+  const handleMenuOpen = event => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleSignOut = async () => {
+    handleMenuClose();
+    await signOut();
+  };
 
   if (status === 'loading') {
-    return <Typography>Loading...</Typography>;
-  }
-
-  if (!session) {
-    const handleSubmit = async (e) => {
-      e.preventDefault();
-      setLoading(true);
-      setError('');
-      const res = await signIn('credentials', {
-        redirect: false,
-        email,
-        password,
-      });
-      setLoading(false);
-      if (res?.error) {
-        setError(res.error);
-      }
-    };
-
     return (
-      <Box component="form" onSubmit={handleSubmit} display="flex" flexDirection="column" gap={2} width={300}>
-        <TextField
-          label="Email"
-          type="email"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          required
-          fullWidth
-        />
-        <TextField
-          label="Password"
-          type="password"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          required
-          fullWidth
-        />
-        {error && <Typography color="error">{error}</Typography>}
-        <Button type="submit" variant="contained" color="primary" disabled={loading}>
-          {loading ? 'Signing in...' : 'Sign in'}
-        </Button>
+      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <Typography variant="body2">Loading...</Typography>
       </Box>
     );
   }
 
-  // If signed in, just show a welcome message
+  if (!session?.user) {
+    return (
+      <Button
+        variant="outlined"
+        onClick={() => signIn('google')}
+        sx={{ textTransform: 'none' }}
+      >
+        Sign In with Google
+      </Button>
+    );
+  }
+
   return (
-    <Typography variant="h5" align="center" sx={{ mt: 2 }}>
-      Welcome!
-    </Typography>
+    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <Button
+        onClick={handleMenuOpen}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+          textTransform: 'none',
+          color: 'inherit',
+        }}
+      >
+        <Avatar
+          src={session.user.image}
+          alt={session.user.name}
+          sx={{ width: 32, height: 32 }}
+        />
+        <Typography variant="body2">{session.user.name}</Typography>
+      </Button>
+
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+      >
+        <MenuItem onClick={() => (window.location.href = '/profile')}>
+          Profile
+        </MenuItem>
+        <MenuItem onClick={handleSignOut}>Sign Out</MenuItem>
+      </Menu>
+    </Box>
   );
-} 
+}

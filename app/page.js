@@ -1,16 +1,28 @@
 'use client';
+import { useSession } from 'next-auth/react';
 import AuthStatus from '../components/AuthStatus';
 import IncidentDashboard from '../components/IncidentDashboard';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
-import React from 'react';
-import { useSession } from 'next-auth/react';
 
 export default function Home() {
   const { data: session, status } = useSession();
 
-  const isSignedIn = !!session;
+  if (status === 'loading') {
+    return (
+      <Box
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        minHeight="100vh"
+      >
+        <Typography variant="h6">Loading...</Typography>
+      </Box>
+    );
+  }
+
+  const isSignedIn = !!session?.user;
 
   // Show Google OAuth login if not signed in
   if (!isSignedIn) {
