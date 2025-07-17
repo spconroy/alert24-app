@@ -15,7 +15,6 @@ export default function StatusPagesPage() {
   const [showCreateStatusPage, setShowCreateStatusPage] = useState(false);
   const statusPageListRef = useRef();
   const { selectedOrganization, session } = useOrganization();
-  const { session } = useOrganization();
 
   const handleStatusPageUpdated = updatedStatusPage => {
     // Update the selected status page with the new data

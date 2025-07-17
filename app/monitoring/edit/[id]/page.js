@@ -38,8 +38,7 @@ export default function EditMonitoringCheckPage() {
   const router = useRouter();
   const params = useParams();
   const checkId = params.id;
-  const { session } = useOrganization();
-  const { selectedOrganization } = useOrganization();
+  const { session, selectedOrganization } = useOrganization();
 
   const [formData, setFormData] = useState({
     name: '',

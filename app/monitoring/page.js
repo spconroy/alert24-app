@@ -62,8 +62,7 @@ export default function MonitoringPage() {
   const [updatingCheckId, setUpdatingCheckId] = useState(null);
   const [isClient, setIsClient] = useState(false);
   const [currentTab, setCurrentTab] = useState(0); // 0 = monitoring checks, 1 = service associations
-  const { session } = useOrganization();
-  const { selectedOrganization } = useOrganization();
+  const { session, selectedOrganization } = useOrganization();
   const router = useRouter();
 
   useEffect(() => {

@@ -34,8 +34,7 @@ import MonitoringLocationSelector from '@/components/MonitoringLocationSelector'
 
 export default function CreateMonitoringCheckPage() {
   const router = useRouter();
-  const { session } = useOrganization();
-  const { selectedOrganization } = useOrganization();
+  const { session, selectedOrganization } = useOrganization();
 
   const [formData, setFormData] = useState({
     name: '',

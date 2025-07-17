@@ -40,8 +40,7 @@ export default function OnCallPage() {
   const [error, setError] = useState(null);
   const [actionMenuAnchor, setActionMenuAnchor] = useState(null);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
-  const { session } = useOrganization();
-  const { selectedOrganization } = useOrganization();
+  const { session, selectedOrganization } = useOrganization();
 
   useEffect(() => {
     if (session) {

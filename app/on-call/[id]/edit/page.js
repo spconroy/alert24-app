@@ -48,8 +48,7 @@ export default function EditOnCallSchedulePage() {
   const router = useRouter();
   const params = useParams();
   const scheduleId = params.id;
-  const { session } = useOrganization();
-  const { selectedOrganization } = useOrganization();
+  const { session, selectedOrganization } = useOrganization();
 
   const [formData, setFormData] = useState({
     name: '',

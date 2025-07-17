@@ -11,12 +11,14 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 
 export default function SettingsPage() {
   const [showCreateOrg, setShowCreateOrg] = useState(false);
-  const { selectedOrganization,
+  const {
+    selectedOrganization,
     organizations,
     loading,
     refreshOrganizations,
-    selectOrganization,, session } = useOrganization();
-  const { session } = useOrganization();
+    selectOrganization,
+    session,
+  } = useOrganization();
 
   // Auto-show create org form if user has no organizations (but only after loading is complete)
   useEffect(() => {
