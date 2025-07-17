@@ -10,14 +10,15 @@ CREATE TABLE IF NOT EXISTS public.service_status_history (
     status_message TEXT,
     response_time_ms INTEGER,
     error_message TEXT,
-    checked_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    started_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    ended_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Add indexes for performance
+-- Add indexes for performance  
 CREATE INDEX IF NOT EXISTS idx_service_status_history_service_id ON public.service_status_history(service_id);
-CREATE INDEX IF NOT EXISTS idx_service_status_history_checked_at ON public.service_status_history(checked_at DESC);
+CREATE INDEX IF NOT EXISTS idx_service_status_history_started_at ON public.service_status_history(started_at DESC);
 CREATE INDEX IF NOT EXISTS idx_service_status_history_service_status ON public.service_status_history(service_id, status);
 
 -- Add is_active column to on_call_schedules if it doesn't exist
