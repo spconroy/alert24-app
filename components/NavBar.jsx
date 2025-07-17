@@ -66,6 +66,15 @@ export default function NavBar() {
 
         if (response.ok) {
           setDefaultOrganizationId(organizationId);
+          // Switch to the newly set default organization
+          const newDefaultOrg = organizations.find(
+            org => org.id === organizationId
+          );
+          if (newDefaultOrg) {
+            selectOrganization(newDefaultOrg);
+          }
+          // Refresh the page to fully load the new default organization
+          window.location.reload();
         } else {
           console.error('Failed to set default organization');
         }
@@ -209,11 +218,6 @@ export default function NavBar() {
                       >
                         <Box display="flex" alignItems="center" gap={1}>
                           🏢 {org.name}
-                          {isDefault && (
-                            <Tooltip title="Default organization">
-                              <StarIcon fontSize="small" color="primary" />
-                            </Tooltip>
-                          )}
                         </Box>
                         <Tooltip
                           title={
