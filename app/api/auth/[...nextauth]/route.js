@@ -25,7 +25,7 @@ export const authOptions = {
 
         try {
           // Use Supabase client to find user
-          const user = await db.users.findByEmail(credentials.email);
+          const user = await db.getUserByEmail(credentials.email);
 
           if (!user || !user.password) {
             throw new Error('No user found');

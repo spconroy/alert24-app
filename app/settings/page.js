@@ -11,15 +11,15 @@ import { useSession } from 'next-auth/react';
 
 export default function SettingsPage() {
   const [showCreateOrg, setShowCreateOrg] = useState(false);
-  const { selectedOrganization, organizations } = useOrganization();
+  const { selectedOrganization, organizations, loading } = useOrganization();
   const { data: session } = useSession();
 
-  // Auto-show create org form if user has no organizations
+  // Auto-show create org form if user has no organizations (but only after loading is complete)
   useEffect(() => {
-    if (organizations.length === 0 && !showCreateOrg) {
+    if (!loading && organizations.length === 0 && !showCreateOrg) {
       setShowCreateOrg(true);
     }
-  }, [organizations, showCreateOrg]);
+  }, [organizations, loading, showCreateOrg]);
 
   if (!session) {
     return (
@@ -30,6 +30,20 @@ export default function SettingsPage() {
         minHeight="400px"
       >
         <Typography>Please sign in to access settings.</Typography>
+      </Box>
+    );
+  }
+
+  // Show loading state while organizations are being fetched
+  if (loading) {
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="400px"
+      >
+        <Typography>Loading organizations...</Typography>
       </Box>
     );
   }

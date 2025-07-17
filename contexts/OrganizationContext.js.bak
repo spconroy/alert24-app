@@ -38,13 +38,7 @@ export function OrganizationProvider({ children }) {
     try {
       setLoading(true);
       setError(null);
-      // Build URL with userId parameter if user is authenticated
-      let url = '/api/organizations';
-      if (session?.user?.id) {
-        url += `?userId=${session.user.id}`;
-      }
-      
-      const response = await fetch(url);
+      const response = await fetch('/api/organizations');
       if (response.ok) {
         const data = await response.json();
         const orgs = data.organizations || [];
