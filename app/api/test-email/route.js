@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '../auth/[...nextauth]/route.js';
+import { auth } from '@/auth';
 
 export const runtime = 'edge';
 
@@ -74,7 +73,7 @@ async function sendTestEmail(toEmail, fromEmail, apiKey) {
 
 export async function POST(req) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     const { action, testEmail } = await req.json();
 
     if (action === 'check-config') {

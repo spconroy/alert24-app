@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { auth } from '@/auth';
 import { SupabaseClient } from '../../../../lib/db-supabase.js';
-import { authOptions } from '../../auth/[...nextauth]/route.js';
 import {
   withErrorHandler,
   ApiResponse,
@@ -16,7 +15,7 @@ export const runtime = 'edge';
 
 // GET - Get associations for monitoring checks
 export const GET = withErrorHandler(async request => {
-  const session = await Auth.requireAuth(authOptions);
+  const session = await auth();
   const user = await Auth.requireUser(db, session.user.email);
 
   const { searchParams } = new URL(request.url);
@@ -103,7 +102,7 @@ export const GET = withErrorHandler(async request => {
 
 // POST - Create or update association between monitoring check and service
 export const POST = withErrorHandler(async request => {
-  const session = await Auth.requireAuth(authOptions);
+  const session = await auth();
   const user = await Auth.requireUser(db, session.user.email);
 
   const { monitoringCheckId, serviceId, organizationId } =
@@ -199,7 +198,7 @@ export const POST = withErrorHandler(async request => {
 
 // DELETE - Remove association between monitoring check and service
 export const DELETE = withErrorHandler(async request => {
-  const session = await Auth.requireAuth(authOptions);
+  const session = await auth();
   const user = await Auth.requireUser(db, session.user.email);
 
   const { searchParams } = new URL(request.url);

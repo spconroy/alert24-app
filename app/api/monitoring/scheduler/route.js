@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { auth } from '@/auth';
 import { SupabaseClient } from '../../../../lib/db-supabase.js';
-import { authOptions } from '../../auth/[...nextauth]/route.js';
 import { emailService } from '../../../../lib/email-service.js';
 
 const db = new SupabaseClient();

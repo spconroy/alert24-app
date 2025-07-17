@@ -1,6 +1,8 @@
-import { auth } from '@/app/auth';
+import { auth } from '@/auth';
 import { ApiResponse, Validator } from '@/lib/api-utils';
-import { supabase } from '@/lib/db-supabase';
+import { SupabaseClient } from '@/lib/db-supabase';
+
+const db = new SupabaseClient();
 
 /**
  * GET /api/user/default-organization
@@ -13,7 +15,7 @@ export async function GET() {
       return ApiResponse.error('Authentication required', 401);
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await db.client
       .from('organization_members')
       .select(
         `
@@ -74,15 +76,12 @@ export async function POST(request) {
     const body = await request.json();
 
     // Validate input
-    const validation = Validator.validateRequired(body, ['organizationId']);
-    if (!validation.isValid) {
-      return ApiResponse.error(validation.message, 400);
-    }
+    Validator.required(['organizationId'], body);
 
     const { organizationId } = body;
 
     // Verify user is a member of this organization
-    const { data: membership, error: membershipError } = await supabase
+    const { data: membership, error: membershipError } = await db.client
       .from('organization_members')
       .select('id, role')
       .eq('user_id', session.user.id)
@@ -98,7 +97,7 @@ export async function POST(request) {
     }
 
     // First, remove default status from all user's organizations
-    const { error: removeError } = await supabase
+    const { error: removeError } = await db.client
       .from('organization_members')
       .update({
         is_default: false,
@@ -112,7 +111,7 @@ export async function POST(request) {
     }
 
     // Then set the specified organization as default
-    const { error: setError } = await supabase
+    const { error: setError } = await db.client
       .from('organization_members')
       .update({
         is_default: true,
@@ -127,7 +126,7 @@ export async function POST(request) {
     }
 
     // Fetch the updated organization details
-    const { data: orgData, error: orgError } = await supabase
+    const { data: orgData, error: orgError } = await db.client
       .from('organizations')
       .select('id, name, slug')
       .eq('id', organizationId)
@@ -165,7 +164,7 @@ export async function DELETE() {
     }
 
     // Remove default status from all user's organizations
-    const { error } = await supabase
+    const { error } = await db.client
       .from('organization_members')
       .update({
         is_default: false,

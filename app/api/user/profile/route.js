@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '../../auth/[...nextauth]/route';
+import { auth } from '@/auth';
 import { SupabaseClient } from '../../../../lib/db-supabase.js';
 
 const db = new SupabaseClient();
@@ -10,7 +9,7 @@ export const runtime = 'edge';
 export async function GET(request) {
   try {
     // Get session
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -38,7 +37,7 @@ export async function GET(request) {
 export async function PUT(request) {
   try {
     // Get session
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

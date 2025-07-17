@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
+import { auth } from '@/auth';
+
 import { SupabaseClient } from '../../../../../lib/db-supabase.js';
-import { authOptions } from '../../../auth/[...nextauth]/route.js';
 import { emailService } from '../../../../../lib/email-service.js';
 
 const db = new SupabaseClient();
@@ -18,7 +18,7 @@ export const runtime = 'edge';
 // GET - List pending invitations for an organization
 export async function GET(req, { params }) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -71,7 +71,7 @@ export async function GET(req, { params }) {
 // POST - Send new invitation
 export async function POST(req, { params }) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

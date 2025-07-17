@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { auth } from '@/auth';
 import { db } from '@/lib/db-supabase.js';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route.js';
 
 export const runtime = 'edge';
 
 export async function GET(req) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
