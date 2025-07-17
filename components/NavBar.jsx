@@ -16,16 +16,19 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Tooltip from '@mui/material/Tooltip';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
-import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useOrganization } from '@/contexts/OrganizationContext';
 
 export default function NavBar() {
-  const { data: session, status } = useSession();
   const pathname = usePathname();
-  const { selectedOrganization, organizations, loading, selectOrganization } =
-    useOrganization();
+  const {
+    selectedOrganization,
+    organizations,
+    loading,
+    selectOrganization,
+    session,
+  } = useOrganization();
 
   const [defaultOrganizationId, setDefaultOrganizationId] = useState(null);
   const [settingDefault, setSettingDefault] = useState(false);
@@ -253,7 +256,7 @@ export default function NavBar() {
 
         {/* User Info & Auth */}
         <Box display="flex" alignItems="center" gap={2}>
-          {status === 'loading' ? null : session ? (
+          {session ? (
             <Box display="flex" alignItems="center" gap={2}>
               <Box
                 display="flex"
@@ -294,7 +297,7 @@ export default function NavBar() {
                 color="secondary"
                 variant="outlined"
                 size="small"
-                onClick={() => signOut()}
+                onClick={() => (window.location.href = '/api/auth/signout')}
               >
                 Sign out
               </Button>
