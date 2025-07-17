@@ -30,7 +30,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import MonitoringLocationSelector from '@/components/MonitoringLocationSelector';
+// import MonitoringLocationSelector from '@/components/MonitoringLocationSelector'; // Temporarily disabled
 
 export default function CreateMonitoringCheckPage() {
   const router = useRouter();
@@ -373,7 +373,8 @@ export default function CreateMonitoringCheckPage() {
                     </FormControl>
                   </Grid>
 
-                  {/* Monitoring Locations */}
+                  {/* Monitoring Locations - TEMPORARILY HIDDEN */}
+                  {/* 
                   <Grid item xs={12}>
                     <MonitoringLocationSelector
                       selectedLocations={formData.monitoring_locations}
@@ -385,6 +386,7 @@ export default function CreateMonitoringCheckPage() {
                       helperText="Choose geographic locations to monitor from. Multiple locations provide better coverage and help detect regional issues."
                     />
                   </Grid>
+                  */}
 
                   {/* Target URL/Hostname */}
                   <Grid item xs={12}>

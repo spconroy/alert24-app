@@ -30,7 +30,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SaveIcon from '@mui/icons-material/Save';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useOrganization } from '@/contexts/OrganizationContext';
-import MonitoringLocationSelector from '@/components/MonitoringLocationSelector';
+// import MonitoringLocationSelector from '@/components/MonitoringLocationSelector'; // Unused - monitoring locations temporarily disabled
 
 export const runtime = 'edge';
 
