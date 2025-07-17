@@ -17,7 +17,7 @@ import {
   Grid,
   Autocomplete,
   FormHelperText,
-  Divider
+  Divider,
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -28,7 +28,7 @@ import { useSession } from 'next-auth/react';
 export default function CreateIncidentPage() {
   const router = useRouter();
   const { data: session } = useSession();
-  
+
   const [formData, setFormData] = useState({
     organization_id: '',
     title: '',
@@ -39,7 +39,7 @@ export default function CreateIncidentPage() {
     impact_description: '',
     assigned_to: '',
     escalation_policy_id: '',
-    tags: []
+    tags: [],
   });
 
   const [organizations, setOrganizations] = useState([]);
@@ -72,12 +72,12 @@ export default function CreateIncidentPage() {
       if (response.ok) {
         const data = await response.json();
         setOrganizations(data.organizations || []);
-        
+
         // Auto-select if only one organization
         if (data.organizations?.length === 1) {
           setFormData(prev => ({
             ...prev,
-            organization_id: data.organizations[0].id
+            organization_id: data.organizations[0].id,
           }));
         }
       }
@@ -86,10 +86,12 @@ export default function CreateIncidentPage() {
     }
   };
 
-  const fetchOrganizationData = async (orgId) => {
+  const fetchOrganizationData = async orgId => {
     try {
       // Fetch escalation policies
-      const policiesResponse = await fetch(`/api/escalation-policies?organization_id=${orgId}&active_only=true`);
+      const policiesResponse = await fetch(
+        `/api/escalation-policies?organization_id=${orgId}&active_only=true`
+      );
       if (policiesResponse.ok) {
         const policiesData = await policiesResponse.json();
         setEscalationPolicies(policiesData.escalation_policies || []);
@@ -103,12 +105,13 @@ export default function CreateIncidentPage() {
       }
 
       // Fetch services (status pages for now)
-      const servicesResponse = await fetch(`/api/services?organization_id=${orgId}`);
+      const servicesResponse = await fetch(
+        `/api/services?organization_id=${orgId}`
+      );
       if (servicesResponse.ok) {
         const servicesData = await servicesResponse.json();
         setServices(servicesData.services || []);
       }
-
     } catch (err) {
       console.error('Error fetching organization data:', err);
     }
@@ -116,18 +119,20 @@ export default function CreateIncidentPage() {
 
   const validateForm = () => {
     const errors = {};
-    
-    if (!formData.organization_id) errors.organization_id = 'Organization is required';
+
+    if (!formData.organization_id)
+      errors.organization_id = 'Organization is required';
     if (!formData.title.trim()) errors.title = 'Title is required';
-    if (!formData.description.trim()) errors.description = 'Description is required';
-    
+    if (!formData.description.trim())
+      errors.description = 'Description is required';
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       setError('Please fix the form errors before submitting');
       return;
@@ -137,11 +142,22 @@ export default function CreateIncidentPage() {
     setError(null);
 
     try {
+      // Map form data to match backend API expectations (camelCase)
       const submitData = {
-        ...formData,
-        affected_services: formData.affected_services.map(service => 
+        organizationId: formData.organization_id,
+        title: formData.title,
+        description: formData.description,
+        severity: formData.severity,
+        status: formData.status,
+        affectedServices: formData.affected_services.map(service =>
           typeof service === 'string' ? service : service.id
-        )
+        ),
+        impactDescription: formData.impact_description,
+        assignedTo: formData.assigned_to,
+        createdBy: session?.user?.id || session?.user?.email,
+        escalationPolicyId: formData.escalation_policy_id,
+        tags: formData.tags,
+        source: 'manual',
       };
 
       const response = await fetch('/api/incidents', {
@@ -159,12 +175,11 @@ export default function CreateIncidentPage() {
 
       const data = await response.json();
       setSuccess(true);
-      
+
       // Redirect to the new incident after a short delay
       setTimeout(() => {
         router.push(`/incidents/${data.incident.id}`);
       }, 2000);
-
     } catch (err) {
       console.error('Error creating incident:', err);
       setError(err.message);
@@ -176,14 +191,14 @@ export default function CreateIncidentPage() {
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
-    
+
     // Clear field error when user starts typing
     if (formErrors[field]) {
       setFormErrors(prev => ({
         ...prev,
-        [field]: ''
+        [field]: '',
       }));
     }
   };
@@ -192,20 +207,20 @@ export default function CreateIncidentPage() {
     if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
       setFormData(prev => ({
         ...prev,
-        tags: [...prev.tags, newTag.trim()]
+        tags: [...prev.tags, newTag.trim()],
       }));
       setNewTag('');
     }
   };
 
-  const handleRemoveTag = (tagToRemove) => {
+  const handleRemoveTag = tagToRemove => {
     setFormData(prev => ({
       ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
+      tags: prev.tags.filter(tag => tag !== tagToRemove),
     }));
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyPress = e => {
     if (e.key === 'Enter') {
       e.preventDefault();
       handleAddTag();
@@ -214,7 +229,12 @@ export default function CreateIncidentPage() {
 
   if (!session) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="400px"
+      >
         <Typography>Please sign in to create incidents.</Typography>
       </Box>
     );
@@ -266,16 +286,20 @@ export default function CreateIncidentPage() {
                   <Select
                     value={formData.organization_id}
                     label="Organization *"
-                    onChange={(e) => handleInputChange('organization_id', e.target.value)}
+                    onChange={e =>
+                      handleInputChange('organization_id', e.target.value)
+                    }
                   >
-                    {organizations.map((org) => (
+                    {organizations.map(org => (
                       <MenuItem key={org.id} value={org.id}>
                         {org.name}
                       </MenuItem>
                     ))}
                   </Select>
                   {formErrors.organization_id && (
-                    <FormHelperText>{formErrors.organization_id}</FormHelperText>
+                    <FormHelperText>
+                      {formErrors.organization_id}
+                    </FormHelperText>
                   )}
                 </FormControl>
               </Grid>
@@ -286,9 +310,12 @@ export default function CreateIncidentPage() {
                   fullWidth
                   label="Incident Title *"
                   value={formData.title}
-                  onChange={(e) => handleInputChange('title', e.target.value)}
+                  onChange={e => handleInputChange('title', e.target.value)}
                   error={!!formErrors.title}
-                  helperText={formErrors.title || 'A clear, concise description of the incident'}
+                  helperText={
+                    formErrors.title ||
+                    'A clear, concise description of the incident'
+                  }
                   placeholder="e.g., API service experiencing high latency"
                 />
               </Grid>
@@ -301,9 +328,14 @@ export default function CreateIncidentPage() {
                   rows={4}
                   label="Description *"
                   value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  onChange={e =>
+                    handleInputChange('description', e.target.value)
+                  }
                   error={!!formErrors.description}
-                  helperText={formErrors.description || 'Detailed description of the incident and its impact'}
+                  helperText={
+                    formErrors.description ||
+                    'Detailed description of the incident and its impact'
+                  }
                   placeholder="Describe the incident, when it started, symptoms, and any initial investigation findings..."
                 />
               </Grid>
@@ -315,7 +347,9 @@ export default function CreateIncidentPage() {
                   <Select
                     value={formData.severity}
                     label="Severity"
-                    onChange={(e) => handleInputChange('severity', e.target.value)}
+                    onChange={e =>
+                      handleInputChange('severity', e.target.value)
+                    }
                   >
                     <MenuItem value="low">Low</MenuItem>
                     <MenuItem value="medium">Medium</MenuItem>
@@ -323,10 +357,14 @@ export default function CreateIncidentPage() {
                     <MenuItem value="critical">Critical</MenuItem>
                   </Select>
                   <FormHelperText>
-                    {formData.severity === 'critical' && 'Service completely unavailable'}
-                    {formData.severity === 'high' && 'Major functionality impacted'}
-                    {formData.severity === 'medium' && 'Some functionality impacted'}
-                    {formData.severity === 'low' && 'Minor impact or cosmetic issue'}
+                    {formData.severity === 'critical' &&
+                      'Service completely unavailable'}
+                    {formData.severity === 'high' &&
+                      'Major functionality impacted'}
+                    {formData.severity === 'medium' &&
+                      'Some functionality impacted'}
+                    {formData.severity === 'low' &&
+                      'Minor impact or cosmetic issue'}
                   </FormHelperText>
                 </FormControl>
               </Grid>
@@ -337,7 +375,7 @@ export default function CreateIncidentPage() {
                   <Select
                     value={formData.status}
                     label="Status"
-                    onChange={(e) => handleInputChange('status', e.target.value)}
+                    onChange={e => handleInputChange('status', e.target.value)}
                   >
                     <MenuItem value="open">Open</MenuItem>
                     <MenuItem value="investigating">Investigating</MenuItem>
@@ -355,7 +393,9 @@ export default function CreateIncidentPage() {
                   rows={2}
                   label="Impact Description"
                   value={formData.impact_description}
-                  onChange={(e) => handleInputChange('impact_description', e.target.value)}
+                  onChange={e =>
+                    handleInputChange('impact_description', e.target.value)
+                  }
                   helperText="Describe the customer or business impact"
                   placeholder="e.g., Users unable to login, checkout process failing for 25% of customers"
                 />
@@ -375,10 +415,12 @@ export default function CreateIncidentPage() {
                   <Select
                     value={formData.assigned_to}
                     label="Assign To"
-                    onChange={(e) => handleInputChange('assigned_to', e.target.value)}
+                    onChange={e =>
+                      handleInputChange('assigned_to', e.target.value)
+                    }
                   >
                     <MenuItem value="">Unassigned</MenuItem>
-                    {organizationMembers.map((member) => (
+                    {organizationMembers.map(member => (
                       <MenuItem key={member.id} value={member.id}>
                         {member.name || member.email}
                       </MenuItem>
@@ -394,10 +436,12 @@ export default function CreateIncidentPage() {
                   <Select
                     value={formData.escalation_policy_id}
                     label="Escalation Policy"
-                    onChange={(e) => handleInputChange('escalation_policy_id', e.target.value)}
+                    onChange={e =>
+                      handleInputChange('escalation_policy_id', e.target.value)
+                    }
                   >
                     <MenuItem value="">No escalation policy</MenuItem>
-                    {escalationPolicies.map((policy) => (
+                    {escalationPolicies.map(policy => (
                       <MenuItem key={policy.id} value={policy.id}>
                         {policy.name}
                       </MenuItem>
@@ -411,10 +455,12 @@ export default function CreateIncidentPage() {
                 <Autocomplete
                   multiple
                   options={services}
-                  getOptionLabel={(option) => option.name || option}
+                  getOptionLabel={option => option.name || option}
                   value={formData.affected_services}
-                  onChange={(e, newValue) => handleInputChange('affected_services', newValue)}
-                  renderInput={(params) => (
+                  onChange={(e, newValue) =>
+                    handleInputChange('affected_services', newValue)
+                  }
+                  renderInput={params => (
                     <TextField
                       {...params}
                       label="Affected Services"
@@ -441,21 +487,26 @@ export default function CreateIncidentPage() {
                     fullWidth
                     label="Add Tags"
                     value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
+                    onChange={e => setNewTag(e.target.value)}
                     onKeyPress={handleKeyPress}
                     helperText="Press Enter to add tags for categorization"
                     InputProps={{
                       endAdornment: (
-                        <Button onClick={handleAddTag} disabled={!newTag.trim()}>
+                        <Button
+                          onClick={handleAddTag}
+                          disabled={!newTag.trim()}
+                        >
                           Add
                         </Button>
-                      )
+                      ),
                     }}
                   />
-                  
+
                   {formData.tags.length > 0 && (
-                    <Box sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                      {formData.tags.map((tag) => (
+                    <Box
+                      sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: 1 }}
+                    >
+                      {formData.tags.map(tag => (
                         <Chip
                           key={tag}
                           label={tag}
@@ -471,7 +522,12 @@ export default function CreateIncidentPage() {
 
               {/* Submit Buttons */}
               <Grid item xs={12}>
-                <Box display="flex" gap={2} justifyContent="flex-end" sx={{ mt: 2 }}>
+                <Box
+                  display="flex"
+                  gap={2}
+                  justifyContent="flex-end"
+                  sx={{ mt: 2 }}
+                >
                   <Button
                     component={Link}
                     href="/incidents"
@@ -483,7 +539,9 @@ export default function CreateIncidentPage() {
                   <Button
                     type="submit"
                     variant="contained"
-                    startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />}
+                    startIcon={
+                      loading ? <CircularProgress size={20} /> : <SaveIcon />
+                    }
                     disabled={loading}
                     color="error"
                   >
@@ -497,4 +555,4 @@ export default function CreateIncidentPage() {
       </Card>
     </Box>
   );
-} 
+}
