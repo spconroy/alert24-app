@@ -23,7 +23,7 @@ export async function GET(request) {
         .select('*')
         .eq('status_page_id', statusPageId)
         .is('deleted_at', null)
-        .not('name', 'like', '[MONITORING]%')
+        .not('name', 'ilike', '[[]MONITORING]%')
         .order('sort_order', { ascending: true })
         .order('name', { ascending: true });
 
@@ -45,7 +45,7 @@ export async function GET(request) {
         )
         .eq('status_pages.organization_id', organizationId)
         .is('deleted_at', null)
-        .not('name', 'like', '[MONITORING]%')
+        .not('name', 'ilike', '[[]MONITORING]%')
         .order('sort_order', { ascending: true })
         .order('name', { ascending: true });
 

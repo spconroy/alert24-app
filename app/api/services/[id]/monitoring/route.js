@@ -222,7 +222,7 @@ export async function PUT(request, { params }) {
       const { data: monitoringChecks, error } = await db.client
         .from('services')
         .select('*')
-        .like('name', '[MONITORING]%');
+        .ilike('name', '[[]MONITORING]%');
 
       if (error) throw error;
 
@@ -257,7 +257,7 @@ export async function PUT(request, { params }) {
         .from('services')
         .select('*')
         .eq('id', monitoringCheckId)
-        .like('name', '[MONITORING]%')
+        .ilike('name', '[[]MONITORING]%')
         .single();
 
       if (fetchError) {

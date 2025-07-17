@@ -45,7 +45,7 @@ export const GET = withErrorHandler(async request => {
       `
       )
       .eq('status_pages.organization_id', organizationId)
-      .not('name', 'like', '[MONITORING]%')
+      .not('name', 'ilike', '[[]MONITORING]%')
       .is('deleted_at', null)
       .order('name');
 
@@ -153,7 +153,7 @@ export const POST = withErrorHandler(async request => {
       .from('services')
       .select('*')
       .eq('id', monitoringCheckId)
-      .like('name', '[MONITORING]%')
+      .ilike('name', '[[]MONITORING]%')
       .single();
 
     if (fetchError) throw fetchError;
@@ -226,7 +226,7 @@ export const DELETE = withErrorHandler(async request => {
       .from('services')
       .select('*')
       .eq('id', monitoringCheckId)
-      .like('name', '[MONITORING]%')
+      .ilike('name', '[[]MONITORING]%')
       .single();
 
     if (fetchError) throw fetchError;

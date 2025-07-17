@@ -20,7 +20,7 @@ async function updateLinkedServiceStatus(check, result) {
       .from('services')
       .select('*')
       .eq('id', linkedServiceId)
-      .not('name', 'like', '[MONITORING]%')
+      .not('name', 'ilike', '[[]MONITORING]%')
       .single();
 
     if (fetchError || !linkedService) {

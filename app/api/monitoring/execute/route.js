@@ -267,7 +267,7 @@ async function updateMonitoringCheckStatus(checkId, result) {
       .from('services')
       .select('*')
       .eq('id', checkId)
-      .like('name', '[MONITORING]%')
+      .ilike('name', '[[]MONITORING]%')
       .single();
 
     if (fetchError || !service) {
@@ -337,7 +337,7 @@ async function updateLinkedServiceStatus(checkData, result) {
       .from('services')
       .select('*')
       .eq('id', linkedServiceId)
-      .not('name', 'like', '[MONITORING]%')
+      .not('name', 'ilike', '[[]MONITORING]%')
       .single();
 
     if (fetchError || !linkedService) {

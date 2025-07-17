@@ -33,7 +33,7 @@ async function getStatusPageData(slug) {
       .select('*')
       .eq('status_page_id', statusPages.id)
       .is('deleted_at', null)
-      .not('name', 'like', '[MONITORING]%')
+      .not('name', 'ilike', '[[]MONITORING]%')
       .order('sort_order', { ascending: true })
       .order('name', { ascending: true });
 
