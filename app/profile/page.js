@@ -23,7 +23,7 @@ import {
   Switch,
   FormControlLabel,
   Chip,
-  CircularProgress
+  CircularProgress,
 } from '@mui/material';
 import {
   Person as PersonIcon,
@@ -32,13 +32,13 @@ import {
   NotificationsActive as NotificationIcon,
   Security as SecurityIcon,
   Save as SaveIcon,
-  Edit as EditIcon
+  Edit as EditIcon,
 } from '@mui/icons-material';
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  
+
   const [profileData, setProfileData] = useState({
     name: '',
     email: '',
@@ -48,10 +48,10 @@ export default function ProfilePage() {
       email_incidents: true,
       email_escalations: true,
       sms_critical: false,
-      sms_escalations: false
-    }
+      sms_escalations: false,
+    },
   });
-  
+
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
@@ -63,7 +63,7 @@ export default function ProfilePage() {
       router.push('/api/auth/signin');
       return;
     }
-    
+
     if (session?.user) {
       fetchUserProfile();
     }
@@ -75,17 +75,19 @@ export default function ProfilePage() {
       const response = await fetch('/api/user/profile');
       if (response.ok) {
         const data = await response.json();
+        const user = data.user || data; // Handle both response formats
         setProfileData({
-          name: data.name || session.user.name || '',
-          email: data.email || session.user.email || '',
-          phone: data.phone || '',
-          timezone: data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
-          notification_preferences: data.notification_preferences || {
+          name: user.name || session.user.name || '',
+          email: user.email || session.user.email || '',
+          phone: user.phone_number || user.phone || '',
+          timezone:
+            user.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+          notification_preferences: user.notification_preferences || {
             email_incidents: true,
             email_escalations: true,
             sms_critical: false,
-            sms_escalations: false
-          }
+            sms_escalations: false,
+          },
         });
       }
     } catch (err) {
@@ -105,7 +107,7 @@ export default function ProfilePage() {
       const response = await fetch('/api/user/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(profileData)
+        body: JSON.stringify(profileData),
       });
 
       if (!response.ok) {
@@ -115,10 +117,9 @@ export default function ProfilePage() {
 
       setSuccess('Profile updated successfully!');
       setIsEditing(false);
-      
+
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(''), 3000);
-
     } catch (err) {
       setError(err.message);
     } finally {
@@ -129,7 +130,7 @@ export default function ProfilePage() {
   const handleInputChange = (field, value) => {
     setProfileData(prev => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
@@ -138,12 +139,12 @@ export default function ProfilePage() {
       ...prev,
       notification_preferences: {
         ...prev.notification_preferences,
-        [field]: value
-      }
+        [field]: value,
+      },
     }));
   };
 
-  const validatePhone = (phone) => {
+  const validatePhone = phone => {
     // Basic phone validation - adjust as needed
     const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
     return !phone || phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''));
@@ -152,7 +153,12 @@ export default function ProfilePage() {
   if (status === 'loading' || loading) {
     return (
       <Container maxWidth="md" sx={{ py: 4 }}>
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          minHeight="400px"
+        >
           <CircularProgress />
         </Box>
       </Container>
@@ -177,10 +183,14 @@ export default function ProfilePage() {
 
       {/* Alerts */}
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
       )}
       {success && (
-        <Alert severity="success" sx={{ mb: 3 }}>{success}</Alert>
+        <Alert severity="success" sx={{ mb: 3 }}>
+          {success}
+        </Alert>
       )}
 
       <Grid container spacing={3}>
@@ -188,18 +198,32 @@ export default function ProfilePage() {
         <Grid item xs={12} md={8}>
           <Card>
             <CardContent>
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                mb={3}
+              >
+                <Typography
+                  variant="h6"
+                  sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                >
                   <PersonIcon color="primary" />
                   Personal Information
                 </Typography>
                 <Button
                   startIcon={isEditing ? <SaveIcon /> : <EditIcon />}
-                  variant={isEditing ? "contained" : "outlined"}
+                  variant={isEditing ? 'contained' : 'outlined'}
                   onClick={isEditing ? handleSave : () => setIsEditing(true)}
                   disabled={saveLoading}
                 >
-                  {saveLoading ? <CircularProgress size={20} /> : (isEditing ? 'Save Changes' : 'Edit Profile')}
+                  {saveLoading ? (
+                    <CircularProgress size={20} />
+                  ) : isEditing ? (
+                    'Save Changes'
+                  ) : (
+                    'Edit Profile'
+                  )}
                 </Button>
               </Box>
 
@@ -209,24 +233,28 @@ export default function ProfilePage() {
                     fullWidth
                     label="Full Name"
                     value={profileData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    onChange={e => handleInputChange('name', e.target.value)}
                     disabled={!isEditing}
                     InputProps={{
-                      startAdornment: <PersonIcon sx={{ mr: 1, color: 'action.active' }} />
+                      startAdornment: (
+                        <PersonIcon sx={{ mr: 1, color: 'action.active' }} />
+                      ),
                     }}
                   />
                 </Grid>
-                
+
                 <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
                     label="Email Address"
                     type="email"
                     value={profileData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    onChange={e => handleInputChange('email', e.target.value)}
                     disabled={!isEditing}
                     InputProps={{
-                      startAdornment: <EmailIcon sx={{ mr: 1, color: 'action.active' }} />
+                      startAdornment: (
+                        <EmailIcon sx={{ mr: 1, color: 'action.active' }} />
+                      ),
                     }}
                   />
                 </Grid>
@@ -236,13 +264,19 @@ export default function ProfilePage() {
                     fullWidth
                     label="Phone Number"
                     value={profileData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    onChange={e => handleInputChange('phone', e.target.value)}
                     disabled={!isEditing}
                     placeholder="+1 (555) 123-4567"
                     error={!validatePhone(profileData.phone)}
-                    helperText={!validatePhone(profileData.phone) ? 'Please enter a valid phone number' : 'For SMS notifications and calls'}
+                    helperText={
+                      !validatePhone(profileData.phone)
+                        ? 'Please enter a valid phone number'
+                        : 'For SMS notifications and calls'
+                    }
                     InputProps={{
-                      startAdornment: <PhoneIcon sx={{ mr: 1, color: 'action.active' }} />
+                      startAdornment: (
+                        <PhoneIcon sx={{ mr: 1, color: 'action.active' }} />
+                      ),
                     }}
                   />
                 </Grid>
@@ -253,12 +287,22 @@ export default function ProfilePage() {
                     <Select
                       value={profileData.timezone}
                       label="Timezone"
-                      onChange={(e) => handleInputChange('timezone', e.target.value)}
+                      onChange={e =>
+                        handleInputChange('timezone', e.target.value)
+                      }
                     >
-                      <MenuItem value="America/New_York">Eastern Time (ET)</MenuItem>
-                      <MenuItem value="America/Chicago">Central Time (CT)</MenuItem>
-                      <MenuItem value="America/Denver">Mountain Time (MT)</MenuItem>
-                      <MenuItem value="America/Los_Angeles">Pacific Time (PT)</MenuItem>
+                      <MenuItem value="America/New_York">
+                        Eastern Time (ET)
+                      </MenuItem>
+                      <MenuItem value="America/Chicago">
+                        Central Time (CT)
+                      </MenuItem>
+                      <MenuItem value="America/Denver">
+                        Mountain Time (MT)
+                      </MenuItem>
+                      <MenuItem value="America/Los_Angeles">
+                        Pacific Time (PT)
+                      </MenuItem>
                       <MenuItem value="UTC">UTC</MenuItem>
                       <MenuItem value="Europe/London">London (GMT)</MenuItem>
                       <MenuItem value="Europe/Berlin">Berlin (CET)</MenuItem>
@@ -283,10 +327,10 @@ export default function ProfilePage() {
               <Typography variant="h6" gutterBottom>
                 {profileData.name || 'User'}
               </Typography>
-              <Chip 
-                label="Account Active" 
-                color="success" 
-                size="small" 
+              <Chip
+                label="Account Active"
+                color="success"
+                size="small"
                 sx={{ mb: 2 }}
               />
               <Typography variant="body2" color="text.secondary">
@@ -300,12 +344,17 @@ export default function ProfilePage() {
         <Grid item xs={12}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography
+                variant="h6"
+                gutterBottom
+                sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+              >
                 <NotificationIcon color="primary" />
                 Notification Preferences
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Choose how you want to be notified about incidents and escalations
+                Choose how you want to be notified about incidents and
+                escalations
               </Typography>
 
               <Grid container spacing={2}>
@@ -313,21 +362,35 @@ export default function ProfilePage() {
                   <FormControlLabel
                     control={
                       <Switch
-                        checked={profileData.notification_preferences.email_incidents}
-                        onChange={(e) => handleNotificationChange('email_incidents', e.target.checked)}
+                        checked={
+                          profileData.notification_preferences.email_incidents
+                        }
+                        onChange={e =>
+                          handleNotificationChange(
+                            'email_incidents',
+                            e.target.checked
+                          )
+                        }
                         disabled={!isEditing}
                       />
                     }
                     label="Email - New Incidents"
                   />
                 </Grid>
-                
+
                 <Grid item xs={12} sm={6}>
                   <FormControlLabel
                     control={
                       <Switch
-                        checked={profileData.notification_preferences.email_escalations}
-                        onChange={(e) => handleNotificationChange('email_escalations', e.target.checked)}
+                        checked={
+                          profileData.notification_preferences.email_escalations
+                        }
+                        onChange={e =>
+                          handleNotificationChange(
+                            'email_escalations',
+                            e.target.checked
+                          )
+                        }
                         disabled={!isEditing}
                       />
                     }
@@ -339,15 +402,26 @@ export default function ProfilePage() {
                   <FormControlLabel
                     control={
                       <Switch
-                        checked={profileData.notification_preferences.sms_critical}
-                        onChange={(e) => handleNotificationChange('sms_critical', e.target.checked)}
+                        checked={
+                          profileData.notification_preferences.sms_critical
+                        }
+                        onChange={e =>
+                          handleNotificationChange(
+                            'sms_critical',
+                            e.target.checked
+                          )
+                        }
                         disabled={!isEditing || !profileData.phone}
                       />
                     }
                     label="SMS - Critical Incidents"
                   />
                   {!profileData.phone && (
-                    <Typography variant="caption" color="text.secondary" display="block">
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                    >
                       Add phone number to enable SMS notifications
                     </Typography>
                   )}
@@ -357,15 +431,26 @@ export default function ProfilePage() {
                   <FormControlLabel
                     control={
                       <Switch
-                        checked={profileData.notification_preferences.sms_escalations}
-                        onChange={(e) => handleNotificationChange('sms_escalations', e.target.checked)}
+                        checked={
+                          profileData.notification_preferences.sms_escalations
+                        }
+                        onChange={e =>
+                          handleNotificationChange(
+                            'sms_escalations',
+                            e.target.checked
+                          )
+                        }
                         disabled={!isEditing || !profileData.phone}
                       />
                     }
                     label="SMS - Escalations"
                   />
                   {!profileData.phone && (
-                    <Typography variant="caption" color="text.secondary" display="block">
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                    >
                       Add phone number to enable SMS notifications
                     </Typography>
                   )}
@@ -379,20 +464,30 @@ export default function ProfilePage() {
         <Grid item xs={12}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography
+                variant="h6"
+                gutterBottom
+                sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+              >
                 <SecurityIcon color="primary" />
                 Security & Account
               </Typography>
-              
+
               <Box sx={{ mt: 2 }}>
                 <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Your account is secured with Google OAuth. To change your password or manage additional security settings, 
-                  please visit your Google Account settings.
+                  Your account is secured with Google OAuth. To change your
+                  password or manage additional security settings, please visit
+                  your Google Account settings.
                 </Typography>
-                
+
                 <Button
                   variant="outlined"
-                  onClick={() => window.open('https://myaccount.google.com/security', '_blank')}
+                  onClick={() =>
+                    window.open(
+                      'https://myaccount.google.com/security',
+                      '_blank'
+                    )
+                  }
                   sx={{ mt: 2 }}
                 >
                   Manage Google Account Security
@@ -404,4 +499,4 @@ export default function ProfilePage() {
       </Grid>
     </Container>
   );
-} 
+}

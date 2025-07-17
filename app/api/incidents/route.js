@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 import { SupabaseClient } from '../../../lib/db-supabase.js';
+import { authOptions } from '../auth/[...nextauth]/route.js';
 
 const db = new SupabaseClient();
 
@@ -7,21 +9,59 @@ export const runtime = 'edge';
 
 export async function GET(request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const organizationId = searchParams.get('organizationId');
-    const status = searchParams.get('status');
-
-    if (organizationId) {
-      const incidents = await db.incidents.findByOrganizationId(
-        organizationId,
-        { status }
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
       );
-      return NextResponse.json({ incidents });
     }
 
-    // Get all incidents (with proper filtering)
-    const incidents = await db.incidents.findAll({ status });
-    return NextResponse.json({ incidents });
+    const { searchParams } = new URL(request.url);
+    const organizationId = searchParams.get('organization_id');
+    const status = searchParams.get('status');
+    const limit = parseInt(searchParams.get('limit')) || 25;
+    const offset = parseInt(searchParams.get('offset')) || 0;
+
+    // Get user
+    const user = await db.getUserByEmail(session.user.email);
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    if (organizationId) {
+      // Verify user has access to this organization
+      const membership = await db.getOrganizationMember(
+        organizationId,
+        user.id
+      );
+      if (!membership) {
+        return NextResponse.json(
+          { error: 'Access denied - not a member of this organization' },
+          { status: 403 }
+        );
+      }
+
+      const incidents = await db.getIncidentsByOrganization(organizationId);
+      // Filter by status if provided
+      const filteredIncidents = status
+        ? incidents.filter(incident => incident.status === status)
+        : incidents;
+
+      return NextResponse.json({
+        success: true,
+        incidents: filteredIncidents.slice(offset, offset + limit),
+        total: filteredIncidents.length,
+      });
+    }
+
+    // Return empty array if no organization specified
+    return NextResponse.json({
+      success: true,
+      incidents: [],
+      total: 0,
+      message: 'Organization ID required',
+    });
   } catch (error) {
     console.error('Error fetching incidents:', error);
     return NextResponse.json(
@@ -54,8 +94,8 @@ export async function POST(request) {
       );
     }
 
-    // Create incident
-    const incident = await db.incidents.create({
+    // Create incident data object
+    const incidentData = {
       organization_id: organizationId,
       title,
       description,
@@ -66,9 +106,19 @@ export async function POST(request) {
       assigned_to: assignedTo,
       created_by: createdBy,
       source,
-    });
+    };
 
-    return NextResponse.json({ incident }, { status: 201 });
+    // Create the incident in the database
+    const incident = await db.createIncident(incidentData);
+
+    return NextResponse.json(
+      {
+        success: true,
+        incident,
+        message: 'Incident created successfully',
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Error creating incident:', error);
     return NextResponse.json(
@@ -118,8 +168,14 @@ export async function PUT(request) {
       updateData.acknowledged_at = acknowledgedAt;
     }
 
-    const incident = await db.incidents.update(id, updateData);
-    return NextResponse.json({ incident });
+    // Update the incident in the database
+    const incident = await db.updateIncident(id, updateData);
+
+    return NextResponse.json({
+      success: true,
+      incident,
+      message: 'Incident updated successfully',
+    });
   } catch (error) {
     console.error('Error updating incident:', error);
     return NextResponse.json(
@@ -141,8 +197,13 @@ export async function DELETE(request) {
       );
     }
 
-    await db.incidents.delete(id);
-    return NextResponse.json({ success: true });
+    // Delete the incident from the database
+    await db.deleteIncident(id);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Incident deleted successfully',
+    });
   } catch (error) {
     console.error('Error deleting incident:', error);
     return NextResponse.json(

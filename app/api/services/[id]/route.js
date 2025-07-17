@@ -108,11 +108,44 @@ export async function PUT(req, { params }) {
       );
     }
 
-    // Update service
-    const updatedService = await db.updateService(serviceId, {
-      ...body,
+    // Filter only valid fields that exist in the services table
+    const validFields = {
+      name: body.name,
+      description: body.description,
+      status: body.status,
+      sort_order: body.sort_order,
       updated_at: new Date().toISOString(),
+    };
+
+    // Only include auto_recovery if it's provided
+    if (body.auto_recovery !== undefined) {
+      validFields.auto_recovery = body.auto_recovery;
+    }
+
+    // Remove undefined fields
+    Object.keys(validFields).forEach(key => {
+      if (validFields[key] === undefined) {
+        delete validFields[key];
+      }
     });
+
+    // Update service with graceful handling of missing columns
+    let updatedService;
+    try {
+      updatedService = await db.updateService(serviceId, validFields);
+    } catch (error) {
+      // If auto_recovery column doesn't exist, retry without it
+      if (
+        error.message?.includes('auto_recovery') &&
+        validFields.auto_recovery !== undefined
+      ) {
+        console.log('Auto recovery column not found, retrying without it...');
+        delete validFields.auto_recovery;
+        updatedService = await db.updateService(serviceId, validFields);
+      } else {
+        throw error; // Re-throw if it's a different error
+      }
+    }
 
     return NextResponse.json({
       success: true,

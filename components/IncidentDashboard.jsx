@@ -30,7 +30,12 @@ import { useOrganization } from '@/contexts/OrganizationContext';
 
 export default function IncidentDashboard() {
   const [incidents, setIncidents] = useState([]);
-  const [monitoringStats, setMonitoringStats] = useState({});
+  const [monitoringStats, setMonitoringStats] = useState({
+    total: 0,
+    up: 0,
+    down: 0,
+    warning: 0,
+  });
   const [onCallInfo, setOnCallInfo] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -72,14 +77,23 @@ export default function IncidentDashboard() {
         const monitoringData = await monitoringResponse.json();
         const checks = monitoringData.monitoring_checks || [];
 
-        // Calculate monitoring statistics
+        // Calculate monitoring statistics with safe defaults
         const stats = {
-          total: checks.length,
-          up: checks.filter(c => c.current_status === 'up').length,
-          down: checks.filter(c => c.current_status === 'down').length,
-          warning: checks.filter(c => c.current_status === 'warning').length,
+          total: checks.length || 0,
+          up: checks.filter(c => c?.current_status === 'up').length || 0,
+          down: checks.filter(c => c?.current_status === 'down').length || 0,
+          warning:
+            checks.filter(c => c?.current_status === 'warning').length || 0,
         };
         setMonitoringStats(stats);
+      } else {
+        // Set default stats if API call fails
+        setMonitoringStats({
+          total: 0,
+          up: 0,
+          down: 0,
+          warning: 0,
+        });
       }
 
       // Fetch on-call info
@@ -140,8 +154,8 @@ export default function IncidentDashboard() {
   };
 
   const getMonitoringStatusColor = () => {
-    if (monitoringStats.down > 0) return 'error';
-    if (monitoringStats.warning > 0) return 'warning';
+    if ((monitoringStats.down || 0) > 0) return 'error';
+    if ((monitoringStats.warning || 0) > 0) return 'warning';
     return 'success';
   };
 
@@ -149,7 +163,8 @@ export default function IncidentDashboard() {
     const activeIncidents = incidents.filter(
       i => i.status !== 'resolved'
     ).length;
-    const monitoringIssues = monitoringStats.down + monitoringStats.warning;
+    const monitoringIssues =
+      (monitoringStats.down || 0) + (monitoringStats.warning || 0);
 
     if (activeIncidents > 0 && monitoringIssues > 0) {
       return { status: 'Outage', color: 'error' };
@@ -278,7 +293,9 @@ export default function IncidentDashboard() {
               </Typography>
               <Box display="flex" alignItems="center" gap={1}>
                 <Badge
-                  badgeContent={monitoringStats.down + monitoringStats.warning}
+                  badgeContent={
+                    (monitoringStats.down || 0) + (monitoringStats.warning || 0)
+                  }
                   color={getMonitoringStatusColor()}
                 >
                   <MonitorIcon color="action" />

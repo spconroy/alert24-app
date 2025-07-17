@@ -162,14 +162,15 @@ export default function MonitoringPage() {
     return nextCheck.toLocaleString();
   };
 
-  // Calculate stats
+  // Calculate stats with safe defaults
   const stats = {
-    total: monitoringChecks.length,
-    up: monitoringChecks.filter(c => c.current_status === 'up').length,
-    down: monitoringChecks.filter(c => c.current_status === 'down').length,
-    warning: monitoringChecks.filter(c => c.current_status === 'warning')
-      .length,
-    inactive: monitoringChecks.filter(c => !c.is_active).length,
+    total: monitoringChecks.length || 0,
+    up: monitoringChecks.filter(c => c?.current_status === 'up').length || 0,
+    down:
+      monitoringChecks.filter(c => c?.current_status === 'down').length || 0,
+    warning:
+      monitoringChecks.filter(c => c?.current_status === 'warning').length || 0,
+    inactive: monitoringChecks.filter(c => !c?.is_active).length || 0,
   };
 
   if (!session) {
