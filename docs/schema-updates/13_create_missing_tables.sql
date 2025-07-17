@@ -1,27 +1,69 @@
--- Create missing tables for Alert24 app
+-- Create missing tables for Alert24 app - SAFE VERSION
 -- These tables are referenced in the code but don't exist in the database
 
--- Service Status History Table
--- Tracks historical status changes for services (needed for timeline data on status pages)
-CREATE TABLE IF NOT EXISTS public.service_status_history (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    service_id UUID NOT NULL REFERENCES public.services(id) ON DELETE CASCADE,
-    status VARCHAR(50) NOT NULL DEFAULT 'operational',
-    status_message TEXT,
-    response_time_ms INTEGER,
-    error_message TEXT,
-    started_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    ended_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+-- Step 1: Handle Service Status History Table safely
+DO $$ 
+BEGIN
+    -- Check if service_status_history table exists
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'service_status_history'
+    ) THEN
+        -- Create the table if it doesn't exist
+        CREATE TABLE public.service_status_history (
+            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+            service_id UUID NOT NULL REFERENCES public.services(id) ON DELETE CASCADE,
+            status VARCHAR(50) NOT NULL DEFAULT 'operational',
+            status_message TEXT,
+            response_time_ms INTEGER,
+            error_message TEXT,
+            started_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            ended_at TIMESTAMP WITH TIME ZONE,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        );
+        
+        -- Add indexes for performance  
+        CREATE INDEX idx_service_status_history_service_id ON public.service_status_history(service_id);
+        CREATE INDEX idx_service_status_history_started_at ON public.service_status_history(started_at DESC);
+        CREATE INDEX idx_service_status_history_service_status ON public.service_status_history(service_id, status);
+        
+        RAISE NOTICE 'Created service_status_history table with started_at column';
+    ELSE
+        -- Table exists, check if it has the correct columns
+        IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_schema = 'public' 
+            AND table_name = 'service_status_history' 
+            AND column_name = 'started_at'
+        ) THEN
+            -- Add the started_at column if missing
+            ALTER TABLE public.service_status_history ADD COLUMN started_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW();
+            RAISE NOTICE 'Added started_at column to existing service_status_history table';
+        END IF;
+        
+        IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_schema = 'public' 
+            AND table_name = 'service_status_history' 
+            AND column_name = 'ended_at'
+        ) THEN
+            -- Add the ended_at column if missing
+            ALTER TABLE public.service_status_history ADD COLUMN ended_at TIMESTAMP WITH TIME ZONE;
+            RAISE NOTICE 'Added ended_at column to existing service_status_history table';
+        END IF;
+        
+        -- Ensure indexes exist
+        CREATE INDEX IF NOT EXISTS idx_service_status_history_service_id ON public.service_status_history(service_id);
+        CREATE INDEX IF NOT EXISTS idx_service_status_history_started_at ON public.service_status_history(started_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_service_status_history_service_status ON public.service_status_history(service_id, status);
+        
+        RAISE NOTICE 'Updated existing service_status_history table schema';
+    END IF;
+END $$;
 
--- Add indexes for performance  
-CREATE INDEX IF NOT EXISTS idx_service_status_history_service_id ON public.service_status_history(service_id);
-CREATE INDEX IF NOT EXISTS idx_service_status_history_started_at ON public.service_status_history(started_at DESC);
-CREATE INDEX IF NOT EXISTS idx_service_status_history_service_status ON public.service_status_history(service_id, status);
-
--- Add is_active column to on_call_schedules if it doesn't exist
+-- Step 2: Add is_active column to on_call_schedules if it doesn't exist
 DO $$ 
 BEGIN
     IF NOT EXISTS (
@@ -31,10 +73,11 @@ BEGIN
         AND column_name = 'is_active'
     ) THEN
         ALTER TABLE public.on_call_schedules ADD COLUMN is_active BOOLEAN DEFAULT true NOT NULL;
+        RAISE NOTICE 'Added is_active column to on_call_schedules table';
     END IF;
 END $$;
 
--- Add organization_id to services table if it doesn't exist (for direct organization linking)
+-- Step 3: Add organization_id to services table if it doesn't exist
 DO $$ 
 BEGIN
     IF NOT EXISTS (
@@ -49,14 +92,15 @@ BEGIN
             FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
         -- Add index
         CREATE INDEX idx_services_organization_id ON public.services(organization_id);
+        RAISE NOTICE 'Added organization_id column to services table';
     END IF;
 END $$;
 
--- Check Results Table (for monitoring check execution results)
+-- Step 4: Create Check Results Table
 CREATE TABLE IF NOT EXISTS public.check_results (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    monitoring_check_id UUID NOT NULL REFERENCES public.services(id) ON DELETE CASCADE, -- References monitoring check (stored as service)
-    service_id UUID REFERENCES public.services(id) ON DELETE CASCADE, -- The service being monitored
+    monitoring_check_id UUID, -- Will be updated later to reference monitoring_checks table
+    service_id UUID REFERENCES public.services(id) ON DELETE CASCADE,
     status VARCHAR(50) NOT NULL DEFAULT 'unknown',
     response_time_ms INTEGER,
     status_code INTEGER,
@@ -71,7 +115,7 @@ CREATE INDEX IF NOT EXISTS idx_check_results_monitoring_check_id ON public.check
 CREATE INDEX IF NOT EXISTS idx_check_results_checked_at ON public.check_results(checked_at DESC);
 CREATE INDEX IF NOT EXISTS idx_check_results_status ON public.check_results(status);
 
--- Monitoring Locations Table (referenced in code but missing)
+-- Step 5: Create Monitoring Locations Table
 CREATE TABLE IF NOT EXISTS public.monitoring_locations (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -84,7 +128,7 @@ CREATE TABLE IF NOT EXISTS public.monitoring_locations (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Add default monitoring locations
+-- Add default monitoring locations (ignore conflicts)
 INSERT INTO public.monitoring_locations (id, name, region, country_code, city, is_active, endpoint_url) 
 VALUES 
     ('00000000-0000-0000-0000-000000000001', 'US East (Virginia)', 'us-east-1', 'US', 'Virginia', true, 'https://monitoring-us-east.alert24.app'),
@@ -93,60 +137,110 @@ VALUES
     ('00000000-0000-0000-0000-000000000004', 'Asia Pacific (Singapore)', 'ap-southeast-1', 'SG', 'Singapore', true, 'https://monitoring-ap.alert24.app')
 ON CONFLICT (id) DO NOTHING;
 
--- Add RLS policies for new tables
-ALTER TABLE public.service_status_history ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.check_results ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.monitoring_locations ENABLE ROW LEVEL SECURITY;
+-- Step 6: Enable RLS (only if tables were created)
+DO $$ 
+BEGIN
+    -- Enable RLS for service_status_history
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'service_status_history') THEN
+        ALTER TABLE public.service_status_history ENABLE ROW LEVEL SECURITY;
+    END IF;
+    
+    -- Enable RLS for check_results
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'check_results') THEN
+        ALTER TABLE public.check_results ENABLE ROW LEVEL SECURITY;
+    END IF;
+    
+    -- Enable RLS for monitoring_locations
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'monitoring_locations') THEN
+        ALTER TABLE public.monitoring_locations ENABLE ROW LEVEL SECURITY;
+    END IF;
+END $$;
 
--- RLS Policy for service_status_history (users can access history for services in their organizations)
-CREATE POLICY "Users can view service status history for their organizations" ON public.service_status_history
-    FOR SELECT USING (
-        EXISTS (
-            SELECT 1 FROM public.services s
-            JOIN public.status_pages sp ON s.status_page_id = sp.id
-            JOIN public.organization_members om ON sp.organization_id = om.organization_id
-            WHERE s.id = service_status_history.service_id
-            AND om.user_id = auth.uid()
-            AND om.is_active = true
-        )
-    );
+-- Step 7: Create RLS Policies (with conflict handling)
+DO $$ 
+BEGIN
+    -- Service status history policy
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE schemaname = 'public' 
+        AND tablename = 'service_status_history' 
+        AND policyname = 'Users can view service status history for their organizations'
+    ) THEN
+        CREATE POLICY "Users can view service status history for their organizations" ON public.service_status_history
+            FOR SELECT USING (
+                EXISTS (
+                    SELECT 1 FROM public.services s
+                    JOIN public.status_pages sp ON s.status_page_id = sp.id
+                    JOIN public.organization_members om ON sp.organization_id = om.organization_id
+                    WHERE s.id = service_status_history.service_id
+                    AND om.user_id = auth.uid()
+                    AND om.is_active = true
+                )
+            );
+    END IF;
+    
+    -- Check results policy
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE schemaname = 'public' 
+        AND tablename = 'check_results' 
+        AND policyname = 'Users can view check results for their organizations'
+    ) THEN
+        CREATE POLICY "Users can view check results for their organizations" ON public.check_results
+            FOR SELECT USING (
+                EXISTS (
+                    SELECT 1 FROM public.services monitoring_service
+                    JOIN public.status_pages sp ON monitoring_service.status_page_id = sp.id
+                    JOIN public.organization_members om ON sp.organization_id = om.organization_id
+                    WHERE monitoring_service.id = check_results.monitoring_check_id
+                    AND om.user_id = auth.uid()
+                    AND om.is_active = true
+                )
+            );
+    END IF;
+    
+    -- Monitoring locations policy
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE schemaname = 'public' 
+        AND tablename = 'monitoring_locations' 
+        AND policyname = 'Anyone can view active monitoring locations'
+    ) THEN
+        CREATE POLICY "Anyone can view active monitoring locations" ON public.monitoring_locations
+            FOR SELECT USING (is_active = true);
+    END IF;
+END $$;
 
--- RLS Policy for check_results (users can access results for their organization's monitoring checks)
-CREATE POLICY "Users can view check results for their organizations" ON public.check_results
-    FOR SELECT USING (
-        EXISTS (
-            SELECT 1 FROM public.services monitoring_service
-            JOIN public.status_pages sp ON monitoring_service.status_page_id = sp.id
-            JOIN public.organization_members om ON sp.organization_id = om.organization_id
-            WHERE monitoring_service.id = check_results.monitoring_check_id
-            AND om.user_id = auth.uid()
-            AND om.is_active = true
-        )
-    );
-
--- RLS Policy for monitoring_locations (public read access for active locations)
-CREATE POLICY "Anyone can view active monitoring locations" ON public.monitoring_locations
-    FOR SELECT USING (is_active = true);
-
--- Grant necessary permissions
+-- Step 8: Grant permissions
 GRANT SELECT, INSERT, UPDATE ON public.service_status_history TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON public.check_results TO authenticated;
 GRANT SELECT ON public.monitoring_locations TO authenticated;
 
--- Add INSERT policy for check_results (monitoring system needs to insert results)
-CREATE POLICY "Authenticated users can insert check results" ON public.check_results
-    FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+-- Step 9: Add INSERT policies
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE schemaname = 'public' 
+        AND tablename = 'check_results' 
+        AND policyname = 'Authenticated users can insert check results'
+    ) THEN
+        CREATE POLICY "Authenticated users can insert check results" ON public.check_results
+            FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE schemaname = 'public' 
+        AND tablename = 'service_status_history' 
+        AND policyname = 'Authenticated users can insert service status history'
+    ) THEN
+        CREATE POLICY "Authenticated users can insert service status history" ON public.service_status_history
+            FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+    END IF;
+END $$;
 
--- Add INSERT policy for service_status_history (needed for timeline updates)
-CREATE POLICY "Authenticated users can insert service status history" ON public.service_status_history
-    FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
-
--- Comments for documentation
-COMMENT ON TABLE public.service_status_history IS 'Historical status data for services, used for uptime timelines';
-COMMENT ON TABLE public.check_results IS 'Results from monitoring check executions';
-COMMENT ON TABLE public.monitoring_locations IS 'Geographic locations for distributed monitoring';
-
--- Update updated_at trigger for new tables
+-- Step 10: Create update trigger function and triggers
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -155,10 +249,37 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
-CREATE TRIGGER update_service_status_history_updated_at 
-    BEFORE UPDATE ON public.service_status_history 
-    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+-- Add triggers if they don't exist
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.triggers 
+        WHERE trigger_schema = 'public' 
+        AND trigger_name = 'update_service_status_history_updated_at'
+    ) THEN
+        CREATE TRIGGER update_service_status_history_updated_at 
+            BEFORE UPDATE ON public.service_status_history 
+            FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.triggers 
+        WHERE trigger_schema = 'public' 
+        AND trigger_name = 'update_monitoring_locations_updated_at'
+    ) THEN
+        CREATE TRIGGER update_monitoring_locations_updated_at 
+            BEFORE UPDATE ON public.monitoring_locations 
+            FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+    END IF;
+END $$;
 
-CREATE TRIGGER update_monitoring_locations_updated_at 
-    BEFORE UPDATE ON public.monitoring_locations 
-    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column(); 
+-- Add table comments
+COMMENT ON TABLE public.service_status_history IS 'Historical status data for services, used for uptime timelines';
+COMMENT ON TABLE public.check_results IS 'Results from monitoring check executions';
+COMMENT ON TABLE public.monitoring_locations IS 'Geographic locations for distributed monitoring';
+
+-- Print completion message
+DO $$ 
+BEGIN
+    RAISE NOTICE 'Migration 13 completed successfully - all missing tables and columns have been created/updated';
+END $$; 
