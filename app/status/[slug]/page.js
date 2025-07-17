@@ -4,63 +4,8 @@ import { useParams } from 'next/navigation';
 import PublicStatusPage from '../../../components/PublicStatusPage';
 import { Box, CircularProgress, Alert } from '@mui/material';
 import { notFound } from 'next/navigation';
-import { SupabaseClient } from '../../../lib/db-supabase.js';
 
 export const runtime = 'edge';
-
-const db = new SupabaseClient();
-
-async function getStatusPageData(slug) {
-  try {
-    // Get status page by slug with organization info
-    const { data: statusPages, error: statusPageError } = await db.client
-      .from('status_pages')
-      .select(
-        `
-        *,
-        organizations (
-          name,
-          slug
-        )
-      `
-      )
-      .eq('slug', slug)
-      .eq('is_public', true)
-      .is('deleted_at', null)
-      .single();
-
-    if (statusPageError || !statusPages) {
-      return null;
-    }
-
-    // Get all services for this status page (excluding monitoring check workarounds)
-    const { data: services, error: servicesError } = await db.client
-      .from('services')
-      .select('*')
-      .eq('status_page_id', statusPages.id)
-      .is('deleted_at', null)
-      .not('name', 'ilike', '[[]MONITORING]%')
-      .order('sort_order', { ascending: true })
-      .order('name', { ascending: true });
-
-    if (servicesError) {
-      console.error('Error fetching services:', servicesError);
-      // Don't fail if services can't be loaded, just return empty array
-    }
-
-    return {
-      statusPage: {
-        ...statusPages,
-        organization_name: statusPages.organizations?.name,
-        organization_slug: statusPages.organizations?.slug,
-      },
-      services: services || [],
-    };
-  } catch (error) {
-    console.error('Error fetching status page data:', error);
-    throw error;
-  }
-}
 
 export default function StatusPageView() {
   const { slug } = useParams();
@@ -72,16 +17,43 @@ export default function StatusPageView() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const fetchedData = await getStatusPageData(slug);
-        setData(fetchedData);
+        setError(null);
+
+        const response = await fetch(`/api/status-pages/public/${slug}`);
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            setData(null);
+            return;
+          }
+          throw new Error(
+            `Failed to fetch status page: ${response.statusText}`
+          );
+        }
+
+        const fetchedData = await response.json();
+        if (fetchedData.success) {
+          setData({
+            statusPage: fetchedData.statusPage,
+            services: fetchedData.services,
+            statusUpdates: fetchedData.statusUpdates,
+          });
+        } else {
+          throw new Error(
+            fetchedData.error || 'Failed to fetch status page data'
+          );
+        }
       } catch (err) {
+        console.error('Error fetching status page:', err);
         setError(err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    if (slug) {
+      fetchData();
+    }
   }, [slug]);
 
   if (loading) {
@@ -119,7 +91,11 @@ export default function StatusPageView() {
   }
 
   return (
-    <PublicStatusPage statusPage={data.statusPage} services={data.services} />
+    <PublicStatusPage
+      statusPage={data.statusPage}
+      services={data.services}
+      statusUpdates={data.statusUpdates}
+    />
   );
 }
 
@@ -127,9 +103,22 @@ export async function generateMetadata({ params }) {
   const { slug } = params;
 
   try {
-    const data = await getStatusPageData(slug);
+    // For metadata generation, we need to use fetch with the full URL
+    const baseUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.NEXTAUTH_URL ||
+      'http://localhost:3000';
+    const response = await fetch(`${baseUrl}/api/status-pages/public/${slug}`);
 
-    if (!data) {
+    if (!response.ok) {
+      return {
+        title: 'Status Page Not Found',
+      };
+    }
+
+    const data = await response.json();
+
+    if (!data.success || !data.statusPage) {
       return {
         title: 'Status Page Not Found',
       };
@@ -142,8 +131,20 @@ export async function generateMetadata({ params }) {
       description:
         statusPage.description ||
         `Current status of ${statusPage.name} services`,
+      openGraph: {
+        title: `${statusPage.name} - Status`,
+        description:
+          statusPage.description ||
+          `Current status of ${statusPage.name} services`,
+        type: 'website',
+      },
+      robots: {
+        index: statusPage.is_public,
+        follow: statusPage.is_public,
+      },
     };
   } catch (error) {
+    console.error('Error generating metadata:', error);
     return {
       title: 'Status Page',
     };

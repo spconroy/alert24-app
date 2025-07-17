@@ -20,7 +20,11 @@ import WarningIcon from '@mui/icons-material/Warning';
 import ErrorIcon from '@mui/icons-material/Error';
 import BuildIcon from '@mui/icons-material/Build';
 
-export default function PublicStatusPage({ statusPage, services }) {
+export default function PublicStatusPage({
+  statusPage,
+  services,
+  statusUpdates,
+}) {
   const getStatusIcon = status => {
     switch (status) {
       case 'operational':
@@ -260,7 +264,10 @@ export default function PublicStatusPage({ statusPage, services }) {
 
         {/* Status Updates Feed */}
         <Box sx={{ mt: 6 }}>
-          <StatusUpdatesFeed statusPageId={statusPage.id} />
+          <StatusUpdatesFeed
+            statusPageId={statusPage.id}
+            statusUpdates={statusUpdates}
+          />
         </Box>
 
         {/* Footer */}
