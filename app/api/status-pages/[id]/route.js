@@ -1,124 +1,171 @@
-
-
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { query, transaction } from '@/lib/db-http-cloudflare';
+import { SupabaseClient } from '../../../../lib/db-supabase.js';
+import { authOptions } from '../../auth/[...nextauth]/route.js';
 
+const db = new SupabaseClient();
 
 async function getStatusPageAndCheckOrg(id, userEmail) {
-  // Get user ID from email
-  const userQuery = `SELECT id FROM public.users WHERE email = $1`;
-  const { rows: userRows } = await query(userQuery, [userEmail]);
+  try {
+    // Get user
+    const user = await db.getUserByEmail(userEmail);
+    if (!user) {
+      return null;
+    }
 
-  if (userRows.length === 0) {
+    // Get status page
+    const statusPage = await db.getStatusPageById(id);
+    if (!statusPage) {
+      return null;
+    }
+
+    // Check organization membership
+    const membership = await db.getOrganizationMember(
+      statusPage.organization_id,
+      user.id
+    );
+    if (!membership) {
+      return null;
+    }
+
+    return statusPage;
+  } catch (error) {
+    console.error('Error checking status page access:', error);
     return null;
   }
-
-  const userId = userRows[0].id;
-
-  // Fetch status page and check org membership
-  const { rows } = await query(
-    `SELECT sp.*, om.user_id FROM public.status_pages sp
-     JOIN public.organization_members om ON sp.organization_id = om.organization_id
-     WHERE sp.id = $1 AND om.user_id = $2 AND om.is_active = true AND sp.deleted_at IS NULL`,
-    [id, userId]
-  );
-  return rows[0] || null;
 }
 
 export async function GET(req, { params }) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
     if (!session || !session.user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-      });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
     const { id } = params;
     const statusPage = await getStatusPageAndCheckOrg(id, session.user.email);
+
     if (!statusPage) {
-      return new Response(JSON.stringify({ error: 'Not found or forbidden' }), {
-        status: 404,
-      });
+      return NextResponse.json(
+        { error: 'Not found or forbidden' },
+        { status: 404 }
+      );
     }
-    return new Response(JSON.stringify({ statusPage }), { status: 200 });
-  } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
+
+    return NextResponse.json({
+      success: true,
+      statusPage,
     });
+  } catch (err) {
+    console.error('Error fetching status page:', err);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to fetch status page',
+        details: err.message,
+      },
+      { status: 500 }
+    );
   }
 }
 
 export async function PUT(req, { params }) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
     if (!session || !session.user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-      });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
     const { id } = params;
-    const statusPage = await getStatusPageAndCheckOrg(id, session.user.email);
-    if (!statusPage) {
-      return new Response(JSON.stringify({ error: 'Not found or forbidden' }), {
-        status: 404,
-      });
-    }
     const body = await req.json();
-    const { name, slug, description, is_public } = body;
-    const updateQuery = `
-      UPDATE public.status_pages
-      SET name = $1, slug = $2, description = $3, is_public = $4, updated_at = NOW()
-      WHERE id = $5
-      RETURNING *
-    `;
-    const { rows } = await query(updateQuery, [
-      name || statusPage.name,
-      slug || statusPage.slug,
-      description || statusPage.description,
-      typeof is_public === 'boolean' ? is_public : statusPage.is_public,
-      id,
-    ]);
-    return new Response(JSON.stringify({ statusPage: rows[0] }), {
-      status: 200,
-    });
-  } catch (err) {
-    if (err.code === '23505') {
-      return new Response(
-        JSON.stringify({
-          error: 'Slug must be unique within the organization.',
-        }),
-        { status: 409 }
+
+    // Check access to status page
+    const statusPage = await getStatusPageAndCheckOrg(id, session.user.email);
+
+    if (!statusPage) {
+      return NextResponse.json(
+        { error: 'Not found or forbidden' },
+        { status: 404 }
       );
     }
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
+
+    // Update status page
+    const updatedStatusPage = await db.updateStatusPage(id, {
+      ...body,
+      updated_at: new Date().toISOString(),
     });
+
+    return NextResponse.json({
+      success: true,
+      statusPage: updatedStatusPage,
+      message: 'Status page updated successfully',
+    });
+  } catch (err) {
+    console.error('Error updating status page:', err);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to update status page',
+        details: err.message,
+      },
+      { status: 500 }
+    );
   }
 }
 
 export async function DELETE(req, { params }) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
     if (!session || !session.user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-      });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
     const { id } = params;
+
+    // Check access to status page
     const statusPage = await getStatusPageAndCheckOrg(id, session.user.email);
+
     if (!statusPage) {
-      return new Response(JSON.stringify({ error: 'Not found or forbidden' }), {
-        status: 404,
-      });
+      return NextResponse.json(
+        { error: 'Not found or forbidden' },
+        { status: 404 }
+      );
     }
-    await query(
-      'UPDATE public.status_pages SET deleted_at = NOW() WHERE id = $1',
-      [id]
+
+    // Get user to check permissions
+    const user = await db.getUserByEmail(session.user.email);
+    const membership = await db.getOrganizationMember(
+      statusPage.organization_id,
+      user.id
     );
-    return new Response(JSON.stringify({ success: true }), { status: 200 });
-  } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
+
+    if (!membership || !['owner', 'admin'].includes(membership.role)) {
+      return NextResponse.json(
+        {
+          error:
+            'Access denied - only owners and admins can delete status pages',
+        },
+        { status: 403 }
+      );
+    }
+
+    // Soft delete status page
+    const deletedStatusPage = await db.deleteStatusPage(id);
+
+    return NextResponse.json({
+      success: true,
+      statusPage: deletedStatusPage,
+      message: 'Status page deleted successfully',
     });
+  } catch (err) {
+    console.error('Error deleting status page:', err);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to delete status page',
+        details: err.message,
+      },
+      { status: 500 }
+    );
   }
 }

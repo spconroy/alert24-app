@@ -1,238 +1,261 @@
-
-
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { query, transaction } from '@/lib/db-http-cloudflare';
+import { SupabaseClient } from '../../../../../lib/db-supabase.js';
+import { authOptions } from '../../../auth/[...nextauth]/route.js';
 
+const db = new SupabaseClient();
 
 export async function GET(req, { params }) {
-  const session = await getServerSession();
-  if (!session || !session.user?.email) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-    });
-  }
-
-  const { id: incidentId } = params;
-  if (!incidentId) {
-    return new Response(JSON.stringify({ error: 'Incident ID is required' }), {
-      status: 400,
-    });
-  }
-
   try {
-    // Get user ID
-    const userRes = await query(
-      'SELECT id FROM public.users WHERE email = $1',
-      [session.user.email]
-    );
-    const user = userRes.rows[0];
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id: incidentId } = params;
+    if (!incidentId) {
+      return NextResponse.json(
+        { error: 'Incident ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Get user
+    const user = await db.getUserByEmail(session.user.email);
     if (!user) {
-      return new Response(JSON.stringify({ error: 'User not found' }), {
-        status: 404,
-      });
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Verify user has access to the incident
-    const accessRes = await query(
-      `
-      SELECT i.id
-      FROM public.incidents i
-      JOIN public.organization_members om ON i.organization_id = om.organization_id
-      WHERE i.id = $1 AND om.user_id = $2 AND om.is_active = true
-    `,
-      [incidentId, user.id]
-    );
-
-    if (accessRes.rows.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'Incident not found or access denied' }),
+    const incident = await db.getIncidentById(incidentId, user.id);
+    if (!incident) {
+      return NextResponse.json(
+        { error: 'Incident not found or access denied' },
         { status: 404 }
       );
     }
 
-    // Parse query parameters
-    const { searchParams } = new URL(req.url);
-    const visibleOnly = searchParams.get('visible_only') === 'true';
-    const limit = parseInt(searchParams.get('limit')) || 50;
-    const offset = parseInt(searchParams.get('offset')) || 0;
+    // Get incident updates
+    const updates = await db.getIncidentUpdates(incidentId);
 
-    // Build query
-    let query = `
-      SELECT iu.*,
-             u.name as posted_by_name, u.email as posted_by_email
-      FROM public.incident_updates iu
-      JOIN public.users u ON iu.posted_by = u.id
-      WHERE iu.incident_id = $1
-    `;
+    // Transform the data to match expected format
+    const formattedUpdates = updates.map(update => ({
+      ...update,
+      posted_by_name: update.posted_by_user?.name,
+      posted_by_email: update.posted_by_user?.email,
+    }));
 
-    const params = [incidentId];
-    let paramIndex = 2;
-
-    if (visibleOnly) {
-      query += ` AND iu.visible_to_subscribers = true`;
-    }
-
-    query += ` ORDER BY iu.created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-    params.push(limit, offset);
-
-    const result = await query(query, params);
-
-    return new Response(
-      JSON.stringify({
-        updates: result.rows,
-      }),
-      { status: 200 }
-    );
-  } catch (error) {
-    console.error('GET incident updates error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
+    return NextResponse.json({
+      success: true,
+      updates: formattedUpdates,
     });
+  } catch (err) {
+    console.error('Error fetching incident updates:', err);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to fetch incident updates',
+        details: err.message,
+      },
+      { status: 500 }
+    );
   }
 }
 
 export async function POST(req, { params }) {
-  const session = await getServerSession();
-  if (!session || !session.user?.email) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-    });
-  }
-
-  const { id: incidentId } = params;
-  if (!incidentId) {
-    return new Response(JSON.stringify({ error: 'Incident ID is required' }), {
-      status: 400,
-    });
-  }
-
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id: incidentId } = params;
+    if (!incidentId) {
+      return NextResponse.json(
+        { error: 'Incident ID is required' },
+        { status: 400 }
+      );
+    }
+
     const body = await req.json();
     const {
       message,
       status,
       update_type = 'update',
       visible_to_subscribers = true,
-      notify_subscribers = false,
     } = body;
 
-    // Validation
     if (!message) {
-      return new Response(JSON.stringify({ error: 'Message is required' }), {
-        status: 400,
-      });
+      return NextResponse.json(
+        { error: 'Message is required' },
+        { status: 400 }
+      );
     }
 
-    // Get user ID
-    const userRes = await query(
-      'SELECT id FROM public.users WHERE email = $1',
-      [session.user.email]
-    );
-    const user = userRes.rows[0];
+    // Get user
+    const user = await db.getUserByEmail(session.user.email);
     if (!user) {
-      return new Response(JSON.stringify({ error: 'User not found' }), {
-        status: 404,
-      });
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Check incident exists and user has permission to post updates
-    const incidentRes = await query(
-      `
-      SELECT i.*, om.incident_role, om.can_post_updates
-      FROM public.incidents i
-      JOIN public.organization_members om ON i.organization_id = om.organization_id
-      WHERE i.id = $1 AND om.user_id = $2 AND om.is_active = true
-    `,
-      [incidentId, user.id]
-    );
-
-    if (incidentRes.rows.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'Incident not found or access denied' }),
+    // Verify user has access to the incident
+    const incident = await db.getIncidentById(incidentId, user.id);
+    if (!incident) {
+      return NextResponse.json(
+        { error: 'Incident not found or access denied' },
         { status: 404 }
       );
     }
 
-    const incident = incidentRes.rows[0];
-
-    // Check permissions - must be admin/manager, assigned user, or have post update permission
-    const canPost =
-      incident.incident_role === 'admin' ||
-      incident.incident_role === 'manager' ||
-      incident.can_post_updates ||
-      incident.assigned_to === user.id ||
-      incident.created_by === user.id;
-
-    if (!canPost) {
-      return new Response(
-        JSON.stringify({
-          error: 'Insufficient permissions to post updates to this incident',
-        }),
-        { status: 403 }
-      );
-    }
-
-    // If status is being changed, validate it and update the incident
-    let finalStatus = status || incident.status;
-
-    if (status && status !== incident.status) {
-      // Update incident status
-      await query(
-        `
-        UPDATE public.incidents 
-        SET status = $1, updated_at = NOW()
-        WHERE id = $2
-      `,
-        [status, incidentId]
-      );
-
-      finalStatus = status;
-    }
-
     // Create incident update
-    const updateRes = await query(
-      `
-      INSERT INTO public.incident_updates (
-        incident_id, message, status, update_type, posted_by, 
-        visible_to_subscribers, notify_subscribers
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *
-    `,
-      [
-        incidentId,
-        message,
-        finalStatus,
-        update_type,
-        user.id,
-        visible_to_subscribers,
-        notify_subscribers,
-      ]
-    );
+    const updateData = {
+      incident_id: incidentId,
+      message,
+      status: status || incident.status,
+      update_type,
+      posted_by: user.id,
+      visible_to_subscribers,
+    };
 
-    const newUpdate = updateRes.rows[0];
+    const newUpdate = await db.createIncidentUpdate(updateData);
 
-    // Get full update details with user info
-    const fullUpdateRes = await query(
-      `
-      SELECT iu.*,
-             u.name as posted_by_name, u.email as posted_by_email
-      FROM public.incident_updates iu
-      JOIN public.users u ON iu.posted_by = u.id
-      WHERE iu.id = $1
-    `,
-      [newUpdate.id]
-    );
+    // If status changed, update the incident
+    if (status && status !== incident.status) {
+      await db.updateIncident(incidentId, {
+        status,
+        updated_at: new Date().toISOString(),
+      });
+    }
 
-    return new Response(
-      JSON.stringify({
-        update: fullUpdateRes.rows[0],
-      }),
+    return NextResponse.json(
+      {
+        success: true,
+        update: newUpdate,
+        message: 'Incident update created successfully',
+      },
       { status: 201 }
     );
-  } catch (error) {
-    console.error('POST incident update error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
+  } catch (err) {
+    console.error('Error creating incident update:', err);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to create incident update',
+        details: err.message,
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(req, { params }) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id: incidentId } = params;
+    const { searchParams } = new URL(req.url);
+    const updateId = searchParams.get('updateId');
+
+    if (!incidentId || !updateId) {
+      return NextResponse.json(
+        { error: 'Incident ID and Update ID are required' },
+        { status: 400 }
+      );
+    }
+
+    const body = await req.json();
+
+    // Get user
+    const user = await db.getUserByEmail(session.user.email);
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Verify user has access to the incident
+    const incident = await db.getIncidentById(incidentId, user.id);
+    if (!incident) {
+      return NextResponse.json(
+        { error: 'Incident not found or access denied' },
+        { status: 404 }
+      );
+    }
+
+    // Update incident update
+    const updatedUpdate = await db.updateIncidentUpdate(updateId, {
+      ...body,
+      updated_at: new Date().toISOString(),
     });
+
+    return NextResponse.json({
+      success: true,
+      update: updatedUpdate,
+      message: 'Incident update updated successfully',
+    });
+  } catch (err) {
+    console.error('Error updating incident update:', err);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to update incident update',
+        details: err.message,
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(req, { params }) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id: incidentId } = params;
+    const { searchParams } = new URL(req.url);
+    const updateId = searchParams.get('updateId');
+
+    if (!incidentId || !updateId) {
+      return NextResponse.json(
+        { error: 'Incident ID and Update ID are required' },
+        { status: 400 }
+      );
+    }
+
+    // Get user
+    const user = await db.getUserByEmail(session.user.email);
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Verify user has access to the incident
+    const incident = await db.getIncidentById(incidentId, user.id);
+    if (!incident) {
+      return NextResponse.json(
+        { error: 'Incident not found or access denied' },
+        { status: 404 }
+      );
+    }
+
+    // Delete incident update
+    await db.deleteIncidentUpdate(updateId);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Incident update deleted successfully',
+    });
+  } catch (err) {
+    console.error('Error deleting incident update:', err);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to delete incident update',
+        details: err.message,
+      },
+      { status: 500 }
+    );
   }
 }
