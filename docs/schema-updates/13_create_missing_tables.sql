@@ -54,8 +54,8 @@ END $$;
 -- Check Results Table (for monitoring check execution results)
 CREATE TABLE IF NOT EXISTS public.check_results (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    monitoring_check_id UUID NOT NULL, -- References monitoring check (stored as service)
-    service_id UUID REFERENCES public.services(id) ON DELETE CASCADE,
+    monitoring_check_id UUID NOT NULL REFERENCES public.services(id) ON DELETE CASCADE, -- References monitoring check (stored as service)
+    service_id UUID REFERENCES public.services(id) ON DELETE CASCADE, -- The service being monitored
     status VARCHAR(50) NOT NULL DEFAULT 'unknown',
     response_time_ms INTEGER,
     status_code INTEGER,
@@ -114,10 +114,10 @@ CREATE POLICY "Users can view service status history for their organizations" ON
 CREATE POLICY "Users can view check results for their organizations" ON public.check_results
     FOR SELECT USING (
         EXISTS (
-            SELECT 1 FROM public.services s
-            JOIN public.status_pages sp ON s.status_page_id = sp.id
+            SELECT 1 FROM public.services monitoring_service
+            JOIN public.status_pages sp ON monitoring_service.status_page_id = sp.id
             JOIN public.organization_members om ON sp.organization_id = om.organization_id
-            WHERE s.id = check_results.service_id
+            WHERE monitoring_service.id = check_results.monitoring_check_id
             AND om.user_id = auth.uid()
             AND om.is_active = true
         )
@@ -131,6 +131,14 @@ CREATE POLICY "Anyone can view active monitoring locations" ON public.monitoring
 GRANT SELECT, INSERT, UPDATE ON public.service_status_history TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON public.check_results TO authenticated;
 GRANT SELECT ON public.monitoring_locations TO authenticated;
+
+-- Add INSERT policy for check_results (monitoring system needs to insert results)
+CREATE POLICY "Authenticated users can insert check results" ON public.check_results
+    FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+
+-- Add INSERT policy for service_status_history (needed for timeline updates)
+CREATE POLICY "Authenticated users can insert service status history" ON public.service_status_history
+    FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
 
 -- Comments for documentation
 COMMENT ON TABLE public.service_status_history IS 'Historical status data for services, used for uptime timelines';
