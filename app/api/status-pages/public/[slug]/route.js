@@ -5,7 +5,7 @@ const db = new SupabaseClient();
 
 export const runtime = 'edge';
 
-export async function GET(req, { params }) {
+export async function GET(request, { params }) {
   try {
     const { slug } = params;
 
@@ -16,80 +16,98 @@ export async function GET(req, { params }) {
       );
     }
 
-    // Get status page by slug with organization info (no authentication required for public pages)
-    const { data: statusPage, error: statusPageError } = await db.client
+    // Get status page by slug - public access
+    const { data: statusPages, error: statusPageError } = await db.client
       .from('status_pages')
       .select(
         `
         *,
-        organizations (
-          name,
-          slug
+        organizations!inner (
+          id,
+          name
         )
       `
       )
       .eq('slug', slug)
       .eq('is_public', true)
-      .is('deleted_at', null)
-      .single();
+      .limit(1);
 
-    if (statusPageError || !statusPage) {
-      console.error('Status page not found or error:', statusPageError);
+    if (statusPageError) {
+      console.error('Error fetching status page:', statusPageError);
       return NextResponse.json(
-        { error: 'Status page not found or not public' },
+        { error: 'Failed to fetch status page' },
+        { status: 500 }
+      );
+    }
+
+    if (!statusPages || statusPages.length === 0) {
+      return NextResponse.json(
+        { error: 'Status page not found or is not public' },
         { status: 404 }
       );
     }
 
-    // Get all services for this status page (excluding monitoring check workarounds)
+    const statusPage = statusPages[0];
+
+    // Add organization name to status page object
+    statusPage.organization_name = statusPage.organizations.name;
+
+    // Get services for this status page (NOT monitoring checks)
     const { data: services, error: servicesError } = await db.client
       .from('services')
       .select('*')
       .eq('status_page_id', statusPage.id)
       .is('deleted_at', null)
-      .not('name', 'ilike', '[[]MONITORING]%')
-      .order('sort_order', { ascending: true })
       .order('name', { ascending: true });
 
     if (servicesError) {
       console.error('Error fetching services:', servicesError);
-      // Don't fail if services can't be loaded, just return empty array
+      return NextResponse.json(
+        { error: 'Failed to fetch services' },
+        { status: 500 }
+      );
     }
 
+    // Filter out any monitoring check workarounds (services that start with [MONITORING])
+    const actualServices = (services || []).filter(
+      service => !service.name?.startsWith('[MONITORING]')
+    );
+
     // Get recent status updates for this status page
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
     const { data: statusUpdates, error: updatesError } = await db.client
       .from('status_updates')
-      .select('*')
+      .select(
+        `
+        *,
+        services (
+          id,
+          name
+        )
+      `
+      )
       .eq('status_page_id', statusPage.id)
+      .gte('created_at', thirtyDaysAgo.toISOString())
       .order('created_at', { ascending: false })
-      .limit(10);
+      .limit(50);
 
     if (updatesError) {
       console.error('Error fetching status updates:', updatesError);
+      // Don't fail the request for status updates error, just log it
     }
-
-    const responseData = {
-      statusPage: {
-        ...statusPage,
-        organization_name: statusPage.organizations?.name,
-        organization_slug: statusPage.organizations?.slug,
-      },
-      services: services || [],
-      statusUpdates: statusUpdates || [],
-    };
 
     return NextResponse.json({
       success: true,
-      ...responseData,
+      statusPage,
+      services: actualServices,
+      statusUpdates: statusUpdates || [],
     });
   } catch (error) {
-    console.error('Error fetching public status page data:', error);
+    console.error('Error in public status page API:', error);
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to fetch status page data',
-        details: error.message,
-      },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
