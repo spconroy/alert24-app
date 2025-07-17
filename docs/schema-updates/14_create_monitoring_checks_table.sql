@@ -134,18 +134,97 @@ WHERE s.name LIKE '[MONITORING]%'
 AND s.deleted_at IS NULL
 ON CONFLICT (id) DO NOTHING;
 
--- Step 3: Update existing check_results table to reference monitoring_checks
--- (if the table exists from previous migration)
+-- Step 3: Handle check_results table structure and foreign key constraints
 DO $$ 
 BEGIN
-    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'check_results') THEN
-        -- Update foreign key constraint to point to monitoring_checks instead of services
-        ALTER TABLE public.check_results 
-            DROP CONSTRAINT IF EXISTS check_results_monitoring_check_id_fkey;
+    -- Check if check_results table exists
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'check_results') THEN
         
-        ALTER TABLE public.check_results 
-            ADD CONSTRAINT check_results_monitoring_check_id_fkey 
-            FOREIGN KEY (monitoring_check_id) REFERENCES public.monitoring_checks(id) ON DELETE CASCADE;
+        -- Check if monitoring_check_id column exists
+        IF EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_schema = 'public' 
+            AND table_name = 'check_results' 
+            AND column_name = 'monitoring_check_id'
+        ) THEN
+            -- Column exists, update the foreign key constraint
+            ALTER TABLE public.check_results 
+                DROP CONSTRAINT IF EXISTS check_results_monitoring_check_id_fkey;
+            
+            ALTER TABLE public.check_results 
+                ADD CONSTRAINT check_results_monitoring_check_id_fkey 
+                FOREIGN KEY (monitoring_check_id) REFERENCES public.monitoring_checks(id) ON DELETE CASCADE;
+            
+            RAISE NOTICE 'Updated foreign key constraint for existing monitoring_check_id column';
+        ELSE
+            -- Column doesn't exist, add it and create constraint
+            ALTER TABLE public.check_results 
+                ADD COLUMN monitoring_check_id UUID;
+            
+            -- Update existing records to link to monitoring checks
+            UPDATE public.check_results 
+            SET monitoring_check_id = monitoring_check_id_temp
+            FROM (
+                SELECT cr.id as check_result_id, s.id as monitoring_check_id_temp
+                FROM public.check_results cr
+                JOIN public.services s ON cr.service_id = s.id 
+                WHERE s.name LIKE '[MONITORING]%'
+            ) AS mapping
+            WHERE id = mapping.check_result_id;
+            
+            -- Add the foreign key constraint
+            ALTER TABLE public.check_results 
+                ADD CONSTRAINT check_results_monitoring_check_id_fkey 
+                FOREIGN KEY (monitoring_check_id) REFERENCES public.monitoring_checks(id) ON DELETE CASCADE;
+            
+            -- Add index for performance
+            CREATE INDEX IF NOT EXISTS idx_check_results_monitoring_check_id ON public.check_results(monitoring_check_id);
+            
+            RAISE NOTICE 'Added monitoring_check_id column and constraint to check_results table';
+        END IF;
+        
+    ELSE
+        -- Create check_results table with proper structure
+        CREATE TABLE public.check_results (
+            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+            monitoring_check_id UUID NOT NULL REFERENCES public.monitoring_checks(id) ON DELETE CASCADE,
+            service_id UUID REFERENCES public.services(id) ON DELETE CASCADE, -- The service being monitored
+            status VARCHAR(50) NOT NULL DEFAULT 'unknown',
+            response_time_ms INTEGER,
+            status_code INTEGER,
+            error_message TEXT,
+            check_data JSONB,
+            checked_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        );
+        
+        -- Add indexes for check results
+        CREATE INDEX idx_check_results_monitoring_check_id ON public.check_results(monitoring_check_id);
+        CREATE INDEX idx_check_results_checked_at ON public.check_results(checked_at DESC);
+        CREATE INDEX idx_check_results_status ON public.check_results(status);
+        
+        -- Add RLS
+        ALTER TABLE public.check_results ENABLE ROW LEVEL SECURITY;
+        
+        -- RLS policies
+        CREATE POLICY "Users can view check results for their organizations" ON public.check_results
+            FOR SELECT USING (
+                EXISTS (
+                    SELECT 1 FROM public.monitoring_checks mc
+                    JOIN public.organization_members om ON mc.organization_id = om.organization_id
+                    WHERE mc.id = check_results.monitoring_check_id
+                    AND om.user_id = auth.uid()
+                    AND om.is_active = true
+                )
+            );
+        
+        CREATE POLICY "Authenticated users can insert check results" ON public.check_results
+            FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+        
+        -- Grant permissions
+        GRANT SELECT, INSERT, UPDATE ON public.check_results TO authenticated;
+        
+        RAISE NOTICE 'Created check_results table with proper monitoring_checks references';
     END IF;
 END $$;
 
@@ -208,6 +287,14 @@ CREATE POLICY "Users can delete monitoring checks for their organizations" ON pu
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.monitoring_checks TO authenticated;
 
 -- Step 7: Add triggers for updated_at
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
 CREATE TRIGGER update_monitoring_checks_updated_at 
     BEFORE UPDATE ON public.monitoring_checks 
     FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
