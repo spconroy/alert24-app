@@ -96,11 +96,8 @@ export function OrganizationProvider({ children }) {
     try {
       setLoading(true);
       setError(null);
-      // Build URL with userId parameter if user is authenticated
-      let url = '/api/organizations';
-      if (session?.user?.id) {
-        url += `?userId=${session.user.id}`;
-      }
+      // API now handles authentication internally via session
+      const url = '/api/organizations';
 
       const response = await fetch(url);
       if (response.ok) {

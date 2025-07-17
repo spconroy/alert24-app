@@ -7,6 +7,18 @@ const db = new SupabaseClient();
 export const runtime = 'edge';
 
 export async function POST(request) {
+  // Credentials-based signup is disabled in favor of Google OAuth
+  return NextResponse.json(
+    {
+      error:
+        'Credentials-based signup is disabled. Please use Google OAuth to sign in.',
+      redirectTo: '/api/auth/signin',
+    },
+    { status: 400 }
+  );
+
+  // Legacy code kept for reference but disabled
+  /*
   try {
     const { email, password, name, organizationName } = await request.json();
 
@@ -74,4 +86,5 @@ export async function POST(request) {
       { status: 500 }
     );
   }
+  */
 }

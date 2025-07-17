@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 import { SupabaseClient } from '../../../lib/db-supabase.js';
+import { authOptions } from '../auth/[...nextauth]/route.js';
 
 const db = new SupabaseClient();
 
@@ -7,26 +9,24 @@ export const runtime = 'edge';
 
 export async function GET(request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-
-    if (userId) {
-      // Get organizations for specific user
-      const organizations = await db.getOrganizations(userId);
-      return NextResponse.json({
-        success: true,
-        organizations: organizations,
-        count: organizations.length,
-      });
-    } else {
-      // For now, return all organizations using generic select method
-      const organizations = await db.select('organizations');
-      return NextResponse.json({
-        success: true,
-        organizations: organizations,
-        count: organizations.length,
-      });
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // Get user by email from session
+    const user = await db.getUserByEmail(session.user.email);
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Get organizations for the authenticated user
+    const organizations = await db.getOrganizations(user.id);
+    return NextResponse.json({
+      success: true,
+      organizations: organizations,
+      count: organizations.length,
+    });
   } catch (error) {
     console.error('Get organizations error:', error);
     return NextResponse.json(
@@ -42,14 +42,25 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
-    const { name, slug, userId } = body;
+    const { name, slug } = body;
 
     if (!name || !slug) {
       return NextResponse.json(
         { error: 'name and slug are required' },
         { status: 400 }
       );
+    }
+
+    // Get user by email from session
+    const user = await db.getUserByEmail(session.user.email);
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Check if slug already exists using generic select
@@ -61,40 +72,23 @@ export async function POST(request) {
       );
     }
 
-    if (userId) {
-      // Use the existing createOrganization method which handles membership
-      const organization = await db.createOrganization(
-        {
-          name,
-          slug,
-          subscription_plan: 'free',
-          max_team_members: 3,
-          max_projects: 5,
-        },
-        userId
-      );
-
-      return NextResponse.json({
-        success: true,
-        organization: organization,
-        message: 'Organization created successfully',
-      });
-    } else {
-      // Just create organization without membership
-      const organization = await db.insert('organizations', {
+    // Use the existing createOrganization method which handles membership
+    const organization = await db.createOrganization(
+      {
         name,
         slug,
         subscription_plan: 'free',
         max_team_members: 3,
         max_projects: 5,
-      });
+      },
+      user.id
+    );
 
-      return NextResponse.json({
-        success: true,
-        organization: organization,
-        message: 'Organization created successfully',
-      });
-    }
+    return NextResponse.json({
+      success: true,
+      organization: organization,
+      message: 'Organization created successfully',
+    });
   } catch (error) {
     console.error('Create organization error:', error);
 

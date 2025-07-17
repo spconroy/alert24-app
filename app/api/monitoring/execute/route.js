@@ -264,6 +264,18 @@ async function executeSslCheck(check, result, startTime) {
 // Update monitoring check status and linked service status based on result
 async function updateMonitoringCheckStatus(checkId, result) {
   try {
+    // Store result in dedicated check_results table
+    await db.createCheckResult({
+      monitoring_check_id: checkId,
+      is_successful: result.is_successful,
+      response_time_ms: result.response_time_ms,
+      status_code: result.status_code,
+      response_body: null, // Not storing full response body for now
+      response_headers: null,
+      error_message: result.error_message,
+      ssl_info: result.ssl_info,
+    });
+
     // Get current service entry
     const { data: service, error: fetchError } = await db.client
       .from('services')
