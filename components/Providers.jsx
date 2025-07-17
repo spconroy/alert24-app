@@ -2,7 +2,6 @@
 
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { SessionProvider } from 'next-auth/react';
 import { OrganizationProvider } from '@/contexts/OrganizationContext';
 
 const theme = createTheme({
@@ -18,11 +17,9 @@ const theme = createTheme({
 
 export default function Providers({ children }) {
   return (
-    <SessionProvider>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <OrganizationProvider>{children}</OrganizationProvider>
-      </ThemeProvider>
-    </SessionProvider>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <OrganizationProvider>{children}</OrganizationProvider>
+    </ThemeProvider>
   );
 }

@@ -1,8 +1,42 @@
 'use client';
 import { createContext, useContext, useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
 
 const OrganizationContext = createContext();
+
+// Custom hook to replace NextAuth v5 useSession
+function useSession() {
+  const [session, setSession] = useState(null);
+  const [status, setStatus] = useState('loading');
+
+  useEffect(() => {
+    const fetchSession = async () => {
+      try {
+        setStatus('loading');
+        const response = await fetch('/api/auth/session');
+        if (response.ok) {
+          const sessionData = await response.json();
+          setSession(sessionData);
+          setStatus(sessionData ? 'authenticated' : 'unauthenticated');
+        } else {
+          setSession(null);
+          setStatus('unauthenticated');
+        }
+      } catch (error) {
+        console.error('Error fetching session:', error);
+        setSession(null);
+        setStatus('unauthenticated');
+      }
+    };
+
+    fetchSession();
+
+    // Refresh session data every 5 minutes
+    const interval = setInterval(fetchSession, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return { data: session, status };
+}
 
 // Utility functions for localStorage operations
 const getStoredOrganizationId = () => {
@@ -212,6 +246,8 @@ export function OrganizationProvider({ children }) {
     error,
     selectOrganization,
     refreshOrganizations: fetchOrganizations,
+    session,
+    sessionStatus: status,
   };
 
   return (

@@ -25,7 +25,6 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import MonitorIcon from '@mui/icons-material/Monitor';
 import PeopleIcon from '@mui/icons-material/People';
-import { useSession } from 'next-auth/react';
 import { useOrganization } from '@/contexts/OrganizationContext';
 
 export default function IncidentDashboard() {
@@ -39,8 +38,7 @@ export default function IncidentDashboard() {
   const [onCallInfo, setOnCallInfo] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { data: session } = useSession();
-  const { selectedOrganization } = useOrganization();
+  const { selectedOrganization, session } = useOrganization();
 
   useEffect(() => {
     if (session) {
