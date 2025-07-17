@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { SupabaseClient } from '../../../lib/db-supabase.js';
-import { authOptions } from '../auth/[...nextauth]/route.js';
 import {
   withErrorHandler,
   ApiResponse,
@@ -72,7 +70,7 @@ async function sendIncidentNotifications(incident, organizationId) {
 }
 
 export const GET = withErrorHandler(async request => {
-  const session = await Auth.requireAuth(authOptions);
+  const session = await Auth.requireAuth();
   const user = await Auth.requireUser(db, session.user.email);
 
   const { searchParams } = new URL(request.url);
@@ -120,7 +118,7 @@ export const GET = withErrorHandler(async request => {
 });
 
 export const POST = withErrorHandler(async request => {
-  const session = await Auth.requireAuth(authOptions);
+  const session = await auth();
   const user = await Auth.requireUser(db, session.user.email);
 
   const {
@@ -134,7 +132,7 @@ export const POST = withErrorHandler(async request => {
     assignedTo,
     createdBy,
     source = 'manual',
-  } = await parseRequestBody(request, ['organizationId', 'title']);
+  } = await Auth.parseRequestBody(request, ['organizationId', 'title']);
 
   // Validate parameters
   Validator.uuid(organizationId, 'organizationId');
@@ -160,7 +158,8 @@ export const POST = withErrorHandler(async request => {
   // Sanitize HTML content
   const sanitizedTitle = Validator.sanitizeHtml(title);
   const sanitizedDescription = Validator.sanitizeHtml(description);
-  const sanitizedImpactDescription = Validator.sanitizeHtml(impactDescription);
+  const sanitizedImpactDescription =
+    Validator.sanitizeHtml(impactDescription);
 
   // Create incident data object
   const incidentData = {
@@ -192,7 +191,7 @@ export const POST = withErrorHandler(async request => {
 });
 
 export const PUT = withErrorHandler(async request => {
-  const session = await Auth.requireAuth(authOptions);
+  const session = await auth();
   const user = await Auth.requireUser(db, session.user.email);
 
   const {
@@ -206,7 +205,7 @@ export const PUT = withErrorHandler(async request => {
     assignedTo,
     resolvedAt,
     acknowledgedAt,
-  } = await parseRequestBody(request, ['id']);
+  } = await Auth.parseRequestBody(request, ['id']);
 
   // Validate parameters
   Validator.uuid(id, 'id');
@@ -241,7 +240,8 @@ export const PUT = withErrorHandler(async request => {
 
   // Sanitize HTML content
   const updateData = {};
-  if (title !== undefined) updateData.title = Validator.sanitizeHtml(title);
+  if (title !== undefined)
+    updateData.title = Validator.sanitizeHtml(title);
   if (description !== undefined)
     updateData.description = Validator.sanitizeHtml(description);
   if (severity !== undefined) updateData.severity = severity;
@@ -249,7 +249,8 @@ export const PUT = withErrorHandler(async request => {
   if (affectedServices !== undefined)
     updateData.affected_services = affectedServices;
   if (impactDescription !== undefined)
-    updateData.impact_description = Validator.sanitizeHtml(impactDescription);
+    updateData.impact_description =
+      Validator.sanitizeHtml(impactDescription);
   if (assignedTo !== undefined) updateData.assigned_to = assignedTo;
 
   // Add timestamp fields if provided
@@ -259,11 +260,14 @@ export const PUT = withErrorHandler(async request => {
   // Update the incident in the database
   const incident = await db.updateIncident(id, updateData);
 
-  return ApiResponse.success({ incident }, 'Incident updated successfully');
+  return ApiResponse.success(
+    { incident },
+    'Incident updated successfully'
+  );
 });
 
 export const DELETE = withErrorHandler(async request => {
-  const session = await Auth.requireAuth(authOptions);
+  const session = await auth();
   const user = await Auth.requireUser(db, session.user.email);
 
   const { searchParams } = new URL(request.url);
