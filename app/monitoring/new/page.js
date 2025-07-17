@@ -94,15 +94,64 @@ export default function CreateMonitoringCheckPage() {
     if (!selectedOrganization)
       errors.organization = 'Please select an organization from the navbar';
     if (!formData.name.trim()) errors.name = 'Monitor name is required';
-    if (!formData.target_url.trim())
-      errors.target_url = 'Target URL is required';
+    if (!formData.target_url.trim()) {
+      if (formData.check_type === 'ping') {
+        errors.target_url = 'Hostname or IP address is required';
+      } else if (formData.check_type === 'tcp') {
+        errors.target_url = 'Hostname:port or IP:port is required';
+      } else if (formData.check_type === 'ssl') {
+        errors.target_url = 'Hostname or URL is required';
+      } else {
+        errors.target_url = 'Target URL is required';
+      }
+    }
 
-    // URL validation
+    // URL validation - only for HTTP/HTTPS checks
     if (formData.target_url.trim()) {
-      try {
-        new URL(formData.target_url);
-      } catch {
-        errors.target_url = 'Please enter a valid URL';
+      if (formData.check_type === 'http') {
+        try {
+          new URL(formData.target_url);
+        } catch {
+          errors.target_url =
+            'Please enter a valid URL (e.g., https://example.com)';
+        }
+      } else if (formData.check_type === 'ping') {
+        // Validate hostname/IP for ping checks
+        const value = formData.target_url.trim();
+        const ipRegex =
+          /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+        const hostnameRegex =
+          /^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$/;
+
+        if (!ipRegex.test(value) && !hostnameRegex.test(value)) {
+          errors.target_url =
+            'Please enter a valid hostname (e.g., example.com) or IP address (e.g., 192.168.1.1)';
+        }
+      } else if (formData.check_type === 'tcp') {
+        // For TCP checks, allow hostname:port or IP:port format
+        const value = formData.target_url.trim();
+        const tcpRegex = /^[a-zA-Z0-9\-\.]+:\d+$/;
+        if (!tcpRegex.test(value)) {
+          errors.target_url =
+            'Please enter hostname:port or IP:port (e.g., example.com:80 or 192.168.1.1:443)';
+        }
+        // Validate port range
+        const portMatch = value.match(/:(\d+)$/);
+        if (portMatch) {
+          const port = parseInt(portMatch[1]);
+          if (port < 1 || port > 65535) {
+            errors.target_url = 'Port number must be between 1 and 65535';
+          }
+        }
+      } else if (formData.check_type === 'ssl') {
+        // SSL checks need hostname or URL
+        const value = formData.target_url.trim();
+        try {
+          new URL(value.startsWith('http') ? value : `https://${value}`);
+        } catch {
+          errors.target_url =
+            'Please enter a valid hostname or URL for SSL certificate checking';
+        }
       }
     }
 
@@ -387,20 +436,43 @@ export default function CreateMonitoringCheckPage() {
               </Grid>
               */}
 
-              {/* Target URL */}
+              {/* Target URL/Hostname */}
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label="Target URL *"
+                  label={
+                    formData.check_type === 'ping'
+                      ? 'Hostname or IP Address *'
+                      : formData.check_type === 'tcp'
+                        ? 'Target Host:Port *'
+                        : formData.check_type === 'ssl'
+                          ? 'Hostname or URL *'
+                          : 'Target URL *'
+                  }
                   value={formData.target_url}
                   onChange={e =>
                     handleInputChange('target_url', e.target.value)
                   }
                   error={!!formErrors.target_url}
                   helperText={
-                    formErrors.target_url || 'The URL or endpoint to monitor'
+                    formErrors.target_url ||
+                    (formData.check_type === 'ping'
+                      ? 'The hostname or IP address to ping'
+                      : formData.check_type === 'tcp'
+                        ? 'The hostname:port or IP:port to check'
+                        : formData.check_type === 'ssl'
+                          ? 'The hostname or URL to check SSL certificate'
+                          : 'The URL or endpoint to monitor')
                   }
-                  placeholder="https://example.com or 192.168.1.1:80"
+                  placeholder={
+                    formData.check_type === 'ping'
+                      ? 'example.com or 192.168.1.1'
+                      : formData.check_type === 'tcp'
+                        ? 'example.com:80 or 192.168.1.1:443'
+                        : formData.check_type === 'ssl'
+                          ? 'example.com or https://example.com'
+                          : 'https://example.com'
+                  }
                 />
               </Grid>
 

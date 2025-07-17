@@ -112,6 +112,10 @@ async function executeMonitoringCheck(check) {
       return await executeHttpCheck(check);
     } else if (check.check_type === 'ping') {
       return await executePingCheck(check);
+    } else if (check.check_type === 'tcp') {
+      return await executeTcpCheck(check);
+    } else if (check.check_type === 'ssl') {
+      return await executeSslCheck(check);
     } else {
       throw new Error(`Unsupported check type: ${check.check_type}`);
     }
@@ -182,16 +186,22 @@ async function executePingCheck(check) {
   const startTime = Date.now();
 
   try {
-    // Extract hostname from URL
-    const hostname = new URL(target_url).hostname;
+    // Use target_url directly as hostname/IP since it's no longer a URL for ping checks
+    let hostname = target_url;
 
-    // Use a simple TCP connection test as a ping alternative
+    // If it looks like a URL, extract the hostname (for backward compatibility)
+    if (target_url.includes('://')) {
+      hostname = new URL(target_url).hostname;
+    }
+
+    // Use a simple TCP connection test as a ping alternative (port 80 for basic connectivity)
     const controller = new AbortController();
     const timeout = setTimeout(
       () => controller.abort(),
       (timeout_seconds || 30) * 1000
     );
 
+    // Try to connect to port 80 (HTTP) as a basic connectivity test
     const response = await fetch(`http://${hostname}`, {
       method: 'HEAD',
       signal: controller.signal,
@@ -212,6 +222,102 @@ async function executePingCheck(check) {
       response_time: Date.now() - startTime,
       status_code: null,
       error_message: error.message,
+      response_body: null,
+    };
+  }
+}
+
+// TCP Check execution
+async function executeTcpCheck(check) {
+  const { target_url, timeout_seconds } = check;
+  const startTime = Date.now();
+
+  try {
+    // Parse hostname:port from target_url
+    const targetParts = target_url.split(':');
+    if (targetParts.length !== 2) {
+      return {
+        is_successful: false,
+        response_time: Date.now() - startTime,
+        status_code: null,
+        error_message: 'TCP check requires hostname:port format',
+        response_body: null,
+      };
+    }
+
+    const hostname = targetParts[0];
+    const port = parseInt(targetParts[1]);
+
+    // Use HTTP request to test TCP connectivity
+    const controller = new AbortController();
+    const timeout = setTimeout(
+      () => controller.abort(),
+      (timeout_seconds || 30) * 1000
+    );
+
+    const response = await fetch(`http://${hostname}:${port}`, {
+      method: 'HEAD',
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+
+    return {
+      is_successful: true,
+      response_time: Date.now() - startTime,
+      status_code: response.status,
+      error_message: null,
+      response_body: null,
+    };
+  } catch (error) {
+    return {
+      is_successful: false,
+      response_time: Date.now() - startTime,
+      status_code: null,
+      error_message: `TCP connection failed - ${error.message}`,
+      response_body: null,
+    };
+  }
+}
+
+// SSL Check execution
+async function executeSslCheck(check) {
+  const { target_url, timeout_seconds } = check;
+  const startTime = Date.now();
+
+  try {
+    // Ensure we have an HTTPS URL
+    let httpsUrl = target_url;
+    if (!httpsUrl.startsWith('https://')) {
+      httpsUrl = `https://${target_url}`;
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(
+      () => controller.abort(),
+      (timeout_seconds || 30) * 1000
+    );
+
+    const response = await fetch(httpsUrl, {
+      method: 'HEAD',
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+
+    return {
+      is_successful: response.status < 500, // Any response means SSL is working
+      response_time: Date.now() - startTime,
+      status_code: response.status,
+      error_message: response.status < 500 ? null : `SSL check failed with status ${response.status}`,
+      response_body: null,
+    };
+  } catch (error) {
+    return {
+      is_successful: false,
+      response_time: Date.now() - startTime,
+      status_code: null,
+      error_message: `SSL check failed - ${error.message}`,
       response_body: null,
     };
   }

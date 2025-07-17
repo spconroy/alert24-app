@@ -31,9 +31,10 @@ export async function GET(req) {
             status_page_id: statusPage.id,
           });
 
-          // Filter out deleted services
+          // Filter out deleted services and monitoring check workarounds
           const activeServices = services.filter(
-            service => !service.deleted_at
+            service =>
+              !service.deleted_at && !service.name?.startsWith('[MONITORING]')
           );
 
           // Calculate service status summary

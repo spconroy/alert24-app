@@ -12,6 +12,7 @@ const statusColors = {
   degraded: '#f59e0b', // Orange
   down: '#ef4444', // Red
   maintenance: '#3b82f6', // Blue
+  up: '#10b981', // Green (for monitoring services)
 };
 
 const statusLabels = {
@@ -19,6 +20,7 @@ const statusLabels = {
   degraded: 'Degraded Performance',
   down: 'Outage',
   maintenance: 'Under Maintenance',
+  up: 'Up',
 };
 
 export default function ServiceUptimeTimeline({ serviceId, days = 30 }) {

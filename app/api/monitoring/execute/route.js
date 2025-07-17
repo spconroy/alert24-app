@@ -5,214 +5,154 @@ import { authOptions } from '../../auth/[...nextauth]/route.js';
 
 const db = new SupabaseClient();
 
-export async function POST(req) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const body = await req.json();
-    const { check_id } = body;
-
-    if (!check_id) {
-      return NextResponse.json(
-        { error: 'check_id is required' },
-        { status: 400 }
-      );
-    }
-
-    // Get user
-    const user = await db.getUserByEmail(session.user.email);
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    // Get monitoring check
-    const check = await db.getMonitoringCheckById(check_id);
-    if (!check) {
-      return NextResponse.json(
-        { error: 'Monitoring check not found' },
-        { status: 404 }
-      );
-    }
-
-    // Check if user has access to this organization
-    const membership = await db.getOrganizationMember(
-      check.organization_id,
-      user.id
-    );
-    if (!membership) {
-      return NextResponse.json(
-        { error: 'Access denied - not a member of this organization' },
-        { status: 403 }
-      );
-    }
-
-    // Execute the monitoring check
-    console.log(
-      `Executing monitoring check: ${check.name} (${check.check_type})`
-    );
-    const result = await executeMonitoringCheck(check);
-
-    // Store the result in database
-    const checkResult = await db.createCheckResult({
-      monitoring_check_id: check.id,
-      is_successful: result.is_successful,
-      response_time: result.response_time,
-      status_code: result.status_code,
-      error_message: result.error_message,
-      response_body: result.response_body,
-    });
-
-    return NextResponse.json({
-      success: true,
-      check_result: checkResult,
-      execution_summary: {
-        check_id: check.id,
-        check_name: check.name,
-        check_type: check.check_type,
-        is_successful: result.is_successful,
-        response_time: result.response_time,
-        status_code: result.status_code,
-        executed_at: new Date().toISOString(),
-      },
-    });
-  } catch (error) {
-    console.error('Error executing monitoring check:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to execute monitoring check',
-        details: error.message,
-      },
-      { status: 500 }
-    );
-  }
-}
-
-// Helper function to execute different types of monitoring checks
+// Execute a single monitoring check
 async function executeMonitoringCheck(check) {
   const startTime = Date.now();
+  let result = {
+    check_id: check.id,
+    timestamp: new Date().toISOString(),
+    is_successful: false,
+    response_time_ms: null,
+    status_code: null,
+    error_message: null,
+    ssl_info: null,
+  };
 
   try {
-    switch (check.check_type) {
-      case 'http':
-      case 'https':
-        return await executeHttpCheck(check);
-      case 'ping':
-        return await executePingCheck(check);
-      case 'tcp':
-        return await executeTcpCheck(check);
-      default:
-        throw new Error(`Unsupported check type: ${check.check_type}`);
-    }
-  } catch (error) {
-    return {
-      is_successful: false,
-      response_time: Date.now() - startTime,
-      status_code: null,
-      error_message: error.message,
-      response_body: null,
-    };
-  }
-}
-
-async function executeHttpCheck(check) {
-  const {
-    target_url,
-    timeout_seconds,
-    expected_response_code,
-    expected_response_body,
-  } = check;
-  const startTime = Date.now();
-
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(
-      () => controller.abort(),
-      (timeout_seconds || 30) * 1000
+    console.log(
+      `Executing ${check.check_type} check: ${check.name} -> ${check.target_url}`
     );
 
-    const response = await fetch(target_url, {
-      method: 'GET',
-      headers: {
-        'User-Agent': 'Alert24-Monitor/1.0',
-        Accept: '*/*',
-      },
-      signal: controller.signal,
-    });
+    // Handle different check types
+    if (check.check_type === 'http') {
+      return await executeHttpCheck(check, result, startTime);
+    } else if (check.check_type === 'ping') {
+      return await executePingCheck(check, result, startTime);
+    } else if (check.check_type === 'tcp') {
+      return await executeTcpCheck(check, result, startTime);
+    } else if (check.check_type === 'ssl') {
+      return await executeSslCheck(check, result, startTime);
+    } else {
+      result.error_message = `Unsupported check type: ${check.check_type}`;
+      result.response_time_ms = Date.now() - startTime;
+      return result;
+    }
+  } catch (error) {
+    result.response_time_ms = Date.now() - startTime;
+    result.is_successful = false;
 
-    clearTimeout(timeout);
-
-    const responseTime = Date.now() - startTime;
-    const statusCode = response.status;
-
-    // Check if status code matches expected
-    const expectedCode = expected_response_code || 200;
-    let isSuccessful = statusCode === expectedCode;
-    let errorMessage = null;
-
-    if (!isSuccessful) {
-      errorMessage = `HTTP ${statusCode} (expected ${expectedCode})`;
+    if (error.name === 'AbortError') {
+      result.error_message = `Timeout after ${check.timeout || 30} seconds`;
+    } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+      result.error_message = `DNS resolution failed or connection refused: ${error.message}`;
+    } else {
+      result.error_message = error.message || 'Unknown error';
     }
 
-    // Get response body for keyword checking
-    let responseBody = '';
-    try {
-      responseBody = await response.text();
+    console.log(`Check failed: ${check.name} - ${result.error_message}`);
+  }
 
-      // Check for expected response body content if specified
-      if (isSuccessful && expected_response_body) {
-        if (!responseBody.includes(expected_response_body)) {
-          isSuccessful = false;
-          errorMessage = `Response body does not contain expected text: "${expected_response_body}"`;
+  return result;
+}
+
+// HTTP Check execution
+async function executeHttpCheck(check, result, startTime) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(
+    () => controller.abort(),
+    (check.timeout || 30) * 1000
+  );
+
+  const fetchOptions = {
+    method: check.http_method || 'GET',
+    signal: controller.signal,
+    redirect: check.follow_redirects ? 'follow' : 'manual',
+    headers: {
+      'User-Agent': 'Alert24-Monitor/1.0',
+      ...check.http_headers,
+    },
+  };
+
+  const response = await fetch(check.target_url, fetchOptions);
+  clearTimeout(timeoutId);
+
+  const responseTime = Date.now() - startTime;
+  result.response_time_ms = responseTime;
+  result.status_code = response.status;
+
+  // Check if status code is expected
+  const expectedCodes = check.expected_status_codes || [200];
+  const statusCodeOk = expectedCodes.includes(response.status);
+
+  // Check keyword matching if configured
+  let keywordMatch = true;
+  if (check.keyword_match && check.keyword_match.trim()) {
+    const responseText = await response.text();
+    switch (check.keyword_match_type) {
+      case 'exact':
+        keywordMatch = responseText === check.keyword_match;
+        break;
+      case 'regex':
+        try {
+          const regex = new RegExp(check.keyword_match);
+          keywordMatch = regex.test(responseText);
+        } catch (e) {
+          keywordMatch = false;
+          result.error_message = `Invalid regex: ${e.message}`;
         }
-      }
-    } catch (e) {
-      // Ignore body read errors but log them
-      console.warn('Could not read response body:', e.message);
+        break;
+      case 'contains':
+      default:
+        keywordMatch = responseText.includes(check.keyword_match);
+        break;
     }
+  }
 
-    return {
-      is_successful: isSuccessful,
-      response_time: responseTime,
-      status_code: statusCode,
-      error_message: errorMessage,
-      response_body: responseBody.substring(0, 1000), // Limit body size
-    };
-  } catch (error) {
-    return {
-      is_successful: false,
-      response_time: Date.now() - startTime,
-      status_code: null,
-      error_message: error.message,
-      response_body: null,
+  // SSL Certificate check for HTTPS URLs
+  let sslValid = true;
+  if (check.ssl_check_enabled && check.target_url.startsWith('https://')) {
+    result.ssl_info = {
+      valid: response.ok,
+      expires_at: null,
+      days_until_expiry: null,
     };
   }
+
+  result.is_successful = statusCodeOk && keywordMatch && sslValid;
+
+  if (!result.is_successful && !result.error_message) {
+    const issues = [];
+    if (!statusCodeOk)
+      issues.push(
+        `Status ${response.status} not in expected codes ${expectedCodes.join(',')}`
+      );
+    if (!keywordMatch) issues.push('Keyword match failed');
+    if (!sslValid) issues.push('SSL validation failed');
+    result.error_message = issues.join('; ');
+  }
+
+  return result;
 }
 
-async function executePingCheck(check) {
-  const { target_url, timeout_seconds } = check;
-  const startTime = Date.now();
+// Ping Check execution
+async function executePingCheck(check, result, startTime) {
+  // Use target_url directly as hostname/IP since it's no longer a URL for ping checks
+  let hostname = check.target_url;
+
+  // If it looks like a URL, extract the hostname (for backward compatibility)
+  if (check.target_url.includes('://')) {
+    hostname = new URL(check.target_url).hostname;
+  }
+
+  // Use a simple TCP connection test as a ping alternative (port 80 for basic connectivity)
+  const controller = new AbortController();
+  const timeout = setTimeout(
+    () => controller.abort(),
+    (check.timeout || 30) * 1000
+  );
 
   try {
-    // Extract hostname from URL if it's a full URL
-    let hostname = target_url;
-    try {
-      const url = new URL(target_url);
-      hostname = url.hostname;
-    } catch (e) {
-      // target_url might already be just a hostname
-    }
-
-    // Use HTTP HEAD request as a ping alternative since we can't do ICMP ping in browser/serverless
-    const controller = new AbortController();
-    const timeout = setTimeout(
-      () => controller.abort(),
-      (timeout_seconds || 10) * 1000
-    );
-
+    // Try to connect to port 80 (HTTP) as a basic connectivity test
     const response = await fetch(`http://${hostname}`, {
       method: 'HEAD',
       signal: controller.signal,
@@ -220,73 +160,242 @@ async function executePingCheck(check) {
 
     clearTimeout(timeout);
 
-    return {
-      is_successful: true,
-      response_time: Date.now() - startTime,
-      status_code: response.status,
-      error_message: null,
-      response_body: null,
-    };
+    result.response_time_ms = Date.now() - startTime;
+    result.status_code = response.status;
+    result.is_successful = true;
+    result.error_message = null;
   } catch (error) {
-    return {
-      is_successful: false,
-      response_time: Date.now() - startTime,
-      status_code: null,
-      error_message: error.message,
-      response_body: null,
-    };
+    clearTimeout(timeout);
+    result.response_time_ms = Date.now() - startTime;
+    result.is_successful = false;
+    result.error_message = error.message;
   }
+
+  return result;
 }
 
-async function executeTcpCheck(check) {
-  const { target_url, target_port, timeout_seconds } = check;
-  const startTime = Date.now();
+// TCP Check execution
+async function executeTcpCheck(check, result, startTime) {
+  // Parse hostname:port from target_url
+  const targetParts = check.target_url.split(':');
+  if (targetParts.length !== 2) {
+    result.response_time_ms = Date.now() - startTime;
+    result.is_successful = false;
+    result.error_message = 'TCP check requires hostname:port format';
+    return result;
+  }
+
+  const hostname = targetParts[0];
+  const port = parseInt(targetParts[1]);
+
+  // Use HTTP request to test TCP connectivity
+  const controller = new AbortController();
+  const timeout = setTimeout(
+    () => controller.abort(),
+    (check.timeout || 30) * 1000
+  );
 
   try {
-    // For TCP checks, we'll try to make an HTTP connection to the port
-    // This is a simplified check since we can't do raw TCP in serverless
-    let hostname = target_url;
-    try {
-      const url = new URL(target_url);
-      hostname = url.hostname;
-    } catch (e) {
-      // target_url might already be just a hostname
-    }
+    const response = await fetch(`http://${hostname}:${port}`, {
+      method: 'HEAD',
+      signal: controller.signal,
+    });
 
-    const port = target_port || 80;
-    const testUrl = `http://${hostname}:${port}`;
+    clearTimeout(timeout);
+    result.response_time_ms = Date.now() - startTime;
+    result.status_code = response.status;
+    result.is_successful = true;
+    result.error_message = null;
+  } catch (error) {
+    clearTimeout(timeout);
+    result.response_time_ms = Date.now() - startTime;
+    result.is_successful = false;
+    result.error_message = `TCP connection to ${hostname}:${port} failed - ${error.message}`;
+  }
 
-    const controller = new AbortController();
-    const timeout = setTimeout(
-      () => controller.abort(),
-      (timeout_seconds || 10) * 1000
-    );
+  return result;
+}
 
-    const response = await fetch(testUrl, {
+// SSL Check execution
+async function executeSslCheck(check, result, startTime) {
+  // Ensure we have an HTTPS URL
+  let httpsUrl = check.target_url;
+  if (!httpsUrl.startsWith('https://')) {
+    httpsUrl = `https://${check.target_url}`;
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(
+    () => controller.abort(),
+    (check.timeout || 30) * 1000
+  );
+
+  try {
+    const response = await fetch(httpsUrl, {
       method: 'HEAD',
       signal: controller.signal,
     });
 
     clearTimeout(timeout);
 
-    return {
-      is_successful: true,
-      response_time: Date.now() - startTime,
-      status_code: response.status,
-      error_message: null,
-      response_body: null,
+    result.response_time_ms = Date.now() - startTime;
+    result.status_code = response.status;
+    result.is_successful = response.status < 500; // Any response means SSL is working
+    result.ssl_info = {
+      valid: true,
+      expires_at: null, // Would need additional SSL inspection
+      days_until_expiry: null,
     };
+    result.error_message = result.is_successful
+      ? null
+      : `SSL check failed with status ${response.status}`;
   } catch (error) {
-    // For TCP checks, connection refused might actually mean the port is closed
-    const isConnectionError =
-      error.message.includes('fetch') || error.message.includes('network');
+    clearTimeout(timeout);
+    result.response_time_ms = Date.now() - startTime;
+    result.is_successful = false;
+    result.error_message = `SSL check failed - ${error.message}`;
+  }
 
-    return {
-      is_successful: false,
-      response_time: Date.now() - startTime,
-      status_code: null,
-      error_message: isConnectionError ? 'Connection failed' : error.message,
-      response_body: null,
+  return result;
+}
+
+// Update monitoring check status based on result
+async function updateMonitoringCheckStatus(checkId, result) {
+  try {
+    // Get current service entry
+    const { data: service, error: fetchError } = await db.client
+      .from('services')
+      .select('*')
+      .eq('id', checkId)
+      .like('name', '[MONITORING]%')
+      .single();
+
+    if (fetchError || !service) {
+      console.error('Error fetching monitoring check:', fetchError);
+      return;
+    }
+
+    // Parse and update the stored monitoring data
+    const checkData = JSON.parse(service.description);
+
+    // Update status based on result
+    checkData.status = result.is_successful ? 'active' : 'down';
+    checkData.last_check_time = result.timestamp;
+    checkData.last_response_time = result.response_time_ms;
+    checkData.last_status_code = result.status_code;
+    checkData.last_error = result.error_message;
+
+    // Update SSL info if available
+    if (result.ssl_info) {
+      checkData.ssl_status = result.ssl_info.valid ? 'valid' : 'invalid';
+      checkData.ssl_expires_at = result.ssl_info.expires_at;
+      checkData.ssl_days_until_expiry = result.ssl_info.days_until_expiry;
+    }
+
+    // Calculate next check time
+    const nextCheckTime = new Date(
+      Date.now() + (checkData.check_interval || 5) * 60 * 1000
+    );
+    checkData.next_check_time = nextCheckTime.toISOString();
+
+    const dbData = {
+      description: JSON.stringify(checkData),
+      status: result.is_successful ? 'operational' : 'down',
+      updated_at: new Date().toISOString(),
     };
+
+    const { error: updateError } = await db.client
+      .from('services')
+      .update(dbData)
+      .eq('id', checkId);
+
+    if (updateError) {
+      console.error('Error updating monitoring check:', updateError);
+    } else {
+      console.log(
+        `Updated check ${checkId}: ${result.is_successful ? 'SUCCESS' : 'FAILED'} (${result.response_time_ms}ms)`
+      );
+    }
+  } catch (error) {
+    console.error('Error updating monitoring check status:', error);
+  }
+}
+
+export async function POST(req) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { checkId, executeAll, organizationId } = await req.json();
+
+    // Get user
+    const user = await db.getUserByEmail(session.user.email);
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    let checksToExecute = [];
+
+    if (checkId) {
+      // Execute specific check
+      const checks = await db.getMonitoringChecks(user.id, {
+        organization_id: organizationId,
+      });
+      const check = checks.find(c => c.id === checkId);
+      if (check) {
+        checksToExecute = [check];
+      }
+    } else if (executeAll && organizationId) {
+      // Execute all checks for organization
+      checksToExecute = await db.getMonitoringChecks(user.id, {
+        organization_id: organizationId,
+      });
+    } else {
+      return NextResponse.json(
+        { error: 'Either checkId or executeAll with organizationId required' },
+        { status: 400 }
+      );
+    }
+
+    if (checksToExecute.length === 0) {
+      return NextResponse.json(
+        { error: 'No monitoring checks found' },
+        { status: 404 }
+      );
+    }
+
+    // Execute checks
+    const results = [];
+    for (const check of checksToExecute) {
+      const result = await executeMonitoringCheck(check);
+      await updateMonitoringCheckStatus(check.id, result);
+      results.push({
+        checkId: check.id,
+        checkName: check.name,
+        success: result.is_successful,
+        responseTime: result.response_time_ms,
+        statusCode: result.status_code,
+        error: result.error_message,
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `Executed ${results.length} monitoring checks`,
+      results: results,
+      executedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Error executing monitoring checks:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to execute monitoring checks',
+        details: error.message,
+      },
+      { status: 500 }
+    );
   }
 }

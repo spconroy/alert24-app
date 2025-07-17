@@ -27,12 +27,13 @@ async function getStatusPageData(slug) {
       return null;
     }
 
-    // Get all services for this status page
+    // Get all services for this status page (excluding monitoring check workarounds)
     const { data: services, error: servicesError } = await db.client
       .from('services')
       .select('*')
       .eq('status_page_id', statusPages.id)
       .is('deleted_at', null)
+      .not('name', 'like', '[MONITORING]%')
       .order('sort_order', { ascending: true })
       .order('name', { ascending: true });
 

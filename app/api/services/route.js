@@ -14,12 +14,13 @@ export async function GET(request) {
       searchParams.get('organization_id') || searchParams.get('organizationId');
 
     if (statusPageId) {
-      // Get services for a specific status page
+      // Get services for a specific status page (excluding monitoring check workarounds)
       const { data: services, error } = await db.client
         .from('services')
         .select('*')
         .eq('status_page_id', statusPageId)
         .is('deleted_at', null)
+        .not('name', 'like', '[MONITORING]%')
         .order('sort_order', { ascending: true })
         .order('name', { ascending: true });
 
@@ -28,7 +29,7 @@ export async function GET(request) {
     }
 
     if (organizationId) {
-      // Get services for an organization (through status pages)
+      // Get services for an organization (through status pages, excluding monitoring check workarounds)
       const { data: services, error } = await db.client
         .from('services')
         .select(
@@ -41,6 +42,7 @@ export async function GET(request) {
         )
         .eq('status_pages.organization_id', organizationId)
         .is('deleted_at', null)
+        .not('name', 'like', '[MONITORING]%')
         .order('sort_order', { ascending: true })
         .order('name', { ascending: true });
 

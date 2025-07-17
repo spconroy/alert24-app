@@ -132,6 +132,16 @@ export async function POST(req) {
       url: target_url,
       organization_id,
       is_active: is_active !== undefined ? is_active : true,
+      // SSL Certificate checking
+      ssl_check_enabled: ssl_check_enabled || false,
+      // HTTP specific settings
+      http_method: http_method || 'GET',
+      expected_status_codes: expected_status_codes || [200],
+      follow_redirects:
+        follow_redirects !== undefined ? follow_redirects : true,
+      keyword_match,
+      keyword_match_type,
+      http_headers: http_headers || {},
     };
 
     // Add other fields that are likely to exist
