@@ -5,6 +5,69 @@ import { authOptions } from '../../auth/[...nextauth]/route.js';
 
 const db = new SupabaseClient();
 
+export async function GET(req, { params }) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id: checkId } = params;
+
+    if (!checkId) {
+      return NextResponse.json(
+        { error: 'Monitoring check ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Get user
+    const user = await db.getUserByEmail(session.user.email);
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Get monitoring check
+    const check = await db.getMonitoringCheckById(checkId);
+    if (!check) {
+      return NextResponse.json(
+        { error: 'Monitoring check not found' },
+        { status: 404 }
+      );
+    }
+
+    // Check organization membership
+    const membership = await db.getOrganizationMember(
+      check.organization_id,
+      user.id
+    );
+    if (
+      !membership ||
+      !['owner', 'admin', 'responder'].includes(membership.role)
+    ) {
+      return NextResponse.json(
+        { error: 'Access denied - insufficient permissions' },
+        { status: 403 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      check,
+    });
+  } catch (error) {
+    console.error('Error fetching monitoring check:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to fetch monitoring check',
+        details: error.message,
+      },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PATCH(req, { params }) {
   try {
     const session = await getServerSession(authOptions);

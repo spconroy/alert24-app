@@ -28,6 +28,8 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import Link from 'next/link';
 import AddIcon from '@mui/icons-material/Add';
@@ -40,8 +42,11 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PauseIcon from '@mui/icons-material/Pause';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
+import EditIcon from '@mui/icons-material/Edit';
 import { useSession } from 'next-auth/react';
 import { useOrganization } from '@/contexts/OrganizationContext';
+import MonitoringServiceAssociation from '@/components/MonitoringServiceAssociation';
+import { useRouter } from 'next/navigation';
 
 export default function MonitoringPage() {
   const [monitoringChecks, setMonitoringChecks] = useState([]);
@@ -55,8 +60,10 @@ export default function MonitoringPage() {
   const [deletingCheckId, setDeletingCheckId] = useState(null);
   const [updatingCheckId, setUpdatingCheckId] = useState(null);
   const [isClient, setIsClient] = useState(false);
+  const [currentTab, setCurrentTab] = useState(0); // 0 = monitoring checks, 1 = service associations
   const { data: session } = useSession();
   const { selectedOrganization } = useOrganization();
+  const router = useRouter();
 
   useEffect(() => {
     setIsClient(true);
@@ -316,6 +323,13 @@ export default function MonitoringPage() {
     await executeCheck(selectedCheck.id);
   };
 
+  const handleEditCheck = () => {
+    if (!selectedCheck) return;
+    handleMenuClose();
+    // Navigate to the edit page for the selected check
+    router.push(`/monitoring/edit/${selectedCheck.id}`);
+  };
+
   const openDeleteDialog = () => {
     setDeleteDialogOpen(true);
     handleMenuClose();
@@ -329,6 +343,8 @@ export default function MonitoringPage() {
         return <ErrorIcon color="error" />;
       case 'warning':
         return <WarningIcon color="warning" />;
+      case 'inactive':
+        return <PauseIcon color="disabled" />;
       default:
         return <CircularProgress size={20} />;
     }
@@ -342,6 +358,8 @@ export default function MonitoringPage() {
         return 'error';
       case 'warning':
         return 'warning';
+      case 'inactive':
+        return 'default';
       default:
         return 'default';
     }
@@ -415,7 +433,9 @@ export default function MonitoringPage() {
       monitoringChecks.filter(c => c?.current_status === 'down').length || 0,
     warning:
       monitoringChecks.filter(c => c?.current_status === 'warning').length || 0,
-    inactive: monitoringChecks.filter(c => !c?.is_active).length || 0,
+    inactive:
+      monitoringChecks.filter(c => c?.current_status === 'inactive').length ||
+      0,
   };
 
   if (!session) {
@@ -478,350 +498,388 @@ export default function MonitoringPage() {
         </Box>
       </Box>
 
-      {/* Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                Total Monitors
-              </Typography>
-              <Typography variant="h3" color="primary">
-                {stats.total}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                Up
-              </Typography>
-              <Typography variant="h3" color="success.main">
-                {stats.up}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                Down
-              </Typography>
-              <Typography variant="h3" color="error.main">
-                {stats.down}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                Warning
-              </Typography>
-              <Typography variant="h3" color="warning.main">
-                {stats.warning}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+      {/* Tabs */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs
+          value={currentTab}
+          onChange={(event, newValue) => setCurrentTab(newValue)}
+        >
+          <Tab label="Monitoring Checks" />
+          <Tab label="Service Associations" />
+        </Tabs>
+      </Box>
 
-      {/* Error Alert */}
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
+      {/* Tab Content */}
+      {currentTab === 0 ? (
+        // Monitoring Checks Tab
+        <>
+          {/* Stats Cards */}
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            <Grid item xs={12} md={3}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" color="text.secondary" gutterBottom>
+                    Total Monitors
+                  </Typography>
+                  <Typography variant="h3" color="primary">
+                    {stats.total}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" color="text.secondary" gutterBottom>
+                    Up
+                  </Typography>
+                  <Typography variant="h3" color="success.main">
+                    {stats.up}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" color="text.secondary" gutterBottom>
+                    Down
+                  </Typography>
+                  <Typography variant="h3" color="error.main">
+                    {stats.down}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" color="text.secondary" gutterBottom>
+                    Warning
+                  </Typography>
+                  <Typography variant="h3" color="warning.main">
+                    {stats.warning}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
 
-      {/* Monitoring Checks Table */}
-      <Card>
-        <CardContent sx={{ p: 0 }}>
-          {loading ? (
-            <Box
-              display="flex"
-              justifyContent="center"
-              alignItems="center"
-              minHeight="200px"
-            >
-              <CircularProgress />
-            </Box>
-          ) : monitoringChecks.length === 0 ? (
-            <Box textAlign="center" py={6}>
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                No monitoring checks found
-              </Typography>
-              <Typography variant="body2" color="text.secondary" mb={3}>
-                Add your first monitoring check to start tracking service
-                health.
-              </Typography>
-              <Button
-                component={Link}
-                href="/monitoring/new"
-                variant="contained"
-                startIcon={<AddIcon />}
-                color="primary"
-              >
-                Add Monitor
-              </Button>
-            </Box>
-          ) : (
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Name</TableCell>
-                    <TableCell>Type</TableCell>
-                    <TableCell>Target</TableCell>
-                    <TableCell>SSL Certificate</TableCell>
-                    <TableCell>Location</TableCell>
-                    <TableCell>Response Time</TableCell>
-                    <TableCell>Last Check</TableCell>
-                    <TableCell>Next Check</TableCell>
-                    <TableCell>Organization</TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {monitoringChecks.map(check => (
-                    <TableRow key={check.id} hover>
-                      <TableCell>
-                        <Box display="flex" alignItems="center" gap={1}>
-                          {getStatusIcon(check.current_status)}
-                          <Chip
-                            label={check.current_status || 'Unknown'}
-                            color={getStatusColor(check.current_status)}
-                            size="small"
-                          />
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="subtitle2" fontWeight="medium">
-                          {check.name}
-                        </Typography>
-                        {!check.is_active && (
-                          <Chip
-                            label="Inactive"
-                            size="small"
-                            variant="outlined"
-                          />
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={check.check_type.toUpperCase()}
-                          color={getCheckTypeColor(check.check_type)}
-                          size="small"
-                          variant="outlined"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            maxWidth: 200,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                        >
-                          {check.target_url}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        {check.ssl_check_enabled ? (
-                          <Box display="flex" alignItems="center" gap={1}>
+          {/* Error Alert */}
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+
+          {/* Monitoring Checks Table */}
+          <Card>
+            <CardContent sx={{ p: 0 }}>
+              {loading ? (
+                <Box
+                  display="flex"
+                  justifyContent="center"
+                  alignItems="center"
+                  minHeight="200px"
+                >
+                  <CircularProgress />
+                </Box>
+              ) : monitoringChecks.length === 0 ? (
+                <Box textAlign="center" py={6}>
+                  <Typography variant="h6" color="text.secondary" gutterBottom>
+                    No monitoring checks found
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" mb={3}>
+                    Add your first monitoring check to start tracking service
+                    health.
+                  </Typography>
+                  <Button
+                    component={Link}
+                    href="/monitoring/new"
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    color="primary"
+                  >
+                    Add Monitor
+                  </Button>
+                </Box>
+              ) : (
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Status</TableCell>
+                        <TableCell>Name</TableCell>
+                        <TableCell>Type</TableCell>
+                        <TableCell>Target</TableCell>
+                        <TableCell>SSL Certificate</TableCell>
+                        <TableCell>Location</TableCell>
+                        <TableCell>Response Time</TableCell>
+                        <TableCell>Last Check</TableCell>
+                        <TableCell>Next Check</TableCell>
+                        <TableCell>Organization</TableCell>
+                        <TableCell>Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {monitoringChecks.map(check => (
+                        <TableRow key={check.id} hover>
+                          <TableCell>
+                            <Box display="flex" alignItems="center" gap={1}>
+                              {getStatusIcon(check.current_status)}
+                              <Chip
+                                label={check.current_status || 'Unknown'}
+                                color={getStatusColor(check.current_status)}
+                                size="small"
+                              />
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="subtitle2" fontWeight="medium">
+                              {check.name}
+                            </Typography>
+                            {!check.is_active && (
+                              <Chip
+                                label="Inactive"
+                                size="small"
+                                variant="outlined"
+                              />
+                            )}
+                          </TableCell>
+                          <TableCell>
                             <Chip
-                              label={
-                                check.ssl_status === 'valid'
-                                  ? 'Valid'
-                                  : check.ssl_status === 'expired'
-                                    ? 'Expired'
-                                    : check.ssl_status === 'expiring'
-                                      ? 'Expiring Soon'
-                                      : 'Pending'
-                              }
-                              color={
-                                check.ssl_status === 'valid'
-                                  ? 'success'
-                                  : check.ssl_status === 'expired'
-                                    ? 'error'
-                                    : check.ssl_status === 'expiring'
-                                      ? 'warning'
-                                      : 'default'
-                              }
+                              label={check.check_type.toUpperCase()}
+                              color={getCheckTypeColor(check.check_type)}
                               size="small"
                               variant="outlined"
                             />
-                            {check.ssl_days_until_expiry !== null && (
+                          </TableCell>
+                          <TableCell>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                maxWidth: 200,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                              }}
+                            >
+                              {check.target_url}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            {check.ssl_check_enabled ? (
+                              <Box display="flex" alignItems="center" gap={1}>
+                                <Chip
+                                  label={
+                                    check.ssl_status === 'valid'
+                                      ? 'Valid'
+                                      : check.ssl_status === 'expired'
+                                        ? 'Expired'
+                                        : check.ssl_status === 'expiring'
+                                          ? 'Expiring Soon'
+                                          : 'Pending'
+                                  }
+                                  color={
+                                    check.ssl_status === 'valid'
+                                      ? 'success'
+                                      : check.ssl_status === 'expired'
+                                        ? 'error'
+                                        : check.ssl_status === 'expiring'
+                                          ? 'warning'
+                                          : 'default'
+                                  }
+                                  size="small"
+                                  variant="outlined"
+                                />
+                                {check.ssl_days_until_expiry !== null && (
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                  >
+                                    {check.ssl_days_until_expiry > 0
+                                      ? `${check.ssl_days_until_expiry}d`
+                                      : 'Expired'}
+                                  </Typography>
+                                )}
+                              </Box>
+                            ) : (
                               <Typography
-                                variant="caption"
+                                variant="body2"
                                 color="text.secondary"
                               >
-                                {check.ssl_days_until_expiry > 0
-                                  ? `${check.ssl_days_until_expiry}d`
-                                  : 'Expired'}
+                                Disabled
                               </Typography>
                             )}
-                          </Box>
-                        ) : (
-                          <Typography variant="body2" color="text.secondary">
-                            Disabled
-                          </Typography>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">
-                          {check.location_name || 'Default'}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">
-                          {formatResponseTime(check.last_response_time)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">
-                          {check.last_check_time
-                            ? new Date(check.last_check_time).toLocaleString()
-                            : 'Never'}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography
-                          variant="body2"
-                          color={
-                            formatNextCheckTime(
-                              check.next_check_time,
-                              check.is_active
-                            ) === 'Now'
-                              ? 'warning.main'
-                              : 'text.secondary'
-                          }
-                        >
-                          {formatNextCheckTime(
-                            check.next_check_time,
-                            check.is_active
-                          )}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">
-                          {check.organization_name}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <IconButton
-                          onClick={event => handleMenuOpen(event, check)}
-                          size="small"
-                          disabled={
-                            executingCheckId === check.id ||
-                            updatingCheckId === check.id ||
-                            deletingCheckId === check.id
-                          }
-                        >
-                          {executingCheckId === check.id ||
-                          updatingCheckId === check.id ||
-                          deletingCheckId === check.id ? (
-                            <CircularProgress size={16} />
-                          ) : (
-                            <MoreVertIcon />
-                          )}
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </CardContent>
-      </Card>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">
+                              {check.location_name || 'Default'}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">
+                              {formatResponseTime(check.last_response_time)}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">
+                              {check.last_check_time
+                                ? new Date(
+                                    check.last_check_time
+                                  ).toLocaleString()
+                                : 'Never'}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography
+                              variant="body2"
+                              color={
+                                formatNextCheckTime(
+                                  check.next_check_time,
+                                  check.is_active
+                                ) === 'Now'
+                                  ? 'warning.main'
+                                  : 'text.secondary'
+                              }
+                            >
+                              {formatNextCheckTime(
+                                check.next_check_time,
+                                check.is_active
+                              )}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">
+                              {check.organization_name}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <IconButton
+                              onClick={event => handleMenuOpen(event, check)}
+                              size="small"
+                              disabled={
+                                executingCheckId === check.id ||
+                                updatingCheckId === check.id ||
+                                deletingCheckId === check.id
+                              }
+                            >
+                              {executingCheckId === check.id ||
+                              updatingCheckId === check.id ||
+                              deletingCheckId === check.id ? (
+                                <CircularProgress size={16} />
+                              ) : (
+                                <MoreVertIcon />
+                              )}
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </CardContent>
+          </Card>
 
-      {/* Actions Menu */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-      >
-        <MenuItem onClick={handleRunCheckNow}>
-          <PlayArrowIcon sx={{ mr: 1 }} />
-          Run Check Now
-        </MenuItem>
-        <MenuItem onClick={handleToggleCheck}>
-          {selectedCheck?.is_active ? (
-            <>
-              <PauseIcon sx={{ mr: 1 }} />
-              Disable
-            </>
-          ) : (
-            <>
-              <PlayCircleOutlineIcon sx={{ mr: 1 }} />
-              Enable
-            </>
-          )}
-        </MenuItem>
-        <MenuItem onClick={openDeleteDialog} sx={{ color: 'error.main' }}>
-          <DeleteIcon sx={{ mr: 1 }} />
-          Delete
-        </MenuItem>
-      </Menu>
+          {/* Actions Menu */}
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleMenuClose}
+            transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+            anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+          >
+            <MenuItem onClick={handleRunCheckNow}>
+              <PlayArrowIcon sx={{ mr: 1 }} />
+              Run Check Now
+            </MenuItem>
+            <MenuItem onClick={handleToggleCheck}>
+              {selectedCheck?.is_active ? (
+                <>
+                  <PauseIcon sx={{ mr: 1 }} />
+                  Disable
+                </>
+              ) : (
+                <>
+                  <PlayCircleOutlineIcon sx={{ mr: 1 }} />
+                  Enable
+                </>
+              )}
+            </MenuItem>
+            <MenuItem onClick={handleEditCheck}>
+              <EditIcon sx={{ mr: 1 }} />
+              Edit
+            </MenuItem>
+            <MenuItem onClick={openDeleteDialog} sx={{ color: 'error.main' }}>
+              <DeleteIcon sx={{ mr: 1 }} />
+              Delete
+            </MenuItem>
+          </Menu>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={() => {
-          console.log('🔒 Dialog onClose triggered');
-          setDeleteDialogOpen(false);
-        }}
-        aria-labelledby="delete-dialog-title"
-        aria-describedby="delete-dialog-description"
-      >
-        <DialogTitle id="delete-dialog-title">Confirm Delete</DialogTitle>
-        <DialogContent>
-          <DialogContentText id="delete-dialog-description">
-            Are you sure you want to delete the monitoring check &quot;
-            {selectedCheck?.name}&quot;? This action cannot be undone and will
-            remove all associated monitoring data.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => {
-              console.log('❌ Cancel button clicked');
+          {/* Delete Confirmation Dialog */}
+          <Dialog
+            open={deleteDialogOpen}
+            onClose={() => {
+              console.log('🔒 Dialog onClose triggered');
               setDeleteDialogOpen(false);
             }}
-            disabled={deletingCheckId === selectedCheck?.id}
+            aria-labelledby="delete-dialog-title"
+            aria-describedby="delete-dialog-description"
           >
-            Cancel
-          </Button>
-          <Button
-            onClick={() => {
-              console.log('🖱️ Delete button clicked');
-              console.log('🔍 Current selectedCheck:', selectedCheck);
-              console.log('🔍 Current deletingCheckId:', deletingCheckId);
-              handleDeleteCheck();
-            }}
-            color="error"
-            variant="contained"
-            disabled={deletingCheckId === selectedCheck?.id}
-            startIcon={
-              deletingCheckId === selectedCheck?.id ? (
-                <CircularProgress size={16} />
-              ) : (
-                <DeleteIcon />
-              )
-            }
-          >
-            {deletingCheckId === selectedCheck?.id ? 'Deleting...' : 'Delete'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+            <DialogTitle id="delete-dialog-title">Confirm Delete</DialogTitle>
+            <DialogContent>
+              <DialogContentText id="delete-dialog-description">
+                Are you sure you want to delete the monitoring check &quot;
+                {selectedCheck?.name}&quot;? This action cannot be undone and
+                will remove all associated monitoring data.
+              </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+              <Button
+                onClick={() => {
+                  console.log('❌ Cancel button clicked');
+                  setDeleteDialogOpen(false);
+                }}
+                disabled={deletingCheckId === selectedCheck?.id}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  console.log('🖱️ Delete button clicked');
+                  console.log('🔍 Current selectedCheck:', selectedCheck);
+                  console.log('🔍 Current deletingCheckId:', deletingCheckId);
+                  handleDeleteCheck();
+                }}
+                color="error"
+                variant="contained"
+                disabled={deletingCheckId === selectedCheck?.id}
+                startIcon={
+                  deletingCheckId === selectedCheck?.id ? (
+                    <CircularProgress size={16} />
+                  ) : (
+                    <DeleteIcon />
+                  )
+                }
+              >
+                {deletingCheckId === selectedCheck?.id
+                  ? 'Deleting...'
+                  : 'Delete'}
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </>
+      ) : // Service Associations Tab
+      selectedOrganization ? (
+        <MonitoringServiceAssociation
+          organizationId={selectedOrganization.id}
+        />
+      ) : (
+        <Alert severity="info">
+          Please select an organization from the navbar to view service
+          associations.
+        </Alert>
+      )}
     </Box>
   );
 }

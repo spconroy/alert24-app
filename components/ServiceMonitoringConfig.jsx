@@ -31,6 +31,7 @@ import {
   Warning,
   CheckCircle,
   Error as ErrorIcon,
+  Pause,
 } from '@mui/icons-material';
 import { useOrganization } from '@/contexts/OrganizationContext';
 
@@ -190,8 +191,10 @@ export default function ServiceMonitoringConfig({
       return { icon: <CheckCircle />, color: 'success' };
     if (check.current_status === 'down')
       return { icon: <ErrorIcon />, color: 'error' };
-    if (check.current_status === 'paused')
+    if (check.current_status === 'warning')
       return { icon: <Warning />, color: 'warning' };
+    if (check.current_status === 'inactive')
+      return { icon: <Pause />, color: 'default' };
     return { icon: <MonitorHeart />, color: 'default' };
   };
 
@@ -218,7 +221,7 @@ export default function ServiceMonitoringConfig({
         <Box display="flex" alignItems="center" justifyContent="space-between">
           <Box>
             <Typography variant="h6">
-              Configure Monitoring for "{service.name}"
+              Configure Monitoring for &quot;{service.name}&quot;
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Associate monitoring checks to automatically update service status

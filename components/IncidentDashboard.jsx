@@ -84,6 +84,8 @@ export default function IncidentDashboard() {
           down: checks.filter(c => c?.current_status === 'down').length || 0,
           warning:
             checks.filter(c => c?.current_status === 'warning').length || 0,
+          inactive:
+            checks.filter(c => c?.current_status === 'inactive').length || 0,
         };
         setMonitoringStats(stats);
       } else {
