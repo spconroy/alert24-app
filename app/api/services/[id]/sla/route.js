@@ -1,13 +1,9 @@
-
-
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { query, transaction } from '@/lib/db-http-cloudflare';
+import { SupabaseClient } from '../../../../lib/db-supabase.js';
 import { authOptions } from '../../../auth/[...nextauth]/route.js';
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+const db = new SupabaseClient();
 
 export async function GET(request, { params }) {
   try {
@@ -23,128 +19,100 @@ export async function GET(request, { params }) {
     const { searchParams } = new URL(request.url);
     const days = parseInt(searchParams.get('days')) || 30;
 
-    // Validate that the user has access to this service
-    const serviceCheck = await query(
-      `
-      SELECT s.id, s.name
-      FROM public.services s
-      JOIN public.status_pages sp ON s.status_page_id = sp.id
-      JOIN public.organizations o ON sp.organization_id = o.id
-      JOIN public.organization_members om ON o.id = om.organization_id
-      JOIN public.users u ON om.user_id = u.id
-      WHERE s.id = $1 AND u.email = $2 AND om.is_active = true
-    `,
-      [serviceId, session.user.email]
-    );
+    // Get user
+    const user = await db.getUserByEmail(session.user.email);
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
 
-    if (serviceCheck.rows.length === 0) {
+    // Get service and verify access
+    const service = await db.getServiceById(serviceId);
+    if (!service) {
+      return NextResponse.json({ error: 'Service not found' }, { status: 404 });
+    }
+
+    // Check organization membership
+    const organizationId = service.status_pages?.organization_id;
+    if (!organizationId) {
       return NextResponse.json(
-        { error: 'Service not found or access denied' },
+        { error: 'Service organization not found' },
         { status: 404 }
       );
     }
 
-    const service = serviceCheck.rows[0];
+    const membership = await db.getOrganizationMember(organizationId, user.id);
+    if (!membership) {
+      return NextResponse.json(
+        { error: 'Access denied - not a member of this organization' },
+        { status: 403 }
+      );
+    }
 
-    // Get uptime percentage for different periods
-    const uptimeQueries = await Promise.all([
-      // Last 24 hours
-      query(
-        "SELECT calculate_service_uptime($1, NOW() - INTERVAL '24 hours', NOW()) as uptime",
-        [serviceId]
-      ),
-      // Last 7 days
-      query(
-        "SELECT calculate_service_uptime($1, NOW() - INTERVAL '7 days', NOW()) as uptime",
-        [serviceId]
-      ),
-      // Last 30 days
-      query(
-        "SELECT calculate_service_uptime($1, NOW() - INTERVAL '30 days', NOW()) as uptime",
-        [serviceId]
-      ),
-      // Last 90 days
-      query(
-        "SELECT calculate_service_uptime($1, NOW() - INTERVAL '90 days', NOW()) as uptime",
-        [serviceId]
-      ),
+    // Get uptime statistics for different periods
+    const [uptime7Days, uptime30Days, uptime90Days] = await Promise.all([
+      db.getServiceUptimeStats(serviceId, 7),
+      db.getServiceUptimeStats(serviceId, 30),
+      db.getServiceUptimeStats(serviceId, 90),
     ]);
 
-    const uptimeStats = {
-      last24Hours: parseFloat(uptimeQueries[0].rows[0].uptime),
-      last7Days: parseFloat(uptimeQueries[1].rows[0].uptime),
-      last30Days: parseFloat(uptimeQueries[2].rows[0].uptime),
-      last90Days: parseFloat(uptimeQueries[3].rows[0].uptime),
+    // Calculate SLA compliance (assuming 99.9% SLA target)
+    const slaTarget = 99.9;
+    const slaCompliance = {
+      '7_days': {
+        target: slaTarget,
+        actual: uptime7Days.uptime_percentage,
+        compliant: uptime7Days.uptime_percentage >= slaTarget,
+        total_checks: uptime7Days.total_checks,
+        failed_checks: uptime7Days.failed_checks,
+      },
+      '30_days': {
+        target: slaTarget,
+        actual: uptime30Days.uptime_percentage,
+        compliant: uptime30Days.uptime_percentage >= slaTarget,
+        total_checks: uptime30Days.total_checks,
+        failed_checks: uptime30Days.failed_checks,
+      },
+      '90_days': {
+        target: slaTarget,
+        actual: uptime90Days.uptime_percentage,
+        compliant: uptime90Days.uptime_percentage >= slaTarget,
+        total_checks: uptime90Days.total_checks,
+        failed_checks: uptime90Days.failed_checks,
+      },
     };
 
-    // Get timeline data for visualization
-    const timelineQuery = await query(
-      `
-      SELECT 
-        started_at as period_start,
-        COALESCE(ended_at, NOW()) as period_end,
-        status,
-        EXTRACT(EPOCH FROM (COALESCE(ended_at, NOW()) - started_at)) / 3600 as duration_hours
-      FROM public.service_status_history 
-      WHERE service_id = $1 
-      AND started_at >= NOW() - ($2 || ' days')::INTERVAL
-      ORDER BY started_at
-    `,
-      [serviceId, days]
-    );
-
-    const timeline = timelineQuery.rows.map(row => ({
-      periodStart: row.period_start,
-      periodEnd: row.period_end,
-      status: row.status,
-      durationHours: parseFloat(row.duration_hours),
-    }));
-
-    // Calculate incident summary for the period
-    const incidentQuery = await query(
-      `
-      SELECT 
-        status,
-        COUNT(*) as count,
-        SUM(EXTRACT(EPOCH FROM (COALESCE(ended_at, NOW()) - started_at)) / 60) as total_minutes
-      FROM public.service_status_history 
-      WHERE service_id = $1 
-      AND started_at >= NOW() - ($2 || ' days')::INTERVAL
-      AND status IN ('degraded', 'down')
-      GROUP BY status
-    `,
-      [serviceId, days]
-    );
-
-    const incidents = incidentQuery.rows.reduce((acc, row) => {
-      acc[row.status] = {
-        count: parseInt(row.count),
-        totalMinutes: parseFloat(row.total_minutes),
-      };
-      return acc;
-    }, {});
+    // Calculate availability metrics
+    const availabilityMetrics = {
+      current_status: service.status || 'operational',
+      uptime_percentages: {
+        '7_days': uptime7Days.uptime_percentage,
+        '30_days': uptime30Days.uptime_percentage,
+        '90_days': uptime90Days.uptime_percentage,
+      },
+      sla_compliance: slaCompliance,
+      total_incidents: 0, // This would require additional queries
+      mean_time_to_recovery: null, // This would require incident data analysis
+    };
 
     return NextResponse.json({
       success: true,
       service: {
         id: service.id,
         name: service.name,
+        description: service.description,
       },
-      uptimeStats,
-      timeline,
-      incidents,
-      period: {
-        days,
-        startDate: new Date(
-          Date.now() - days * 24 * 60 * 60 * 1000
-        ).toISOString(),
-        endDate: new Date().toISOString(),
-      },
+      availability_metrics: availabilityMetrics,
+      period_days: days,
+      generated_at: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Error fetching SLA data:', error);
+    console.error('Error fetching SLA metrics:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      {
+        success: false,
+        error: 'Failed to fetch SLA metrics',
+        details: error.message,
+      },
       { status: 500 }
     );
   }

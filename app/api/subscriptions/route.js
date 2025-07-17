@@ -1,7 +1,8 @@
+import { NextResponse } from 'next/server';
+import { SupabaseClient } from '../../lib/db-supabase.js';
+import crypto from 'crypto';
 
-
-import { query, transaction } from '@/lib/db-http-cloudflare';
-
+const db = new SupabaseClient();
 
 export async function POST(req) {
   try {
@@ -9,8 +10,8 @@ export async function POST(req) {
     const { status_page_id, email } = body;
 
     if (!status_page_id || !email) {
-      return new Response(
-        JSON.stringify({ error: 'Missing status_page_id or email' }),
+      return NextResponse.json(
+        { error: 'Missing status_page_id or email' },
         { status: 400 }
       );
     }
@@ -18,147 +19,108 @@ export async function POST(req) {
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return new Response(JSON.stringify({ error: 'Invalid email format' }), {
-        status: 400,
-      });
+      return NextResponse.json(
+        { error: 'Invalid email format' },
+        { status: 400 }
+      );
     }
 
     // Check if status page exists and is public
-    const statusPageQuery = `
-      SELECT id, name, is_public 
-      FROM public.status_pages 
-      WHERE id = $1 AND deleted_at IS NULL
-    `;
-    const { rows: statusPages } = await query(statusPageQuery, [
-      status_page_id,
-    ]);
+    const statusPage = await db.getStatusPageById(status_page_id);
 
-    if (statusPages.length === 0) {
-      return new Response(JSON.stringify({ error: 'Status page not found' }), {
-        status: 404,
-      });
+    if (!statusPage) {
+      return NextResponse.json(
+        { error: 'Status page not found' },
+        { status: 404 }
+      );
     }
 
-    const statusPage = statusPages[0];
     if (!statusPage.is_public) {
-      return new Response(
-        JSON.stringify({ error: 'Cannot subscribe to private status page' }),
+      return NextResponse.json(
+        { error: 'Cannot subscribe to private status page' },
         { status: 403 }
       );
     }
 
     // Check if subscription already exists
-    const existingSubscriptionQuery = `
-      SELECT id FROM public.subscriptions 
-      WHERE status_page_id = $1 AND email = $2 AND deleted_at IS NULL
-    `;
-    const { rows: existingSubscriptions } = await query(
-      existingSubscriptionQuery,
-      [status_page_id, email]
+    const existingSubscription = await db.getSubscription(
+      status_page_id,
+      email
     );
 
-    if (existingSubscriptions.length > 0) {
-      return new Response(
-        JSON.stringify({
-          message: 'Already subscribed',
-          subscription_id: existingSubscriptions[0].id,
-        }),
-        { status: 200 }
+    if (existingSubscription) {
+      return NextResponse.json(
+        { error: 'Email is already subscribed to this status page' },
+        { status: 409 }
       );
     }
 
-    // Create new subscription
-    const insertSubscriptionQuery = `
-      INSERT INTO public.subscriptions (status_page_id, email, is_active, created_at, updated_at)
-      VALUES ($1, $2, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-      RETURNING id, email, created_at
-    `;
+    // Generate unsubscribe token
+    const unsubscribeToken = crypto.randomBytes(32).toString('hex');
 
-    const { rows: newSubscriptions } = await query(
-      insertSubscriptionQuery,
-      [status_page_id, email]
-    );
-    const subscription = newSubscriptions[0];
-
-    return new Response(
-      JSON.stringify({
-        message: 'Successfully subscribed',
-        subscription: {
-          id: subscription.id,
-          email: subscription.email,
-          status_page_name: statusPage.name,
-          created_at: subscription.created_at,
-        },
-      }),
-      { status: 201 }
-    );
-  } catch (err) {
-    console.error('Subscription POST error:', err);
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
+    // Create subscription
+    const subscription = await db.createSubscription({
+      status_page_id,
+      email,
+      unsubscribe_token: unsubscribeToken,
+      subscribed_at: new Date().toISOString(),
+      is_active: true,
     });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Successfully subscribed to status page updates',
+      subscription_id: subscription.id,
+      unsubscribe_token: unsubscribeToken,
+    });
+  } catch (error) {
+    console.error('Error creating subscription:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to create subscription',
+        details: error.message,
+      },
+      { status: 500 }
+    );
   }
 }
 
 export async function DELETE(req) {
   try {
     const { searchParams } = new URL(req.url);
-    const subscriptionId = searchParams.get('id');
-    const email = searchParams.get('email');
-    const statusPageId = searchParams.get('status_page_id');
+    const token = searchParams.get('token');
 
-    if (!subscriptionId && (!email || !statusPageId)) {
-      return new Response(
-        JSON.stringify({
-          error: 'Missing subscription ID or email/status_page_id combination',
-        }),
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Unsubscribe token is required' },
         { status: 400 }
       );
     }
 
-    let unsubscribeQuery;
-    let queryParams;
+    // Unsubscribe using token
+    const unsubscribed = await db.unsubscribeByToken(token);
 
-    if (subscriptionId) {
-      unsubscribeQuery = `
-        UPDATE public.subscriptions 
-        SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-        WHERE id = $1 AND deleted_at IS NULL
-        RETURNING id, email
-      `;
-      queryParams = [subscriptionId];
-    } else {
-      unsubscribeQuery = `
-        UPDATE public.subscriptions 
-        SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-        WHERE status_page_id = $1 AND email = $2 AND deleted_at IS NULL
-        RETURNING id, email
-      `;
-      queryParams = [statusPageId, email];
+    if (!unsubscribed) {
+      return NextResponse.json(
+        { error: 'Invalid unsubscribe token' },
+        { status: 404 }
+      );
     }
 
-    const { rows: unsubscribed } = await query(
-      unsubscribeQuery,
-      queryParams
-    );
-
-    if (unsubscribed.length === 0) {
-      return new Response(JSON.stringify({ error: 'Subscription not found' }), {
-        status: 404,
-      });
-    }
-
-    return new Response(
-      JSON.stringify({
-        message: 'Successfully unsubscribed',
-        email: unsubscribed[0].email,
-      }),
-      { status: 200 }
-    );
-  } catch (err) {
-    console.error('Subscription DELETE error:', err);
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
+    return NextResponse.json({
+      success: true,
+      message: 'Successfully unsubscribed from status page updates',
     });
+  } catch (error) {
+    console.error('Error unsubscribing:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to unsubscribe',
+        details: error.message,
+      },
+      { status: 500 }
+    );
   }
 }

@@ -1,90 +1,116 @@
-
-
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { query, transaction } from '@/lib/db-http-cloudflare';
+import { SupabaseClient } from '../../../lib/db-supabase.js';
+import { authOptions } from '../../auth/[...nextauth]/route.js';
 
+const db = new SupabaseClient();
 
 export async function GET(req) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
     if (!session || !session.user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-      });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // First, get the user ID from the database using the email
-    const { rows: userRows } = await query(
-      'SELECT id, email FROM public.users WHERE email = $1',
-      [session.user.email]
-    );
-
-    if (userRows.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'User not found in database' }),
+    // Get user
+    const user = await db.getUserByEmail(session.user.email);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found in database' },
         { status: 404 }
       );
     }
 
-    const userId = userRows[0].id;
-
     // Get all status pages from organizations the user is a member of
-    const statusPagesQuery = `
-      SELECT 
-        sp.*,
-        o.name as organization_name,
-        o.slug as organization_slug
-      FROM public.status_pages sp
-      JOIN public.organizations o ON sp.organization_id = o.id
-      JOIN public.organization_members om ON o.id = om.organization_id
-      WHERE om.user_id = $1 
-        AND om.is_active = true 
-        AND sp.deleted_at IS NULL
-        AND o.deleted_at IS NULL
-      ORDER BY o.name ASC, sp.name ASC
-    `;
+    const statusPages = await db.getAllStatusPagesForUser(user.id);
 
-    const { rows: statusPages } = await query(statusPagesQuery, [userId]);
-
-    // For each status page, get service summary
+    // For each status page, get service summary (simplified for now)
     const statusPagesWithServices = await Promise.all(
       statusPages.map(async statusPage => {
-        const servicesQuery = `
-          SELECT 
-            COUNT(*) as total_services,
-            SUM(CASE WHEN status = 'operational' THEN 1 ELSE 0 END) as operational,
-            SUM(CASE WHEN status = 'degraded' THEN 1 ELSE 0 END) as degraded,
-            SUM(CASE WHEN status = 'down' THEN 1 ELSE 0 END) as down,
-            SUM(CASE WHEN status = 'maintenance' THEN 1 ELSE 0 END) as maintenance
-          FROM public.services 
-          WHERE status_page_id = $1 AND deleted_at IS NULL
-        `;
+        try {
+          // Get services for this status page
+          const services = await db.select('services', '*', {
+            status_page_id: statusPage.id,
+          });
 
-        const { rows: serviceSummary } = await query(servicesQuery, [
-          statusPage.id,
-        ]);
+          // Filter out deleted services
+          const activeServices = services.filter(
+            service => !service.deleted_at
+          );
 
-        return {
-          ...statusPage,
-          service_summary: {
-            total: parseInt(serviceSummary[0].total_services) || 0,
-            operational: parseInt(serviceSummary[0].operational) || 0,
-            degraded: parseInt(serviceSummary[0].degraded) || 0,
-            down: parseInt(serviceSummary[0].down) || 0,
-            maintenance: parseInt(serviceSummary[0].maintenance) || 0,
-          },
-        };
+          // Calculate service status summary
+          const serviceStatusCounts = {
+            operational: 0,
+            degraded: 0,
+            down: 0,
+            maintenance: 0,
+          };
+
+          activeServices.forEach(service => {
+            const status = service.status || 'operational';
+            if (serviceStatusCounts.hasOwnProperty(status)) {
+              serviceStatusCounts[status]++;
+            } else {
+              serviceStatusCounts.operational++;
+            }
+          });
+
+          // Determine overall status
+          let overallStatus = 'operational';
+          if (serviceStatusCounts.down > 0) {
+            overallStatus = 'down';
+          } else if (serviceStatusCounts.degraded > 0) {
+            overallStatus = 'degraded';
+          } else if (serviceStatusCounts.maintenance > 0) {
+            overallStatus = 'maintenance';
+          }
+
+          return {
+            ...statusPage,
+            organization_name: statusPage.organizations?.name,
+            organization_slug: statusPage.organizations?.slug,
+            service_count: activeServices.length,
+            service_status_counts: serviceStatusCounts,
+            overall_status: overallStatus,
+            services: activeServices,
+          };
+        } catch (error) {
+          console.error(
+            `Error processing status page ${statusPage.id}:`,
+            error
+          );
+          return {
+            ...statusPage,
+            organization_name: statusPage.organizations?.name,
+            organization_slug: statusPage.organizations?.slug,
+            service_count: 0,
+            service_status_counts: {
+              operational: 0,
+              degraded: 0,
+              down: 0,
+              maintenance: 0,
+            },
+            overall_status: 'unknown',
+            services: [],
+          };
+        }
       })
     );
 
-    return new Response(
-      JSON.stringify({ statusPages: statusPagesWithServices }),
-      { status: 200 }
-    );
-  } catch (err) {
-    console.error('Status pages all GET error:', err);
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
+    return NextResponse.json({
+      success: true,
+      status_pages: statusPagesWithServices,
+      count: statusPagesWithServices.length,
     });
+  } catch (error) {
+    console.error('Error fetching all status pages:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to fetch status pages',
+        details: error.message,
+      },
+      { status: 500 }
+    );
   }
 }

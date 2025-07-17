@@ -1,38 +1,40 @@
-import { testConnection } from '@/lib/db-http-cloudflare';
+import { NextResponse } from 'next/server';
+import { SupabaseClient } from '../../lib/db-supabase.js';
+
+const db = new SupabaseClient();
 
 export async function GET() {
   try {
-    console.log('Testing PostgREST connection through Cloudflare Access...');
+    console.log('Testing Supabase connection...');
 
-    const HTTP_DATABASE_URL = process.env.HTTP_DATABASE_URL;
-    const CF_ACCESS_CLIENT_ID = process.env.CF_ACCESS_CLIENT_ID;
-    const CF_ACCESS_CLIENT_SECRET = process.env.CF_ACCESS_CLIENT_SECRET;
+    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    // Test the PostgREST connection
-    const connectionResult = await testConnection();
+    // Test the Supabase connection
+    const connectionResult = await db.testConnection();
 
-    return Response.json({
-      success: true,
-      message: 'PostgREST connection test completed',
-      baseUrl: HTTP_DATABASE_URL,
+    return NextResponse.json({
+      success: connectionResult.success,
+      message: 'Supabase connection test completed',
+      baseUrl: SUPABASE_URL,
       hasCredentials: {
-        client_id: !!CF_ACCESS_CLIENT_ID,
-        client_secret: !!CF_ACCESS_CLIENT_SECRET,
+        supabase_url: !!SUPABASE_URL,
+        supabase_anon_key: !!SUPABASE_ANON_KEY,
       },
       connectionResult,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('PostgREST connection test error:', error);
+    console.error('Supabase connection test error:', error);
 
-    return Response.json(
+    return NextResponse.json(
       {
         success: false,
         error: error.message,
-        baseUrl: process.env.HTTP_DATABASE_URL,
+        baseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
         hasCredentials: {
-          client_id: !!process.env.CF_ACCESS_CLIENT_ID,
-          client_secret: !!process.env.CF_ACCESS_CLIENT_SECRET,
+          supabase_url: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+          supabase_anon_key: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
         },
         timestamp: new Date().toISOString(),
       },
@@ -43,37 +45,59 @@ export async function GET() {
 
 export async function POST(request) {
   try {
-    const { sql, params = [] } = await request.json();
+    const { table, operation = 'select', data = {} } = await request.json();
 
-    if (!sql) {
-      return Response.json(
+    if (!table) {
+      return NextResponse.json(
         {
           success: false,
-          error: 'SQL query is required',
+          error: 'Table name is required',
+          timestamp: new Date().toISOString(),
         },
         { status: 400 }
       );
     }
 
-    // Import query function dynamically to avoid import issues
-    const { query } = await import('@/lib/db-http-cloudflare');
-    const result = await query(sql, params);
+    let result;
 
-    return Response.json({
+    switch (operation) {
+      case 'select':
+        result = await db.select(table, '*', data);
+        break;
+      case 'insert':
+        result = await db.insert(table, data);
+        break;
+      case 'update':
+        if (!data.id) {
+          throw new Error('ID is required for update operations');
+        }
+        const { id, ...updateData } = data;
+        result = await db.update(table, id, updateData);
+        break;
+      case 'delete':
+        if (!data.id) {
+          throw new Error('ID is required for delete operations');
+        }
+        result = await db.delete(table, data.id);
+        break;
+      default:
+        throw new Error(`Unsupported operation: ${operation}`);
+    }
+
+    return NextResponse.json({
       success: true,
-      result: result.rows,
-      row_count: result.rows.length,
+      operation,
+      table,
+      result,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('PostgREST query error:', error);
+    console.error('Database operation error:', error);
 
-    return Response.json(
+    return NextResponse.json(
       {
         success: false,
         error: error.message,
-        details:
-          'This might be due to Cloudflare Access authentication or PostgREST configuration',
         timestamp: new Date().toISOString(),
       },
       { status: 500 }
