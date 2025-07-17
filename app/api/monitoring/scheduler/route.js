@@ -1,7 +1,240 @@
 import { NextResponse } from 'next/server';
 import { SupabaseClient } from '../../../../lib/db-supabase.js';
+import { emailService } from '../../../../lib/email-service.js';
 
 const db = new SupabaseClient();
+
+// Update the status of a service linked to this monitoring check
+async function updateLinkedServiceStatus(check, result) {
+  try {
+    // Parse check data from the service description
+    const checkData = JSON.parse(check.description);
+    const linkedServiceId = checkData.linked_service_id;
+
+    if (!linkedServiceId) {
+      return; // No linked service
+    }
+
+    // Get the linked service
+    const { data: linkedService, error: fetchError } = await db.client
+      .from('services')
+      .select('*')
+      .eq('id', linkedServiceId)
+      .not('name', 'like', '[MONITORING]%')
+      .single();
+
+    if (fetchError || !linkedService) {
+      console.warn(
+        `Linked service ${linkedServiceId} not found or not accessible`
+      );
+      return;
+    }
+
+    // Determine new service status based on monitoring result
+    let newStatus = 'operational';
+    if (!result.is_successful) {
+      // Determine severity based on error type
+      if (result.status_code >= 500) {
+        newStatus = 'down';
+      } else if (result.status_code >= 400 || result.response_time_ms > 10000) {
+        newStatus = 'degraded';
+      } else {
+        newStatus = 'degraded'; // Default for any failure
+      }
+    }
+
+    // Only update if status actually changed
+    if (linkedService.status !== newStatus) {
+      const { error: updateError } = await db.client
+        .from('services')
+        .update({
+          status: newStatus,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', linkedServiceId);
+
+      if (updateError) {
+        console.error('Error updating linked service status:', updateError);
+      } else {
+        console.log(
+          `🔗 Updated linked service ${linkedService.name}: ${linkedService.status} → ${newStatus}`
+        );
+        return {
+          oldStatus: linkedService.status,
+          newStatus,
+          serviceName: linkedService.name,
+        };
+      }
+    }
+  } catch (error) {
+    console.error('Error updating linked service status:', error);
+  }
+  return null;
+}
+
+// Resolve incident when monitoring check recovers
+async function resolveIncidentForRecovery(check) {
+  try {
+    // Parse check data from the service description
+    const checkData = JSON.parse(check.description);
+
+    // Find open monitoring-related incidents for this check
+    const existingIncidents = await db.getIncidentsByOrganization(
+      checkData.organization_id
+    );
+    const openIncident = existingIncidents.find(
+      incident =>
+        incident.source === 'monitoring' &&
+        incident.status !== 'resolved' &&
+        incident.affected_services?.includes(check.id)
+    );
+
+    if (openIncident) {
+      // Auto-resolve the incident
+      const updateData = {
+        status: 'resolved',
+        resolved_at: new Date().toISOString(),
+      };
+
+      await db.updateIncident(openIncident.id, updateData);
+      console.log(
+        `✅ Auto-resolved incident ${openIncident.id} - check ${check.name} recovered`
+      );
+      return openIncident;
+    }
+  } catch (error) {
+    console.error('Error resolving incident for recovery:', error);
+  }
+  return null;
+}
+
+// Create incident for monitoring check failure
+async function createIncidentForFailure(check, result) {
+  try {
+    // Parse check data from the service description
+    const checkData = JSON.parse(check.description);
+
+    // Get organization details
+    const organization = await db.getOrganizationById(
+      checkData.organization_id
+    );
+    if (!organization) {
+      console.error('Organization not found for check:', check.id);
+      return null;
+    }
+
+    // Check if there's already an open incident for this check
+    const existingIncidents = await db.getIncidentsByOrganization(
+      checkData.organization_id
+    );
+    const openIncident = existingIncidents.find(
+      incident =>
+        incident.source === 'monitoring' &&
+        incident.status !== 'resolved' &&
+        incident.affected_services?.includes(check.id)
+    );
+
+    if (openIncident) {
+      console.log(
+        `Incident already exists for check ${check.name}: ${openIncident.id}`
+      );
+      return openIncident;
+    }
+
+    // Determine severity based on check type and failure details
+    let severity = 'medium';
+    if (checkData.check_type === 'http' && result.status_code >= 500) {
+      severity = 'high';
+    } else if (result.response_time_ms > 10000) {
+      severity = 'high';
+    } else if (
+      checkData.check_type === 'ssl' &&
+      result.error_message?.includes('expired')
+    ) {
+      severity = 'critical';
+    }
+
+    // Create incident
+    const incidentData = {
+      organization_id: checkData.organization_id,
+      title: `Service Down: ${check.name}`,
+      description: `Monitoring check "${checkData.name || check.name}" has failed.\n\nError: ${result.error_message}\n\nCheck URL: ${checkData.url || checkData.target_url}\nResponse Time: ${result.response_time_ms}ms\n${result.status_code ? `Status Code: ${result.status_code}` : ''}`,
+      severity,
+      status: 'investigating',
+      affected_services: [check.id],
+      impact_description: `Service "${check.name}" is currently unavailable or experiencing issues.`,
+      source: 'monitoring',
+      created_by: null, // System created
+    };
+
+    const incident = await db.createIncident(incidentData);
+    console.log(
+      `📋 Auto-created incident ${incident.id} for failed check: ${check.name}`
+    );
+    return incident;
+  } catch (error) {
+    console.error('Error creating incident for failure:', error);
+    return null;
+  }
+}
+
+// Send failure notifications for monitoring checks
+async function sendFailureNotifications(check, result) {
+  try {
+    // Parse check data from the service description
+    const checkData = JSON.parse(check.description);
+
+    // Get organization details
+    const organization = await db.getOrganizationById(
+      checkData.organization_id
+    );
+    if (!organization) {
+      console.error('Organization not found for check:', check.id);
+      return;
+    }
+
+    // Get organization members who should be notified (admins and responders)
+    const members = await db.getOrganizationMembersByOrganization(
+      checkData.organization_id
+    );
+    const notificationTargets = members.filter(
+      member =>
+        ['admin', 'owner', 'responder'].includes(member.role) &&
+        member.email_notifications_enabled !== false
+    );
+
+    // Send email to each target
+    for (const member of notificationTargets) {
+      try {
+        await emailService.sendMonitoringAlert({
+          toEmail: member.users?.email || member.email,
+          toName: member.users?.name || member.name,
+          organizationName: organization.name,
+          serviceName: check.name,
+          checkName: checkData.name || check.name,
+          alertType: 'down',
+          errorMessage: result.error_message,
+          responseTime: result.response_time_ms,
+          organizationBranding: {
+            name: organization.name,
+            logoUrl: organization.logo_url,
+          },
+        });
+
+        console.log(
+          `📧 Failure notification sent to ${member.users?.email || member.email}`
+        );
+      } catch (emailError) {
+        console.error(
+          `Failed to send notification to ${member.users?.email || member.email}:`,
+          emailError
+        );
+      }
+    }
+  } catch (error) {
+    console.error('Error sending failure notifications:', error);
+  }
+}
 
 export async function GET(req) {
   // Verify this is coming from Vercel Cron or internal call
@@ -55,20 +288,52 @@ export async function GET(req) {
             response_body: result.response_body,
           });
 
+          // Update linked service status if association exists
+          const linkedServiceUpdate = await updateLinkedServiceStatus(
+            check,
+            result
+          );
+
           executionResults.push({
             check_id: check.id,
             check_name: check.name,
             success: result.is_successful,
             response_time: result.response_time,
             error: result.error_message,
+            linked_service_updated: linkedServiceUpdate
+              ? {
+                  service_name: linkedServiceUpdate.serviceName,
+                  old_status: linkedServiceUpdate.oldStatus,
+                  new_status: linkedServiceUpdate.newStatus,
+                }
+              : null,
           });
 
-          // If check failed, could trigger notifications here
+          // If check failed, create incident and trigger notifications
           if (!result.is_successful) {
             console.log(
               `Check failed: ${check.name} - ${result.error_message}`
             );
-            // TODO: Trigger escalation/notification logic
+
+            // Create incident for the failure (if one doesn't already exist)
+            const incident = await createIncidentForFailure(check, result);
+
+            // Send email notifications to organization admins and responders
+            await sendFailureNotifications(check, result);
+
+            // Add incident info to execution results
+            if (incident) {
+              executionResults[executionResults.length - 1].incident_created =
+                incident.id;
+            }
+          } else {
+            // Check succeeded - resolve any open incidents for this check
+            const resolvedIncident = await resolveIncidentForRecovery(check);
+            if (resolvedIncident) {
+              executionResults[executionResults.length - 1].incident_resolved =
+                resolvedIncident.id;
+              console.log(`✅ Check recovered: ${check.name}`);
+            }
           }
         } else {
           console.log(`Skipping check: ${check.name} (not due yet)`);
@@ -309,7 +574,10 @@ async function executeSslCheck(check) {
       is_successful: response.status < 500, // Any response means SSL is working
       response_time: Date.now() - startTime,
       status_code: response.status,
-      error_message: response.status < 500 ? null : `SSL check failed with status ${response.status}`,
+      error_message:
+        response.status < 500
+          ? null
+          : `SSL check failed with status ${response.status}`,
       response_body: null,
     };
   } catch (error) {

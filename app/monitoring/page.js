@@ -54,8 +54,13 @@ export default function MonitoringPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingCheckId, setDeletingCheckId] = useState(null);
   const [updatingCheckId, setUpdatingCheckId] = useState(null);
+  const [isClient, setIsClient] = useState(false);
   const { data: session } = useSession();
   const { selectedOrganization } = useOrganization();
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     if (session) {
@@ -73,6 +78,23 @@ export default function MonitoringPage() {
 
     return () => clearInterval(interval);
   }, [session, selectedOrganization]);
+
+  // Debug: Track state changes
+  useEffect(() => {
+    console.log('🔍 deleteDialogOpen changed:', deleteDialogOpen);
+  }, [deleteDialogOpen]);
+
+  useEffect(() => {
+    console.log('🔍 deletingCheckId changed:', deletingCheckId);
+  }, [deletingCheckId]);
+
+  useEffect(() => {
+    console.log(
+      '🔍 selectedCheck changed:',
+      selectedCheck?.id,
+      selectedCheck?.name
+    );
+  }, [selectedCheck]);
 
   const fetchMonitoringData = async () => {
     try {
@@ -222,29 +244,67 @@ export default function MonitoringPage() {
   };
 
   const handleDeleteCheck = async () => {
-    if (!selectedCheck) return;
+    if (!selectedCheck) {
+      console.error('No check selected for deletion');
+      return;
+    }
+
+    console.log(
+      '🗑️ Starting delete process for check:',
+      selectedCheck.id,
+      selectedCheck.name
+    );
 
     try {
       setDeletingCheckId(selectedCheck.id);
       setError(null);
 
+      console.log(
+        '📡 Making DELETE request to:',
+        `/api/monitoring/${selectedCheck.id}`
+      );
+
       const response = await fetch(`/api/monitoring/${selectedCheck.id}`, {
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
+      console.log('📡 Response status:', response.status, response.statusText);
+
       if (!response.ok) {
-        const errorData = await response.json();
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError);
+          errorData = {
+            error: `HTTP ${response.status}: ${response.statusText}`,
+          };
+        }
+        console.error('❌ Delete failed:', errorData);
         throw new Error(errorData.error || 'Failed to delete monitoring check');
       }
 
+      const result = await response.json();
+      console.log('✅ Delete successful:', result);
+
       // Refresh monitoring data
+      console.log('🔄 Refreshing monitoring data...');
       await fetchMonitoringData();
+
+      console.log('🔒 Closing dialog and menu...');
       setDeleteDialogOpen(false);
       handleMenuClose();
+
+      console.log('✅ Delete process completed successfully');
     } catch (err) {
-      console.error('Error deleting monitoring check:', err);
+      console.error('❌ Error deleting monitoring check:', err);
       setError(`Failed to delete check: ${err.message}`);
+      // Don't close dialog on error so user can retry
     } finally {
+      console.log('🏁 Clearing deleting state');
       setDeletingCheckId(null);
     }
   };
@@ -311,6 +371,11 @@ export default function MonitoringPage() {
   const formatNextCheckTime = (nextCheckTime, isActive) => {
     if (!isActive) return 'Paused';
     if (!nextCheckTime) return 'Unknown';
+
+    // Prevent hydration issues by avoiding dynamic time calculations during SSR
+    if (!isClient) {
+      return 'Loading...';
+    }
 
     const now = new Date();
     const nextCheck = new Date(nextCheckTime);
@@ -710,7 +775,10 @@ export default function MonitoringPage() {
       {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
+        onClose={() => {
+          console.log('🔒 Dialog onClose triggered');
+          setDeleteDialogOpen(false);
+        }}
         aria-labelledby="delete-dialog-title"
         aria-describedby="delete-dialog-description"
       >
@@ -724,13 +792,21 @@ export default function MonitoringPage() {
         </DialogContent>
         <DialogActions>
           <Button
-            onClick={() => setDeleteDialogOpen(false)}
+            onClick={() => {
+              console.log('❌ Cancel button clicked');
+              setDeleteDialogOpen(false);
+            }}
             disabled={deletingCheckId === selectedCheck?.id}
           >
             Cancel
           </Button>
           <Button
-            onClick={handleDeleteCheck}
+            onClick={() => {
+              console.log('🖱️ Delete button clicked');
+              console.log('🔍 Current selectedCheck:', selectedCheck);
+              console.log('🔍 Current deletingCheckId:', deletingCheckId);
+              handleDeleteCheck();
+            }}
             color="error"
             variant="contained"
             disabled={deletingCheckId === selectedCheck?.id}

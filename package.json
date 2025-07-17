@@ -24,6 +24,7 @@
     "@neondatabase/serverless": "^1.0.1",
     "@noble/hashes": "^1.8.0",
     "@panva/hkdf": "^1.2.1",
+    "@sendgrid/mail": "^8.1.5",
     "@supabase/supabase-js": "^2.51.0",
     "@types/bcrypt": "^5.0.2",
     "bcrypt": "^6.0.0",

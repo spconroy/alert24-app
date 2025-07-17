@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { SupabaseClient } from '../../../../../lib/db-supabase.js';
 import { authOptions } from '../../../auth/[...nextauth]/route.js';
+import { emailService } from '../../../../../lib/email-service.js';
 
 const db = new SupabaseClient();
 
@@ -194,12 +195,32 @@ export async function POST(req, { params }) {
     // Create invitation link
     const invitationLink = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/accept-invitation?token=${invitationToken}`;
 
-    // TODO: Send email invitation (integrate with SendGrid later)
-    console.log(`Invitation sent to ${email}:`);
-    console.log(`Organization: ${organization.name}`);
-    console.log(`Role: ${role}`);
-    console.log(`Invitation Link: ${invitationLink}`);
-    console.log(`Expires: ${expiresAt}`);
+    // Send email invitation
+    const emailResult = await emailService.sendInvitationEmail({
+      toEmail: email,
+      toName: email.split('@')[0], // Use username part of email as name
+      organizationName: organization.name,
+      inviterName: user.name || user.email,
+      role,
+      invitationLink,
+      expiresAt: expiresAt.toISOString(),
+      organizationBranding: {
+        name: organization.name,
+        logoUrl: organization.logo_url,
+      },
+    });
+
+    // Log email result
+    if (emailResult.success) {
+      console.log(
+        `✅ Invitation email sent to ${email} (Message ID: ${emailResult.messageId})`
+      );
+    } else {
+      console.error(
+        `❌ Failed to send invitation email to ${email}: ${emailResult.error}`
+      );
+      // Continue with the invitation creation even if email fails
+    }
 
     return NextResponse.json(
       {

@@ -259,7 +259,7 @@ async function executeSslCheck(check, result, startTime) {
   return result;
 }
 
-// Update monitoring check status based on result
+// Update monitoring check status and linked service status based on result
 async function updateMonitoringCheckStatus(checkId, result) {
   try {
     // Get current service entry
@@ -316,8 +316,70 @@ async function updateMonitoringCheckStatus(checkId, result) {
         `Updated check ${checkId}: ${result.is_successful ? 'SUCCESS' : 'FAILED'} (${result.response_time_ms}ms)`
       );
     }
+
+    // Update linked service status if association exists
+    await updateLinkedServiceStatus(checkData, result);
   } catch (error) {
     console.error('Error updating monitoring check status:', error);
+  }
+}
+
+// Update the status of a service linked to this monitoring check
+async function updateLinkedServiceStatus(checkData, result) {
+  try {
+    const linkedServiceId = checkData.linked_service_id;
+    if (!linkedServiceId) {
+      return; // No linked service
+    }
+
+    // Get the linked service
+    const { data: linkedService, error: fetchError } = await db.client
+      .from('services')
+      .select('*')
+      .eq('id', linkedServiceId)
+      .not('name', 'like', '[MONITORING]%')
+      .single();
+
+    if (fetchError || !linkedService) {
+      console.warn(
+        `Linked service ${linkedServiceId} not found or not accessible`
+      );
+      return;
+    }
+
+    // Determine new service status based on monitoring result
+    let newStatus = 'operational';
+    if (!result.is_successful) {
+      // Determine severity based on error type
+      if (result.status_code >= 500) {
+        newStatus = 'down';
+      } else if (result.status_code >= 400 || result.response_time_ms > 10000) {
+        newStatus = 'degraded';
+      } else {
+        newStatus = 'degraded'; // Default for any failure
+      }
+    }
+
+    // Only update if status actually changed
+    if (linkedService.status !== newStatus) {
+      const { error: updateError } = await db.client
+        .from('services')
+        .update({
+          status: newStatus,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', linkedServiceId);
+
+      if (updateError) {
+        console.error('Error updating linked service status:', updateError);
+      } else {
+        console.log(
+          `🔗 Updated linked service ${linkedService.name}: ${linkedService.status} → ${newStatus}`
+        );
+      }
+    }
+  } catch (error) {
+    console.error('Error updating linked service status:', error);
   }
 }
 

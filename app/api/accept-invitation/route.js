@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
+import { getServerSession } from 'next-auth';
 import { db } from '@/lib/db-supabase.js';
 import { authOptions } from '../auth/[...nextauth]/route.js';
 

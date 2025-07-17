@@ -198,25 +198,6 @@ export default function ServiceUptimeTimeline({ serviceId, days = 30 }) {
           Today
         </Typography>
       </Box>
-
-      {/* Uptime percentage */}
-      {timelineData.uptimeStats && (
-        <Box mt={1}>
-          <Typography
-            variant="body2"
-            fontWeight="bold"
-            color={
-              timelineData.uptimeStats.last30Days >= 99.9
-                ? 'success.main'
-                : timelineData.uptimeStats.last30Days >= 99.0
-                  ? 'warning.main'
-                  : 'error.main'
-            }
-          >
-            {timelineData.uptimeStats.last30Days.toFixed(2)}% uptime
-          </Typography>
-        </Box>
-      )}
     </Box>
   );
 }

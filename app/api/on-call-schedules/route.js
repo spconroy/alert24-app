@@ -107,7 +107,6 @@ export async function POST(req) {
       rotation_config,
       is_active,
       timezone,
-      created_by: user.id,
     };
 
     const onCallSchedule = await db.createOnCallSchedule(scheduleData);
