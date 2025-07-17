@@ -31,6 +31,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useSession } from 'next-auth/react';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import MonitoringLocationSelector from '@/components/MonitoringLocationSelector';
 
 export default function CreateMonitoringCheckPage() {
   const router = useRouter();
@@ -52,9 +53,9 @@ export default function CreateMonitoringCheckPage() {
     follow_redirects: true,
     notification_settings: {},
     is_active: true,
+    monitoring_locations: ['00000000-0000-0000-0000-000000000001'], // Default to US East
   });
 
-  const [monitoringLocations, setMonitoringLocations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -66,28 +67,6 @@ export default function CreateMonitoringCheckPage() {
 
   // Status codes management
   const [newStatusCode, setNewStatusCode] = useState('');
-
-  useEffect(() => {
-    if (session) {
-      fetchMonitoringLocations();
-    }
-  }, [session]);
-
-  const fetchMonitoringLocations = async () => {
-    try {
-      // This would fetch from a monitoring locations API
-      // For now, we'll use mock data since we don't have the endpoint yet
-      setMonitoringLocations([
-        { id: '1', name: 'US East (Virginia)', region: 'us-east-1' },
-        { id: '2', name: 'US West (Oregon)', region: 'us-west-2' },
-        { id: '3', name: 'Europe (Ireland)', region: 'eu-west-1' },
-        { id: '4', name: 'Asia Pacific (Singapore)', region: 'ap-southeast-1' },
-        { id: '5', name: 'Default Location', region: 'default' },
-      ]);
-    } catch (err) {
-      console.error('Error fetching monitoring locations:', err);
-    }
-  };
 
   const validateForm = () => {
     const errors = {};
@@ -191,7 +170,7 @@ export default function CreateMonitoringCheckPage() {
       const submitData = {
         ...formData,
         organization_id: selectedOrganization.id,
-        monitoring_locations: [], // Pass empty array since we're using mock location data
+        monitoring_locations: formData.monitoring_locations,
         target_port: formData.check_type === 'tcp' ? 80 : null,
       };
 
@@ -396,31 +375,18 @@ export default function CreateMonitoringCheckPage() {
                     </FormControl>
                   </Grid>
 
-                  {/* Location - Temporarily hidden until we set up proper monitoring locations with UUIDs */}
-                  {/*
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Monitoring Location</InputLabel>
-                  <Select
-                    value={formData.location_id}
-                    label="Monitoring Location"
-                    onChange={e =>
-                      handleInputChange('location_id', e.target.value)
-                    }
-                  >
-                    <MenuItem value="">Default Location</MenuItem>
-                    {monitoringLocations.map(location => (
-                      <MenuItem key={location.id} value={location.id}>
-                        {location.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  <FormHelperText>
-                    Choose the geographic location for monitoring
-                  </FormHelperText>
-                </FormControl>
-              </Grid>
-              */}
+                  {/* Monitoring Locations */}
+                  <Grid item xs={12}>
+                    <MonitoringLocationSelector
+                      selectedLocations={formData.monitoring_locations}
+                      onLocationChange={locations =>
+                        handleInputChange('monitoring_locations', locations)
+                      }
+                      multiple={true}
+                      label="Monitoring Locations"
+                      helperText="Choose geographic locations to monitor from. Multiple locations provide better coverage and help detect regional issues."
+                    />
+                  </Grid>
 
                   {/* Target URL/Hostname */}
                   <Grid item xs={12}>

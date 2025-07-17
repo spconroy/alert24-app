@@ -31,6 +31,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useSession } from 'next-auth/react';
 import { useOrganization } from '@/contexts/OrganizationContext';
+import MonitoringLocationSelector from '@/components/MonitoringLocationSelector';
 
 export const runtime = 'edge';
 
@@ -56,9 +57,9 @@ export default function EditMonitoringCheckPage() {
     follow_redirects: true,
     notification_settings: {},
     is_active: true,
+    monitoring_locations: ['00000000-0000-0000-0000-000000000001'], // Default to US East
   });
 
-  const [monitoringLocations, setMonitoringLocations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [fetchingData, setFetchingData] = useState(true);
   const [error, setError] = useState(null);
@@ -75,7 +76,6 @@ export default function EditMonitoringCheckPage() {
   useEffect(() => {
     if (session && checkId) {
       fetchMonitoringCheck();
-      fetchMonitoringLocations();
     }
   }, [session, checkId]);
 
@@ -118,21 +118,6 @@ export default function EditMonitoringCheckPage() {
       setError(`Failed to load monitoring check: ${err.message}`);
     } finally {
       setFetchingData(false);
-    }
-  };
-
-  const fetchMonitoringLocations = async () => {
-    try {
-      // Mock data for monitoring locations
-      setMonitoringLocations([
-        { id: '1', name: 'US East (Virginia)', region: 'us-east-1' },
-        { id: '2', name: 'US West (Oregon)', region: 'us-west-2' },
-        { id: '3', name: 'Europe (Ireland)', region: 'eu-west-1' },
-        { id: '4', name: 'Asia Pacific (Singapore)', region: 'ap-southeast-1' },
-        { id: '5', name: 'Default Location', region: 'default' },
-      ]);
-    } catch (err) {
-      console.error('Error fetching monitoring locations:', err);
     }
   };
 
