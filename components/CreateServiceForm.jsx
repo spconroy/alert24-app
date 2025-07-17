@@ -17,33 +17,33 @@ const statusOptions = [
   { value: 'operational', label: 'Operational' },
   { value: 'degraded', label: 'Degraded' },
   { value: 'down', label: 'Down' },
-  { value: 'maintenance', label: 'Maintenance' }
+  { value: 'maintenance', label: 'Maintenance' },
 ];
 
-export default function CreateServiceForm({ 
-  open, 
-  onClose, 
-  statusPageId, 
-  onServiceCreated 
+export default function CreateServiceForm({
+  open,
+  onClose,
+  statusPageId,
+  onServiceCreated,
 }) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     status: 'operational',
-    sort_order: 0
+    sort_order: 0,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const handleChange = (e) => {
+  const handleChange = e => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
     if (!formData.name.trim()) {
       setError('Service name is required');
@@ -58,17 +58,19 @@ export default function CreateServiceForm({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          status_page_id: statusPageId,
+          statusPageId: statusPageId,
           name: formData.name.trim(),
           description: formData.description.trim() || null,
           status: formData.status,
-          sort_order: parseInt(formData.sort_order) || 0
-        })
+          sortOrder: parseInt(formData.sort_order) || 0,
+        }),
       });
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${res.status}: ${res.statusText}`);
+        throw new Error(
+          errorData.error || `HTTP ${res.status}: ${res.statusText}`
+        );
       }
 
       const data = await res.json();
@@ -79,7 +81,7 @@ export default function CreateServiceForm({
         name: '',
         description: '',
         status: 'operational',
-        sort_order: 0
+        sort_order: 0,
       });
 
       onServiceCreated?.(data.service);
@@ -98,7 +100,7 @@ export default function CreateServiceForm({
         name: '',
         description: '',
         status: 'operational',
-        sort_order: 0
+        sort_order: 0,
       });
       setError(null);
       onClose();
@@ -115,7 +117,7 @@ export default function CreateServiceForm({
               {error}
             </Alert>
           )}
-          
+
           <TextField
             name="name"
             label="Service Name"
@@ -169,14 +171,14 @@ export default function CreateServiceForm({
             helperText="Lower numbers appear first (0 = top)"
           />
         </DialogContent>
-        
+
         <DialogActions>
           <Button onClick={handleClose} disabled={loading}>
             Cancel
           </Button>
-          <Button 
-            type="submit" 
-            variant="contained" 
+          <Button
+            type="submit"
+            variant="contained"
             disabled={loading || !formData.name.trim()}
           >
             {loading ? (
@@ -192,4 +194,4 @@ export default function CreateServiceForm({
       </form>
     </Dialog>
   );
-} 
+}

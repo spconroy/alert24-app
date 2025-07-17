@@ -11,6 +11,7 @@ import {
   Grid,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { useSession } from 'next-auth/react';
 
 export default function CreateOrganizationForm({ onBack, onSuccess }) {
   const [name, setName] = useState('');
@@ -19,12 +20,14 @@ export default function CreateOrganizationForm({ onBack, onSuccess }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const { data: session } = useSession();
 
-  const handleChange = (e) => {
+  const handleChange = e => {
     const { name, value } = e.target;
     if (name === 'name') {
       setName(value);
-      const slug = value.toLowerCase()
+      const slug = value
+        .toLowerCase()
         .replace(/[^a-z0-9]/g, '-')
         .replace(/-+/g, '-')
         .replace(/^-|-$/g, '');
@@ -34,15 +37,26 @@ export default function CreateOrganizationForm({ onBack, onSuccess }) {
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
+
+    if (!session?.user?.id) {
+      setError('You must be logged in to create an organization');
+      return;
+    }
+
     setLoading(true);
     setError('');
     setSuccess(false);
     const res = await fetch('/api/organizations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, slug, domain }),
+      body: JSON.stringify({
+        name,
+        slug,
+        domain,
+        userId: session?.user?.id,
+      }),
     });
     const data = await res.json();
     setLoading(false);
@@ -61,11 +75,7 @@ export default function CreateOrganizationForm({ onBack, onSuccess }) {
     <Card>
       <CardContent>
         <Box display="flex" alignItems="center" mb={3}>
-          <Button
-            startIcon={<ArrowBackIcon />}
-            onClick={onBack}
-            sx={{ mr: 2 }}
-          >
+          <Button startIcon={<ArrowBackIcon />} onClick={onBack} sx={{ mr: 2 }}>
             Back
           </Button>
           <Typography variant="h5" component="h2">
@@ -135,11 +145,7 @@ export default function CreateOrganizationForm({ onBack, onSuccess }) {
                 >
                   {loading ? 'Creating...' : 'Create Organization'}
                 </Button>
-                <Button
-                  variant="outlined"
-                  onClick={onBack}
-                  disabled={loading}
-                >
+                <Button variant="outlined" onClick={onBack} disabled={loading}>
                   Cancel
                 </Button>
               </Box>
@@ -149,4 +155,4 @@ export default function CreateOrganizationForm({ onBack, onSuccess }) {
       </CardContent>
     </Card>
   );
-} 
+}

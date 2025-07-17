@@ -1,31 +1,40 @@
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
 import { SupabaseClient } from '../../../lib/db-supabase.js';
+import { authOptions } from '../auth/[...nextauth]/route.js';
 
 const db = new SupabaseClient();
 
-export const runtime = 'edge';
-
 export async function GET(request) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
-    const organizationId = searchParams.get('organizationId');
+    const organizationId =
+      searchParams.get('org_id') || searchParams.get('organizationId');
     const isPublic = searchParams.get('public');
 
     if (isPublic === 'true') {
-      // Get all public status pages
-      const statusPages = await db.statusPages.findPublic();
-      return NextResponse.json({ statusPages });
+      // Get all public status pages (not implemented yet, return empty for now)
+      return NextResponse.json({ statusPages: [] });
     }
 
     if (organizationId) {
       // Get status pages for a specific organization
-      const statusPages =
-        await db.statusPages.findByOrganizationId(organizationId);
+      const statusPages = await db.getStatusPagesByOrganization(organizationId);
       return NextResponse.json({ statusPages });
     }
 
-    // Get all status pages (with proper filtering)
-    const statusPages = await db.statusPages.findAll();
+    // Get all status pages for the user
+    const user = await db.getUserByEmail(session.user.email);
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    const statusPages = await db.getAllStatusPagesForUser(user.id);
     return NextResponse.json({ statusPages });
   } catch (error) {
     console.error('Error fetching status pages:', error);
@@ -38,41 +47,39 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const {
       organizationId,
+      org_id, // Support both parameter names
       name,
       slug,
       description,
       isPublic = true,
+      is_public = true,
     } = await request.json();
 
+    const finalOrgId = organizationId || org_id;
+    const finalIsPublic = isPublic !== undefined ? isPublic : is_public;
+
     // Validate required fields
-    if (!organizationId || !name || !slug) {
+    if (!finalOrgId || !name || !slug) {
       return NextResponse.json(
         { error: 'Organization ID, name, and slug are required' },
         { status: 400 }
       );
     }
 
-    // Check if slug is unique within the organization
-    const existingPage = await db.statusPages.findBySlug(organizationId, slug);
-    if (existingPage) {
-      return NextResponse.json(
-        {
-          error:
-            'A status page with this slug already exists in this organization',
-        },
-        { status: 400 }
-      );
-    }
-
-    // Create status page
-    const statusPage = await db.statusPages.create({
-      organization_id: organizationId,
+    // Create status page using generic insert method
+    const statusPage = await db.insert('status_pages', {
+      organization_id: finalOrgId,
       name,
       slug,
       description,
-      is_public: isPublic,
+      is_public: finalIsPublic,
     });
 
     return NextResponse.json({ statusPage }, { status: 201 });
@@ -87,7 +94,13 @@ export async function POST(request) {
 
 export async function PUT(request) {
   try {
-    const { id, name, slug, description, isPublic } = await request.json();
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id, name, slug, description, isPublic, is_public } =
+      await request.json();
 
     if (!id) {
       return NextResponse.json(
@@ -96,11 +109,14 @@ export async function PUT(request) {
       );
     }
 
-    const statusPage = await db.statusPages.update(id, {
+    const finalIsPublic = isPublic !== undefined ? isPublic : is_public;
+
+    const statusPage = await db.update('status_pages', id, {
       name,
       slug,
       description,
-      is_public: isPublic,
+      is_public: finalIsPublic,
+      updated_at: new Date().toISOString(),
     });
 
     return NextResponse.json({ statusPage });
@@ -115,6 +131,11 @@ export async function PUT(request) {
 
 export async function DELETE(request) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -125,7 +146,11 @@ export async function DELETE(request) {
       );
     }
 
-    await db.statusPages.delete(id);
+    // Soft delete by setting deleted_at
+    await db.update('status_pages', id, {
+      deleted_at: new Date().toISOString(),
+    });
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting status page:', error);

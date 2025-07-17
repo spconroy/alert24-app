@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { SupabaseClient } from '../../../lib/db-supabase.js';
-import { authOptions } from '../../auth/[...nextauth]/route.js';
-
-const db = new SupabaseClient();
+import { db } from '@/lib/db-supabase.js';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route.js';
 
 export async function POST(req) {
   try {

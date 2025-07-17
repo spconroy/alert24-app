@@ -1,30 +1,67 @@
 import { SupabaseClient } from '../../../lib/db-supabase.js';
+import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../auth/[...nextauth]/route.js';
 
 const db = new SupabaseClient();
-import { NextResponse } from 'next/server';
-
-export const runtime = 'edge';
 
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const statusPageId = searchParams.get('statusPageId');
-    const organizationId = searchParams.get('organizationId');
+    const statusPageId =
+      searchParams.get('status_page_id') || searchParams.get('statusPageId');
+    const organizationId =
+      searchParams.get('organization_id') || searchParams.get('organizationId');
 
     if (statusPageId) {
       // Get services for a specific status page
-      const services = await db.services.findByStatusPageId(statusPageId);
+      const { data: services, error } = await db.client
+        .from('services')
+        .select('*')
+        .eq('status_page_id', statusPageId)
+        .is('deleted_at', null)
+        .order('sort_order', { ascending: true })
+        .order('name', { ascending: true });
+
+      if (error) throw error;
       return NextResponse.json({ services });
     }
 
     if (organizationId) {
       // Get services for an organization (through status pages)
-      const services = await db.services.findByOrganizationId(organizationId);
+      const { data: services, error } = await db.client
+        .from('services')
+        .select(
+          `
+          *,
+          status_pages!inner(
+            organization_id
+          )
+        `
+        )
+        .eq('status_pages.organization_id', organizationId)
+        .is('deleted_at', null)
+        .order('sort_order', { ascending: true })
+        .order('name', { ascending: true });
+
+      if (error) throw error;
       return NextResponse.json({ services });
     }
 
-    // Get all services (with proper filtering)
-    const services = await db.services.findAll();
+    // Get all services - require authentication for this
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { data: services, error } = await db.client
+      .from('services')
+      .select('*')
+      .is('deleted_at', null)
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true });
+
+    if (error) throw error;
     return NextResponse.json({ services });
   } catch (error) {
     console.error('Error fetching services:', error);
@@ -54,7 +91,7 @@ export async function POST(request) {
     }
 
     // Create service
-    const service = await db.services.create({
+    const service = await db.createService({
       status_page_id: statusPageId,
       name,
       description,

@@ -11,7 +11,13 @@ import { useSession } from 'next-auth/react';
 
 export default function SettingsPage() {
   const [showCreateOrg, setShowCreateOrg] = useState(false);
-  const { selectedOrganization, organizations, loading } = useOrganization();
+  const {
+    selectedOrganization,
+    organizations,
+    loading,
+    refreshOrganizations,
+    selectOrganization,
+  } = useOrganization();
   const { data: session } = useSession();
 
   // Auto-show create org form if user has no organizations (but only after loading is complete)
@@ -63,8 +69,17 @@ export default function SettingsPage() {
         {/* Show create form if no organizations or explicitly requested */}
         {showCreateOrg ? (
           <CreateOrganizationForm
-            onSuccess={() => {
+            onSuccess={async newOrganization => {
               setShowCreateOrg(false);
+              // Refresh the organization list to include the new org
+              await refreshOrganizations();
+              // Auto-select the newly created organization with owner role
+              if (newOrganization) {
+                selectOrganization({
+                  ...newOrganization,
+                  role: 'owner', // User who creates org is always the owner
+                });
+              }
             }}
             onBack={() => setShowCreateOrg(false)}
           />

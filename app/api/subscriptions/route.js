@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
-import { SupabaseClient } from '../../lib/db-supabase.js';
+import { db } from '@/lib/db-supabase.js';
 import crypto from 'crypto';
-
-const db = new SupabaseClient();
 
 export async function POST(req) {
   try {

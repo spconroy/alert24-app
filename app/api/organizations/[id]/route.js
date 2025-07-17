@@ -56,6 +56,7 @@ export async function GET(req, { params }) {
     }
 
     // Get all active members and their roles
+    // Include owners even if they haven't "accepted" since they created the org
     const { data: members, error: membersError } = await db.client
       .from('organization_members')
       .select(
@@ -64,7 +65,7 @@ export async function GET(req, { params }) {
         role,
         is_active,
         accepted_at,
-        users!inner (
+        users!organization_members_user_id_fkey (
           id,
           email,
           name
@@ -72,7 +73,9 @@ export async function GET(req, { params }) {
       `
       )
       .eq('organization_id', orgId)
-      .eq('is_active', true)
+      .or(
+        'and(is_active.eq.true,accepted_at.not.is.null),and(is_active.eq.true,role.eq.owner)'
+      )
       .order('role', { ascending: false });
 
     if (membersError) {

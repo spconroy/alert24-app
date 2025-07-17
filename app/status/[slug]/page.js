@@ -1,47 +1,53 @@
-import { Pool } from 'pg';
 import { notFound } from 'next/navigation';
 import PublicStatusPage from '../../../components/PublicStatusPage';
+import { SupabaseClient } from '../../../lib/db-supabase.js';
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const db = new SupabaseClient();
 
 async function getStatusPageData(slug) {
   try {
-    // Get status page by slug
-    const statusPageQuery = `
-      SELECT 
-        sp.*,
-        o.name as organization_name,
-        o.slug as organization_slug
-      FROM public.status_pages sp
-      JOIN public.organizations o ON sp.organization_id = o.id
-      WHERE sp.slug = $1 
-        AND sp.deleted_at IS NULL
-        AND o.deleted_at IS NULL
-        AND sp.is_public = true
-    `;
+    // Get status page by slug with organization info
+    const { data: statusPages, error: statusPageError } = await db.client
+      .from('status_pages')
+      .select(
+        `
+        *,
+        organizations (
+          name,
+          slug
+        )
+      `
+      )
+      .eq('slug', slug)
+      .eq('is_public', true)
+      .is('deleted_at', null)
+      .single();
 
-    const { rows: statusPageRows } = await pool.query(statusPageQuery, [slug]);
-
-    if (statusPageRows.length === 0) {
+    if (statusPageError || !statusPages) {
       return null;
     }
 
-    const statusPage = statusPageRows[0];
-
     // Get all services for this status page
-    const servicesQuery = `
-      SELECT *
-      FROM public.services 
-      WHERE status_page_id = $1 
-        AND deleted_at IS NULL
-      ORDER BY sort_order ASC, name ASC
-    `;
+    const { data: services, error: servicesError } = await db.client
+      .from('services')
+      .select('*')
+      .eq('status_page_id', statusPages.id)
+      .is('deleted_at', null)
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true });
 
-    const { rows: services } = await pool.query(servicesQuery, [statusPage.id]);
+    if (servicesError) {
+      console.error('Error fetching services:', servicesError);
+      // Don't fail if services can't be loaded, just return empty array
+    }
 
     return {
-      statusPage,
-      services,
+      statusPage: {
+        ...statusPages,
+        organization_name: statusPages.organizations?.name,
+        organization_slug: statusPages.organizations?.slug,
+      },
+      services: services || [],
     };
   } catch (error) {
     console.error('Error fetching status page data:', error);

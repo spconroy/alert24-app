@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { SupabaseClient } from '../../lib/db-supabase.js';
+import { db } from '@/lib/db-supabase.js';
 import { authOptions } from '../auth/[...nextauth]/route.js';
-
-const db = new SupabaseClient();
 
 // GET - Validate invitation token and return invitation details
 export async function GET(req) {
