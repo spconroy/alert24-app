@@ -11,22 +11,6 @@ import {
   Alert,
   CircularProgress,
   Divider,
-  Timeline,
-  TimelineItem,
-  TimelineSeparator,
-  TimelineConnector,
-  TimelineContent,
-  TimelineDot,
-  Paper,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   IconButton,
   Tooltip,
   List,
@@ -47,6 +31,7 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import PersonIcon from '@mui/icons-material/Person';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import { useSession } from 'next-auth/react';
+import IncidentTimeline from '@/components/IncidentTimeline';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 
@@ -386,84 +371,11 @@ export default function IncidentDetailPage() {
           {/* Timeline */}
           <Card>
             <CardContent>
-              <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-                mb={3}
-              >
-                <Typography variant="h6">Incident Timeline</Typography>
-                <Button
-                  startIcon={<AddIcon />}
-                  variant="outlined"
-                  onClick={() => setUpdateDialogOpen(true)}
-                >
-                  Add Update
-                </Button>
-              </Box>
-
-              <Timeline>
-                {incidentUpdates.map((update, index) => (
-                  <TimelineItem key={update.id}>
-                    <TimelineSeparator>
-                      <TimelineDot
-                        color={
-                          update.update_type === 'status_change'
-                            ? 'primary'
-                            : 'grey'
-                        }
-                      >
-                        {getUpdateIcon(update.update_type)}
-                      </TimelineDot>
-                      {index < incidentUpdates.length - 1 && (
-                        <TimelineConnector />
-                      )}
-                    </TimelineSeparator>
-                    <TimelineContent>
-                      <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
-                        <Typography variant="body1" gutterBottom>
-                          {update.message}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {dayjs(update.created_at).format(
-                            'MMM D, YYYY h:mm A'
-                          )}{' '}
-                          • {update.created_by_name || 'System'}
-                          {update.update_type && (
-                            <Chip
-                              label={update.update_type.replace('_', ' ')}
-                              size="small"
-                              sx={{ ml: 1 }}
-                            />
-                          )}
-                        </Typography>
-                      </Paper>
-                    </TimelineContent>
-                  </TimelineItem>
-                ))}
-
-                {/* Incident Created */}
-                <TimelineItem>
-                  <TimelineSeparator>
-                    <TimelineDot color="primary">
-                      <ErrorIcon />
-                    </TimelineDot>
-                  </TimelineSeparator>
-                  <TimelineContent>
-                    <Paper elevation={1} sx={{ p: 2 }}>
-                      <Typography variant="body1" gutterBottom>
-                        Incident created
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {dayjs(incident.created_at).format(
-                          'MMM D, YYYY h:mm A'
-                        )}{' '}
-                        • {incident.created_by_name || 'System'}
-                      </Typography>
-                    </Paper>
-                  </TimelineContent>
-                </TimelineItem>
-              </Timeline>
+              <IncidentTimeline
+                incidentId={incidentId}
+                incident={incident}
+                onIncidentUpdate={fetchIncident}
+              />
             </CardContent>
           </Card>
         </Grid>
@@ -597,127 +509,6 @@ export default function IncidentDetailPage() {
       </Grid>
 
       {/* Add Update Dialog */}
-      <Dialog
-        open={updateDialogOpen}
-        onClose={() => setUpdateDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>Add Incident Update</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
-              <FormControl fullWidth>
-                <InputLabel>Update Type</InputLabel>
-                <Select
-                  value={updateForm.update_type}
-                  label="Update Type"
-                  onChange={e =>
-                    setUpdateForm(prev => ({
-                      ...prev,
-                      update_type: e.target.value,
-                    }))
-                  }
-                >
-                  <MenuItem value="update">General Update</MenuItem>
-                  <MenuItem value="investigation">Investigation</MenuItem>
-                  <MenuItem value="workaround">Workaround</MenuItem>
-                  <MenuItem value="fix_applied">Fix Applied</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                multiline
-                rows={4}
-                label="Update Message"
-                value={updateForm.message}
-                onChange={e =>
-                  setUpdateForm(prev => ({ ...prev, message: e.target.value }))
-                }
-                placeholder="Describe the current status, actions taken, or next steps..."
-              />
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setUpdateDialogOpen(false)}>Cancel</Button>
-          <Button
-            onClick={handleAddUpdate}
-            disabled={submitting || !updateForm.message.trim()}
-            startIcon={
-              submitting ? <CircularProgress size={20} /> : <SaveIcon />
-            }
-          >
-            Add Update
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Status Update Dialog */}
-      <Dialog
-        open={statusUpdateDialogOpen}
-        onClose={() => setStatusUpdateDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Update Incident Status</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
-              <FormControl fullWidth>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={statusForm.status}
-                  label="Status"
-                  onChange={e =>
-                    setStatusForm(prev => ({ ...prev, status: e.target.value }))
-                  }
-                >
-                  <MenuItem value="open">Open</MenuItem>
-                  <MenuItem value="investigating">Investigating</MenuItem>
-                  <MenuItem value="monitoring">Monitoring</MenuItem>
-                  <MenuItem value="resolved">Resolved</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            {statusForm.status === 'resolved' && (
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={3}
-                  label="Resolution Notes"
-                  value={statusForm.resolution_notes}
-                  onChange={e =>
-                    setStatusForm(prev => ({
-                      ...prev,
-                      resolution_notes: e.target.value,
-                    }))
-                  }
-                  placeholder="Describe how the incident was resolved..."
-                />
-              </Grid>
-            )}
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setStatusUpdateDialogOpen(false)}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleStatusUpdate}
-            disabled={submitting}
-            startIcon={
-              submitting ? <CircularProgress size={20} /> : <SaveIcon />
-            }
-            color={statusForm.status === 'resolved' ? 'success' : 'primary'}
-          >
-            Update Status
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 }
