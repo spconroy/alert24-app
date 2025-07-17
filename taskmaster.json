@@ -436,5 +436,357 @@
       "Add alerting and escalation systems"
     ],
     "timelineBenefit": "20 weeks total vs 24 weeks from scratch (4 week advantage)"
+  },
+  "tasks": {
+    "critical": [
+      {
+        "id": "CRIT-001",
+        "title": "Fix Organization Context Loading",
+        "description": "Debug and fix organization context provider that's causing 'Please select organization' errors throughout the app",
+        "priority": "Critical",
+        "status": "pending",
+        "estimatedHours": 8,
+        "category": "Core Infrastructure",
+        "impact": "Blocks entire app functionality",
+        "files": [
+          "contexts/OrganizationContext.js",
+          "components/NavBar.jsx",
+          "app/layout.js"
+        ],
+        "acceptance_criteria": [
+          "Organizations load properly in navbar dropdown",
+          "Organization context propagates throughout app",
+          "No 'Please select organization' errors on protected pages",
+          "Organization switching works correctly",
+          "Context state persists across page navigation"
+        ],
+        "technical_notes": "Check async loading, error handling, and state management in OrganizationContext provider",
+        "dependencies": []
+      },
+      {
+        "id": "CRIT-002",
+        "title": "Apply Database Schema Migration",
+        "description": "Execute the comprehensive schema migration (12_missing_columns_and_fixes.sql) that adds missing columns and fixes critical database issues",
+        "priority": "Critical",
+        "status": "pending",
+        "estimatedHours": 4,
+        "category": "Database",
+        "impact": "Prevents core functionality - service editing, SLA metrics, monitoring associations",
+        "files": [
+          "docs/schema-updates/12_missing_columns_and_fixes.sql",
+          "docs/APPLY_SCHEMA_MIGRATION.md"
+        ],
+        "acceptance_criteria": [
+          "auto_recovery column added to services table",
+          "Profile completion tracking added to users table",
+          "Invitation status tracking added to organization_members table",
+          "Public access and SEO fields added to status_pages table",
+          "notification_rules and notification_history tables created",
+          "Unsubscribe functionality added to subscriptions table",
+          "All indexes and triggers created successfully",
+          "Data migration completed for existing records"
+        ],
+        "technical_notes": "Run: psql postgresql://alert24:Sg47^kLm9@wPz!rT@34.223.13.196:5432/alert24 -f docs/schema-updates/12_missing_columns_and_fixes.sql",
+        "dependencies": []
+      }
+    ],
+    "high": [
+      {
+        "id": "HIGH-001",
+        "title": "Configure Email Notifications System",
+        "description": "Set up SendGrid configuration and implement email notification system for incidents, invitations, and monitoring alerts",
+        "priority": "High",
+        "status": "pending",
+        "estimatedHours": 12,
+        "category": "Notifications",
+        "impact": "Essential for alerting system - no incident alerts or team invitations",
+        "files": [
+          "lib/email-service.js",
+          "app/api/notifications/route.js",
+          "Environment variables configuration"
+        ],
+        "acceptance_criteria": [
+          "SENDGRID_API_KEY environment variable configured",
+          "SENDGRID_FROM_EMAIL environment variable configured",
+          "Incident notification emails send successfully",
+          "Team invitation emails send successfully",
+          "Monitoring alert emails send successfully",
+          "Email templates are professional and branded",
+          "Email delivery status is tracked"
+        ],
+        "technical_notes": "Configure SendGrid API key, implement email templates, test email delivery in production",
+        "dependencies": []
+      },
+      {
+        "id": "HIGH-002",
+        "title": "Complete Incident Management Workflow",
+        "description": "Implement complete incident lifecycle management including updates, escalation policies, and notification rules",
+        "priority": "High",
+        "status": "pending",
+        "estimatedHours": 20,
+        "category": "Incident Management",
+        "impact": "Core platform feature - can create incidents but can't manage them properly",
+        "files": [
+          "app/api/incidents/[id]/updates/route.js",
+          "app/api/escalation-policies/route.js",
+          "app/incidents/[id]/page.js",
+          "components/IncidentTimeline.jsx",
+          "components/EscalationPolicyForm.jsx"
+        ],
+        "acceptance_criteria": [
+          "Incident updates can be created and displayed in timeline",
+          "Escalation policies can be created and configured",
+          "Incident status transitions work (investigating, identified, monitoring, resolved)",
+          "Escalation triggers work based on time thresholds",
+          "Notification rules execute properly during escalation",
+          "Incident resolution workflow is complete",
+          "Post-mortem documentation can be added"
+        ],
+        "technical_notes": "Build on existing incident creation, add update workflow and escalation engine",
+        "dependencies": ["HIGH-001"]
+      },
+      {
+        "id": "HIGH-003",
+        "title": "Fix Monitoring Check Execution and Results Storage",
+        "description": "Complete monitoring check execution system with proper result storage and service status updates",
+        "priority": "High",
+        "status": "pending",
+        "estimatedHours": 16,
+        "category": "Monitoring",
+        "impact": "Monitoring checks run but don't update service status properly",
+        "files": [
+          "app/api/monitoring/scheduler/route.js",
+          "app/api/monitoring/execute/route.js",
+          "lib/db-supabase.js"
+        ],
+        "acceptance_criteria": [
+          "Monitoring checks execute on schedule",
+          "Check results are stored in check_results table",
+          "Service status updates based on monitoring results",
+          "Failed checks trigger incident creation",
+          "SSL certificate expiration monitoring works",
+          "Multiple check types (HTTP, ping, TCP, SSL) function correctly",
+          "Check execution results are visible in UI"
+        ],
+        "technical_notes": "Fix result storage in proper database tables instead of services table workaround",
+        "dependencies": ["CRIT-002"]
+      }
+    ],
+    "medium": [
+      {
+        "id": "MED-001",
+        "title": "Fix Subscription Management for Status Pages",
+        "description": "Complete email subscription system for status page updates including subscription, notification, and unsubscribe functionality",
+        "priority": "Medium",
+        "status": "pending",
+        "estimatedHours": 12,
+        "category": "Subscriptions",
+        "impact": "Users can't subscribe to status page updates - affects public engagement",
+        "files": [
+          "app/api/subscriptions/route.js",
+          "components/StatusPageSubscribe.jsx",
+          "app/api/status-updates/route.js"
+        ],
+        "acceptance_criteria": [
+          "Users can subscribe to status page updates via email",
+          "Subscription confirmation emails are sent",
+          "Status update notifications are sent to subscribers",
+          "Unsubscribe links work properly",
+          "Subscription preferences can be managed",
+          "Subscription analytics are tracked"
+        ],
+        "technical_notes": "Implement complete subscription workflow with unsubscribe tokens from schema migration",
+        "dependencies": ["HIGH-001", "CRIT-002"]
+      },
+      {
+        "id": "MED-002",
+        "title": "Complete Team Invitation System",
+        "description": "Fix team invitation email sending and acceptance workflow for adding members to organizations",
+        "priority": "Medium",
+        "status": "pending",
+        "estimatedHours": 10,
+        "category": "Team Management",
+        "impact": "Can't add team members to organizations - affects team collaboration",
+        "files": [
+          "app/api/organizations/[id]/invitations/route.js",
+          "app/accept-invitation/page.js",
+          "components/OrganizationMembers.jsx"
+        ],
+        "acceptance_criteria": [
+          "Invitation emails are sent successfully",
+          "Invitation links work and redirect properly",
+          "Users can accept invitations and join organizations",
+          "Invitation expiration is handled correctly",
+          "Role assignment works during invitation acceptance",
+          "Invitation status tracking is functional"
+        ],
+        "technical_notes": "Use invitation status tracking from schema migration, integrate with email service",
+        "dependencies": ["HIGH-001", "CRIT-002"]
+      },
+      {
+        "id": "MED-003",
+        "title": "Implement User Profile Management",
+        "description": "Build comprehensive user profile management with phone numbers, notification preferences, and profile completion tracking",
+        "priority": "Medium",
+        "status": "pending",
+        "estimatedHours": 14,
+        "category": "User Management",
+        "impact": "Incomplete user setup, no notification customization - affects user experience",
+        "files": [
+          "app/profile/page.js",
+          "components/UserProfileForm.jsx",
+          "app/api/user/profile/route.js"
+        ],
+        "acceptance_criteria": [
+          "Users can update profile information (phone, timezone, preferences)",
+          "Notification preferences can be configured per channel",
+          "Profile completion percentage is calculated and displayed",
+          "Phone number validation works correctly",
+          "Timezone selection and handling is functional",
+          "Profile pictures can be uploaded and managed"
+        ],
+        "technical_notes": "Use profile completion tracking from schema migration, implement phone number formatting",
+        "dependencies": ["CRIT-002"]
+      },
+      {
+        "id": "MED-004",
+        "title": "Fix Public Status Page Data Loading",
+        "description": "Debug and fix public status page service data loading to ensure real-time status display for public users",
+        "priority": "Medium",
+        "status": "pending",
+        "estimatedHours": 8,
+        "category": "Status Pages",
+        "impact": "Public users can't see actual service status - affects public transparency",
+        "files": [
+          "app/status/[slug]/page.js",
+          "components/PublicStatusPage.jsx",
+          "app/api/status-pages/all/route.js"
+        ],
+        "acceptance_criteria": [
+          "Public status pages load service data correctly",
+          "Real-time status updates are displayed",
+          "Service uptime percentages are accurate",
+          "Incident history is displayed properly",
+          "Status page branding and customization works",
+          "SEO optimization is functional"
+        ],
+        "technical_notes": "Use public access and SEO fields from schema migration, ensure proper data filtering",
+        "dependencies": ["CRIT-002", "HIGH-003"]
+      }
+    ],
+    "lower": [
+      {
+        "id": "LOW-001",
+        "title": "Complete Escalation Policies Implementation",
+        "description": "Build comprehensive escalation policy system with automated escalation triggers and notification routing",
+        "priority": "Lower",
+        "status": "pending",
+        "estimatedHours": 16,
+        "category": "Escalation",
+        "impact": "Automated escalation doesn't work - affects incident response automation",
+        "files": [
+          "app/api/escalation-policies/route.js",
+          "app/escalation-policies/new/page.js",
+          "components/EscalationPolicyBuilder.jsx",
+          "lib/escalation-engine.js"
+        ],
+        "acceptance_criteria": [
+          "Escalation policies can be created with multiple steps",
+          "Time-based escalation triggers work automatically",
+          "Notification routing works per escalation step",
+          "Multiple notification channels are supported",
+          "Escalation history is tracked and auditable",
+          "Escalation can be paused or overridden manually"
+        ],
+        "technical_notes": "Build on existing API foundation, implement escalation engine with cron jobs",
+        "dependencies": ["HIGH-002", "HIGH-001"]
+      },
+      {
+        "id": "LOW-002",
+        "title": "Implement Monitoring Locations Functionality",
+        "description": "Add monitoring locations system to allow specifying check execution regions and improve monitoring coverage",
+        "priority": "Lower",
+        "status": "pending",
+        "estimatedHours": 10,
+        "category": "Monitoring",
+        "impact": "Can't specify monitoring check locations - affects monitoring coverage",
+        "files": [
+          "app/api/monitoring-locations/route.js",
+          "components/MonitoringLocationSelector.jsx",
+          "app/monitoring/new/page.js"
+        ],
+        "acceptance_criteria": [
+          "Monitoring locations can be created and managed",
+          "Locations can be selected during check creation",
+          "Multi-location monitoring results are aggregated",
+          "Location-specific failure alerts work",
+          "Geographic distribution of checks is visible",
+          "Location health monitoring is functional"
+        ],
+        "technical_notes": "Create monitoring_locations table and integrate with check execution system",
+        "dependencies": ["HIGH-003"]
+      },
+      {
+        "id": "LOW-003",
+        "title": "Upgrade to NextAuth v5 for Full Edge Runtime Compatibility",
+        "description": "Upgrade from NextAuth v4 to v5 to enable full Edge Runtime compatibility with Cloudflare Pages",
+        "priority": "Lower",
+        "status": "pending",
+        "estimatedHours": 12,
+        "category": "Infrastructure",
+        "impact": "Reduced performance, build compatibility issues with Edge Runtime",
+        "files": [
+          "app/api/auth/[...nextauth]/route.js",
+          "lib/auth-config.js",
+          "package.json"
+        ],
+        "acceptance_criteria": [
+          "NextAuth v5 is installed and configured",
+          "All authentication flows work with new version",
+          "Edge Runtime can be enabled on auth routes",
+          "Build performance is improved",
+          "Session handling works correctly",
+          "Migration doesn't break existing user sessions"
+        ],
+        "technical_notes": "Follow NextAuth v5 migration guide, test thoroughly before deployment",
+        "dependencies": []
+      },
+      {
+        "id": "LOW-004",
+        "title": "Migrate to Proper Check Results Table Usage",
+        "description": "Replace monitoring check workaround using services table with proper check_results table implementation",
+        "priority": "Lower",
+        "status": "pending",
+        "estimatedHours": 14,
+        "category": "Database Architecture",
+        "impact": "Monitoring data not properly structured - affects data integrity and performance",
+        "files": [
+          "lib/db-supabase.js",
+          "app/api/monitoring/execute/route.js",
+          "app/api/monitoring/route.js"
+        ],
+        "acceptance_criteria": [
+          "Monitoring checks are stored in proper monitoring_checks table",
+          "Check results are stored in check_results table",
+          "Historical check data is preserved during migration",
+          "Query performance is improved",
+          "Data relationships are properly normalized",
+          "Reporting and analytics work with new structure"
+        ],
+        "technical_notes": "Create proper table structure, migrate existing data, update all database queries",
+        "dependencies": ["CRIT-002", "HIGH-003"]
+      }
+    ]
+  },
+  "status": {
+    "totalTasks": 13,
+    "completed": 0,
+    "inProgress": 0,
+    "pending": 13,
+    "critical": 2,
+    "high": 3,
+    "medium": 4,
+    "lower": 4,
+    "estimatedTotalHours": 156
   }
 }
