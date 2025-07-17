@@ -261,10 +261,67 @@ export default function ServiceMonitoringConfig({
             </Typography>
 
             {availableChecks.length === 0 ? (
-              <Alert severity="warning" sx={{ mb: 2 }}>
-                No monitoring checks found for this organization. Create
-                monitoring checks first before associating them with services.
-              </Alert>
+              <Box>
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  <Typography variant="body2" gutterBottom>
+                    <strong>
+                      No monitoring checks found for this organization.
+                    </strong>
+                  </Typography>
+                  <Typography variant="body2" gutterBottom>
+                    To link monitoring checks to services, you need to create
+                    monitoring checks first.
+                  </Typography>
+                  <Typography variant="body2">
+                    Monitoring checks automatically test your services and can
+                    update their status on your status pages when issues are
+                    detected.
+                  </Typography>
+                </Alert>
+
+                <Box
+                  sx={{
+                    mt: 2,
+                    p: 2,
+                    backgroundColor: 'grey.50',
+                    borderRadius: 1,
+                  }}
+                >
+                  <Typography variant="subtitle2" gutterBottom color="primary">
+                    Quick Start Guide:
+                  </Typography>
+                  <Typography variant="body2" component="div">
+                    <strong>1.</strong> Create monitoring checks for your
+                    critical services
+                    <br />
+                    <strong>2.</strong> Return here to link those checks to
+                    status page services
+                    <br />
+                    <strong>3.</strong> When checks fail, service status updates
+                    automatically
+                  </Typography>
+
+                  <Box sx={{ mt: 2 }}>
+                    <Button
+                      variant="contained"
+                      href="/monitoring/new"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      sx={{ mr: 1 }}
+                    >
+                      Create First Monitoring Check
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      href="/monitoring"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      View All Monitoring
+                    </Button>
+                  </Box>
+                </Box>
+              </Box>
             ) : (
               <List>
                 {availableChecks.map(check => {

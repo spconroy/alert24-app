@@ -139,6 +139,35 @@ export default function HelpPage() {
           'Create specific checks for each critical component',
           'Monitor dependencies and third-party services',
         ],
+        linkingToServices: {
+          overview:
+            'Link monitoring checks to status page services for automatic status updates when issues are detected.',
+          prerequisites: [
+            'Create monitoring checks first (they must exist before linking)',
+            'Create services on your status page',
+            'Ensure you have appropriate permissions (Owner, Admin, or Responder)',
+          ],
+          steps: [
+            'Navigate to your services list on a status page',
+            'Find the service you want to monitor',
+            'Click the "Configure Monitoring" link icon next to the service',
+            'Select monitoring checks to associate with the service',
+            'Configure failure thresholds and custom messages',
+            'Save the association',
+          ],
+          troubleshooting: [
+            'No monitoring checks found? Create monitoring checks first at /monitoring/new',
+            'Missing services? Add services to your status page first',
+            'Permission denied? Check your organization role (must be Owner, Admin, or Responder)',
+            'Links not working? Try refreshing the page after creating monitoring checks',
+          ],
+          benefits: [
+            'Automatic service status updates when monitoring detects issues',
+            'Real-time status page updates without manual intervention',
+            'Consistent incident response and status communication',
+            'Reduced time to customer notification during outages',
+          ],
+        },
       },
     },
     {
@@ -884,6 +913,99 @@ export default function HelpPage() {
                         <ListItemText primary={step} />
                       </ListItem>
                     ))}
+                  </List>
+                </Box>
+              )}
+
+              {/* Linking Monitoring Checks to Services */}
+              {section.content.linkingToServices && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography
+                    variant="h6"
+                    gutterBottom
+                    sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                  >
+                    <MonitorIcon color="primary" />
+                    Linking Monitoring Checks to Services
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 2 }}>
+                    {section.content.linkingToServices.overview}
+                  </Typography>
+
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ mb: 1, fontWeight: 'bold' }}
+                  >
+                    Prerequisites:
+                  </Typography>
+                  <List dense>
+                    {section.content.linkingToServices.prerequisites.map(
+                      (prerequisite, index) => (
+                        <ListItem key={index}>
+                          <ListItemIcon>
+                            <CheckIcon color="success" />
+                          </ListItemIcon>
+                          <ListItemText primary={prerequisite} />
+                        </ListItem>
+                      )
+                    )}
+                  </List>
+
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ mb: 1, mt: 2, fontWeight: 'bold' }}
+                  >
+                    Steps:
+                  </Typography>
+                  <List dense>
+                    {section.content.linkingToServices.steps.map(
+                      (step, index) => (
+                        <ListItem key={index}>
+                          <ListItemIcon>
+                            <StepIcon color="primary" />
+                          </ListItemIcon>
+                          <ListItemText primary={step} />
+                        </ListItem>
+                      )
+                    )}
+                  </List>
+
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ mb: 1, mt: 2, fontWeight: 'bold' }}
+                  >
+                    Troubleshooting:
+                  </Typography>
+                  <List dense>
+                    {section.content.linkingToServices.troubleshooting.map(
+                      (item, index) => (
+                        <ListItem key={index}>
+                          <ListItemIcon>
+                            <InfoIcon color="info" />
+                          </ListItemIcon>
+                          <ListItemText primary={item} />
+                        </ListItem>
+                      )
+                    )}
+                  </List>
+
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ mb: 1, mt: 2, fontWeight: 'bold' }}
+                  >
+                    Benefits:
+                  </Typography>
+                  <List dense>
+                    {section.content.linkingToServices.benefits.map(
+                      (benefit, index) => (
+                        <ListItem key={index}>
+                          <ListItemIcon>
+                            <CheckIcon color="success" />
+                          </ListItemIcon>
+                          <ListItemText primary={benefit} />
+                        </ListItem>
+                      )
+                    )}
                   </List>
                 </Box>
               )}

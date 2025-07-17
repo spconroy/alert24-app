@@ -225,11 +225,85 @@ const MonitoringServiceAssociation = ({ organizationId }) => {
 
           {associations.length === 0 ? (
             <Box textAlign="center" py={4}>
-              <Typography variant="body2" color="text.secondary">
-                No monitoring checks found for this organization.
-                <br />
-                Create monitoring checks first to set up associations.
-              </Typography>
+              <Alert severity="info" sx={{ mb: 3, textAlign: 'left' }}>
+                <Typography variant="body2" gutterBottom>
+                  <strong>
+                    No monitoring checks found for this organization.
+                  </strong>
+                </Typography>
+                <Typography variant="body2" gutterBottom>
+                  Monitoring checks test your services automatically and can
+                  update status page services when issues are detected.
+                </Typography>
+                <Typography variant="body2">
+                  Create monitoring checks first, then return here to link them
+                  to your status page services.
+                </Typography>
+              </Alert>
+
+              <Box
+                sx={{
+                  mt: 3,
+                  p: 3,
+                  backgroundColor: 'grey.50',
+                  borderRadius: 2,
+                }}
+              >
+                <Typography variant="h6" gutterBottom color="primary">
+                  Get Started with Monitoring
+                </Typography>
+                <Typography variant="body2" gutterBottom sx={{ mb: 2 }}>
+                  Follow these steps to set up automated service monitoring:
+                </Typography>
+
+                <Box sx={{ textAlign: 'left', mb: 3 }}>
+                  <Typography
+                    variant="body2"
+                    component="div"
+                    sx={{ '& strong': { color: 'primary.main' } }}
+                  >
+                    <strong>Step 1:</strong> Create monitoring checks for your
+                    critical services (websites, APIs, databases)
+                    <br />
+                    <strong>Step 2:</strong> Return to this page to associate
+                    checks with status page services
+                    <br />
+                    <strong>Step 3:</strong> When monitoring detects issues,
+                    service status updates automatically
+                    <br />
+                    <strong>Step 4:</strong> Your users see real-time status
+                    updates on your status page
+                  </Typography>
+                </Box>
+
+                <Box
+                  sx={{
+                    display: 'flex',
+                    gap: 2,
+                    justifyContent: 'center',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    href="/monitoring/new"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    size="large"
+                  >
+                    Create Your First Check
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    href="/monitoring"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    View All Monitoring
+                  </Button>
+                </Box>
+              </Box>
             </Box>
           ) : (
             <TableContainer component={Paper} sx={{ mt: 2 }}>
