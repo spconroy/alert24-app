@@ -31,7 +31,6 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import EditIcon from '@mui/icons-material/Edit';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import PersonIcon from '@mui/icons-material/Person';
-import { useSession } from 'next-auth/react';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
@@ -41,7 +40,7 @@ export default function OnCallPage() {
   const [error, setError] = useState(null);
   const [actionMenuAnchor, setActionMenuAnchor] = useState(null);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
-  const { data: session } = useSession();
+  const { session } = useOrganization();
   const { selectedOrganization } = useOrganization();
 
   useEffect(() => {

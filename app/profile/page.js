@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import {
   Container,
@@ -26,6 +25,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 import {
+import { useOrganization } from '@/contexts/OrganizationContext';
   Person as PersonIcon,
   Phone as PhoneIcon,
   Email as EmailIcon,
@@ -36,7 +36,7 @@ import {
 } from '@mui/icons-material';
 
 export default function ProfilePage() {
-  const { data: session, status } = useSession();
+  const { session } = useOrganization();
   const router = useRouter();
 
   const [profileData, setProfileData] = useState({

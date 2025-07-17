@@ -23,15 +23,15 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SaveIcon from '@mui/icons-material/Save';
-import { useSession } from 'next-auth/react';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 export const runtime = 'edge';
 
 export default function EditIncidentPage() {
   const params = useParams();
   const router = useRouter();
-  const { data: session } = useSession();
+  const { session } = useOrganization();
   const incidentId = params.id;
 
   const [formData, setFormData] = useState({

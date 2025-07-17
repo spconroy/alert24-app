@@ -29,7 +29,6 @@ import Link from 'next/link';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SaveIcon from '@mui/icons-material/Save';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { useSession } from 'next-auth/react';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import MonitoringLocationSelector from '@/components/MonitoringLocationSelector';
 
@@ -39,7 +38,7 @@ export default function EditMonitoringCheckPage() {
   const router = useRouter();
   const params = useParams();
   const checkId = params.id;
-  const { data: session } = useSession();
+  const { session } = useOrganization();
   const { selectedOrganization } = useOrganization();
 
   const [formData, setFormData] = useState({

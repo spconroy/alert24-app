@@ -43,7 +43,6 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import PauseIcon from '@mui/icons-material/Pause';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import EditIcon from '@mui/icons-material/Edit';
-import { useSession } from 'next-auth/react';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import MonitoringServiceAssociation from '@/components/MonitoringServiceAssociation';
 import { useRouter } from 'next/navigation';
@@ -63,7 +62,7 @@ export default function MonitoringPage() {
   const [updatingCheckId, setUpdatingCheckId] = useState(null);
   const [isClient, setIsClient] = useState(false);
   const [currentTab, setCurrentTab] = useState(0); // 0 = monitoring checks, 1 = service associations
-  const { data: session } = useSession();
+  const { session } = useOrganization();
   const { selectedOrganization } = useOrganization();
   const router = useRouter();
 

@@ -9,15 +9,13 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
-import { useSession } from 'next-auth/react';
 import { useOrganization } from '@/contexts/OrganizationContext';
 
 export default function DebugMonitoringPage() {
   const [debugData, setDebugData] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const { data: session } = useSession();
-  const { selectedOrganization, organizations } = useOrganization();
+  const { selectedOrganization, organizations, session } = useOrganization();
 
   const runDiagnostics = async () => {
     setLoading(true);

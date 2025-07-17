@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
-import { useSession, signIn } from 'next-auth/react';
 import CircularProgress from '@mui/material/CircularProgress';
 import Box from '@mui/material/Box';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 export default function ProtectedRoute({ children }) {
-  const { data: session, status } = useSession();
+  const { session } = useOrganization();
 
   useEffect(() => {
     if (status === 'unauthenticated') {

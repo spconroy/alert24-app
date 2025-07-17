@@ -7,19 +7,16 @@ import Button from '@mui/material/Button';
 import React, { useState, useEffect } from 'react';
 import Alert from '@mui/material/Alert';
 import { useOrganization } from '@/contexts/OrganizationContext';
-import { useSession } from 'next-auth/react';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
 export default function SettingsPage() {
   const [showCreateOrg, setShowCreateOrg] = useState(false);
-  const {
-    selectedOrganization,
+  const { selectedOrganization,
     organizations,
     loading,
     refreshOrganizations,
-    selectOrganization,
-  } = useOrganization();
-  const { data: session } = useSession();
+    selectOrganization,, session } = useOrganization();
+  const { session } = useOrganization();
 
   // Auto-show create org form if user has no organizations (but only after loading is complete)
   useEffect(() => {

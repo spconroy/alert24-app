@@ -30,10 +30,10 @@ import InfoIcon from '@mui/icons-material/Info';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import PersonIcon from '@mui/icons-material/Person';
 import NotificationsIcon from '@mui/icons-material/Notifications';
-import { useSession } from 'next-auth/react';
 import IncidentTimeline from '@/components/IncidentTimeline';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 export const runtime = 'edge';
 
@@ -42,7 +42,7 @@ dayjs.extend(relativeTime);
 export default function IncidentDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { data: session } = useSession();
+  const { session } = useOrganization();
   const incidentId = params.id;
 
   const [incident, setIncident] = useState(null);

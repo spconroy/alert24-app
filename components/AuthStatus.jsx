@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useSession, signIn, signOut } from 'next-auth/react';
 import { Box, Button, Avatar, Typography, Menu, MenuItem } from '@mui/material';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 export default function AuthStatus() {
-  const { data: session, status } = useSession();
+  const { session } = useOrganization();
   const [anchorEl, setAnchorEl] = useState(null);
 
   const handleMenuOpen = event => {
@@ -18,7 +18,7 @@ export default function AuthStatus() {
 
   const handleSignOut = async () => {
     handleMenuClose();
-    await signOut();
+    await window.location.href = '/api/auth/signout';
   };
 
   if (status === 'loading') {

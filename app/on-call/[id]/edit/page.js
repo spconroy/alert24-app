@@ -38,7 +38,6 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import PersonIcon from '@mui/icons-material/Person';
 import ClearIcon from '@mui/icons-material/Clear';
-import { useSession } from 'next-auth/react';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import dayjs from 'dayjs';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -49,7 +48,7 @@ export default function EditOnCallSchedulePage() {
   const router = useRouter();
   const params = useParams();
   const scheduleId = params.id;
-  const { data: session } = useSession();
+  const { session } = useOrganization();
   const { selectedOrganization } = useOrganization();
 
   const [formData, setFormData] = useState({

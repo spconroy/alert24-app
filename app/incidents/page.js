@@ -32,8 +32,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import FilterListIcon from '@mui/icons-material/FilterList';
-import { useSession } from 'next-auth/react';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 export default function IncidentsPage() {
   const [incidents, setIncidents] = useState([]);
@@ -54,7 +54,7 @@ export default function IncidentsPage() {
     hasMore: false,
   });
 
-  const { data: session } = useSession();
+  const { session } = useOrganization();
 
   useEffect(() => {
     if (session) {

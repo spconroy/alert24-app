@@ -23,12 +23,12 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SaveIcon from '@mui/icons-material/Save';
-import { useSession } from 'next-auth/react';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 export default function CreateIncidentPage() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { session } = useOrganization();
 
   const [formData, setFormData] = useState({
     organization_id: '',

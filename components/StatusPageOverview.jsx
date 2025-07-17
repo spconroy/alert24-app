@@ -19,8 +19,7 @@ import {
 } from '@mui/material';
 import Link from 'next/link';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import { useSession } from 'next-auth/react';
-
+import { useOrganization } from '@/contexts/OrganizationContext';
 export default function StatusPageOverview() {
   const [statusPages, setStatusPages] = useState([]);
   const [filteredStatusPages, setFilteredStatusPages] = useState([]);
@@ -28,7 +27,7 @@ export default function StatusPageOverview() {
   const [selectedOrgId, setSelectedOrgId] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { data: session } = useSession();
+  const { session } = useOrganization();
 
   useEffect(() => {
     if (session) {

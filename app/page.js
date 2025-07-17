@@ -1,13 +1,13 @@
 'use client';
-import { useSession } from 'next-auth/react';
 import AuthStatus from '../components/AuthStatus';
 import IncidentDashboard from '../components/IncidentDashboard';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 export default function Home() {
-  const { data: session, status } = useSession();
+  const { session } = useOrganization();
 
   if (status === 'loading') {
     return (

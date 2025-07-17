@@ -31,12 +31,12 @@ import SaveIcon from '@mui/icons-material/Save';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { useSession } from 'next-auth/react';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 export default function CreateEscalationPolicyPage() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { session } = useOrganization();
 
   const [formData, setFormData] = useState({
     organization_id: '',

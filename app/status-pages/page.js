@@ -8,15 +8,14 @@ import CreateStatusPageForm from '../../components/CreateStatusPageForm';
 import StatusPageServices from '../../components/StatusPageServices';
 import Alert from '@mui/material/Alert';
 import { useOrganization } from '@/contexts/OrganizationContext';
-import { useSession } from 'next-auth/react';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
 export default function StatusPagesPage() {
   const [selectedStatusPage, setSelectedStatusPage] = useState(null);
   const [showCreateStatusPage, setShowCreateStatusPage] = useState(false);
   const statusPageListRef = useRef();
-  const { selectedOrganization } = useOrganization();
-  const { data: session } = useSession();
+  const { selectedOrganization, session } = useOrganization();
+  const { session } = useOrganization();
 
   const handleStatusPageUpdated = updatedStatusPage => {
     // Update the selected status page with the new data

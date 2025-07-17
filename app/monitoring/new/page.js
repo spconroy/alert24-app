@@ -28,14 +28,13 @@ import Link from 'next/link';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SaveIcon from '@mui/icons-material/Save';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { useSession } from 'next-auth/react';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import MonitoringLocationSelector from '@/components/MonitoringLocationSelector';
 
 export default function CreateMonitoringCheckPage() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { session } = useOrganization();
   const { selectedOrganization } = useOrganization();
 
   const [formData, setFormData] = useState({

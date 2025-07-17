@@ -10,13 +10,13 @@ import {
   CircularProgress,
   TextField,
 } from '@mui/material';
-import { useSession } from 'next-auth/react';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 export default function DebugEmailPage() {
   const [testResult, setTestResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [testEmail, setTestEmail] = useState('');
-  const { data: session } = useSession();
+  const { session } = useOrganization();
 
   const testEmailService = async () => {
     setLoading(true);

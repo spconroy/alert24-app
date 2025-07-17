@@ -11,8 +11,7 @@ import {
   Grid,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { useSession } from 'next-auth/react';
-
+import { useOrganization } from '@/contexts/OrganizationContext';
 export default function CreateOrganizationForm({ onBack, onSuccess }) {
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
@@ -20,7 +19,7 @@ export default function CreateOrganizationForm({ onBack, onSuccess }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const { data: session } = useSession();
+  const { session } = useOrganization();
 
   const handleChange = e => {
     const { name, value } = e.target;

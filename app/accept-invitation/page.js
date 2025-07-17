@@ -2,7 +2,6 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import {
   Container,
   Paper,
@@ -16,6 +15,7 @@ import {
   Chip,
 } from '@mui/material';
 import {
+import { useOrganization } from '@/contexts/OrganizationContext';
   Business as OrgIcon,
   Person as PersonIcon,
   CheckCircle as AcceptIcon,
@@ -25,7 +25,7 @@ import {
 function AcceptInvitationContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { session } = useOrganization();
 
   const [invitation, setInvitation] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -213,11 +213,7 @@ function AcceptInvitationContent() {
         )}
 
         {/* Authentication Status */}
-        {status === 'loading' ? (
-          <Box display="flex" justifyContent="center" mb={3}>
-            <CircularProgress size={24} />
-          </Box>
-        ) : !session ? (
+        {!session ? (
           <Alert severity="info" sx={{ mb: 3 }}>
             You need to sign in to accept this invitation. We'll bring you back
             here after authentication.
