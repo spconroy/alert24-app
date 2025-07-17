@@ -25,6 +25,15 @@ import {
   ListItem,
   ListItemText,
   ListItemSecondaryAction,
+  ListItemAvatar,
+  Avatar,
+  Stack,
+  Paper,
+  Stepper,
+  Step,
+  StepLabel,
+  StepContent,
+  Tooltip,
 } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
@@ -37,16 +46,44 @@ import SaveIcon from '@mui/icons-material/Save';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import PersonIcon from '@mui/icons-material/Person';
-import ClearIcon from '@mui/icons-material/Clear';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import GroupIcon from '@mui/icons-material/Group';
+import SettingsIcon from '@mui/icons-material/Settings';
+import InfoIcon from '@mui/icons-material/Info';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useSession } from 'next-auth/react';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import dayjs from 'dayjs';
+
+const steps = [
+  {
+    label: 'Basic Information',
+    description: 'Schedule name and description',
+    icon: <InfoIcon />,
+  },
+  {
+    label: 'Schedule Configuration',
+    description: 'When and how often to rotate',
+    icon: <ScheduleIcon />,
+  },
+  {
+    label: 'Team Members',
+    description: 'Add responders to rotation',
+    icon: <GroupIcon />,
+  },
+  {
+    label: 'Settings & Review',
+    description: 'Final settings and confirmation',
+    icon: <SettingsIcon />,
+  },
+];
 
 export default function CreateOnCallSchedulePage() {
   const router = useRouter();
   const { data: session } = useSession();
   const { selectedOrganization } = useOrganization();
 
+  const [activeStep, setActiveStep] = useState(0);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -69,12 +106,7 @@ export default function CreateOnCallSchedulePage() {
   const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
-    console.log('Selected organization changed:', selectedOrganization);
     if (selectedOrganization?.id) {
-      console.log(
-        'Fetching members for organization:',
-        selectedOrganization.id
-      );
       fetchOrganizationMembers(selectedOrganization.id);
     } else {
       setOrganizationMembers([]);
@@ -104,65 +136,60 @@ export default function CreateOnCallSchedulePage() {
       const response = await fetch(`/api/organizations/${orgId}`);
       if (response.ok) {
         const data = await response.json();
-        console.log('Organization members fetched:', data.members);
-        console.log('Members array length:', data.members?.length);
-        console.log(
-          'Full members data:',
-          JSON.stringify(data.members, null, 2)
-        );
         setOrganizationMembers(data.members || []);
-      } else {
-        console.error(
-          'Failed to fetch organization members:',
-          response.status,
-          response.statusText
-        );
-        const errorData = await response.json();
-        console.error('Error details:', errorData);
       }
     } catch (err) {
       console.error('Error fetching organization members:', err);
     }
   };
 
-  const validateForm = () => {
+  const validateStep = step => {
     const errors = {};
 
-    if (!selectedOrganization)
-      errors.organization = 'Please select an organization from the navbar';
-    if (!formData.name.trim()) errors.name = 'Schedule name is required';
-    if (!formData.start_date) errors.start_date = 'Start date is required';
-    if (formData.participants.length === 0)
-      errors.participants = 'At least one participant is required';
-
-    // Date validation
-    if (formData.start_date && formData.start_date.isBefore(dayjs())) {
-      errors.start_date = 'Start date cannot be in the past';
-    }
-
-    if (
-      formData.end_date &&
-      formData.start_date &&
-      formData.end_date.isBefore(formData.start_date)
-    ) {
-      errors.end_date = 'End date must be after start date';
-    }
-
-    // Rotation interval validation
-    if (formData.rotation_interval_hours < 1) {
-      errors.rotation_interval_hours =
-        'Rotation interval must be at least 1 hour';
+    switch (step) {
+      case 0: // Basic Information
+        if (!selectedOrganization)
+          errors.organization = 'Please select an organization';
+        if (!formData.name.trim()) errors.name = 'Schedule name is required';
+        break;
+      case 1: // Schedule Configuration
+        if (!formData.start_date) errors.start_date = 'Start date is required';
+        if (formData.start_date && formData.start_date.isBefore(dayjs())) {
+          errors.start_date = 'Start date cannot be in the past';
+        }
+        if (
+          formData.end_date &&
+          formData.start_date &&
+          formData.end_date.isBefore(formData.start_date)
+        ) {
+          errors.end_date = 'End date must be after start date';
+        }
+        break;
+      case 2: // Team Members
+        if (formData.participants.length === 0) {
+          errors.participants = 'At least one participant is required';
+        }
+        break;
     }
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = async e => {
-    e.preventDefault();
+  const handleNext = () => {
+    if (validateStep(activeStep)) {
+      setActiveStep(prevStep => prevStep + 1);
+    }
+  };
 
-    if (!validateForm()) {
-      setError('Please fix the form errors before submitting');
+  const handleBack = () => {
+    setActiveStep(prevStep => prevStep - 1);
+  };
+
+  const handleSubmit = async () => {
+    if (!validateStep(2)) {
+      // Validate all required fields
+      setError('Please complete all required fields');
       return;
     }
 
@@ -203,10 +230,7 @@ export default function CreateOnCallSchedulePage() {
         throw new Error(errorData.error || 'Failed to create on-call schedule');
       }
 
-      const data = await response.json();
       setSuccess(true);
-
-      // Redirect to on-call page after a short delay
       setTimeout(() => {
         router.push('/on-call');
       }, 2000);
@@ -244,12 +268,8 @@ export default function CreateOnCallSchedulePage() {
       }));
       setSelectedMember(null);
 
-      // Clear participants error
       if (formErrors.participants) {
-        setFormErrors(prev => ({
-          ...prev,
-          participants: '',
-        }));
+        setFormErrors(prev => ({ ...prev, participants: '' }));
       }
     }
   };
@@ -274,84 +294,22 @@ export default function CreateOnCallSchedulePage() {
     return days[dayNumber];
   };
 
-  const getNextRotationDate = () => {
-    if (
-      !formData.start_date ||
-      !['weekly', 'biweekly'].includes(formData.rotation_type)
-    ) {
-      return null;
-    }
-
-    const startDate = formData.start_date;
-    const targetDay = formData.rotation_day;
-    const intervalWeeks = formData.rotation_type === 'weekly' ? 1 : 2;
-
-    // Find the first rotation date (next occurrence of target day from start date)
-    let nextRotation = startDate.clone();
-    const startDay = startDate.day();
-    let daysToAdd = (targetDay - startDay + 7) % 7;
-    if (daysToAdd === 0 && startDate.isAfter(dayjs())) {
-      daysToAdd = 7 * intervalWeeks; // If it's the same day, go to next rotation
-    }
-    nextRotation = nextRotation.add(daysToAdd, 'day');
-
-    // If the calculated date is before start date, add the interval
-    while (nextRotation.isBefore(startDate)) {
-      nextRotation = nextRotation.add(7 * intervalWeeks, 'day');
-    }
-
-    return nextRotation;
-  };
-
-  const getRotationDates = (count = 3) => {
-    if (
-      !formData.start_date ||
-      !['weekly', 'biweekly'].includes(formData.rotation_type) ||
-      formData.participants.length <= 1
-    ) {
-      return [];
-    }
-
-    const dates = [];
-    const intervalWeeks = formData.rotation_type === 'weekly' ? 1 : 2;
-    let currentDate = getNextRotationDate();
-
-    if (!currentDate) return [];
-
-    for (let i = 0; i < count; i++) {
-      const participantIndex = i % formData.participants.length;
-      dates.push({
-        date: currentDate.clone(),
-        participant: formData.participants[participantIndex],
-      });
-      currentDate = currentDate.add(7 * intervalWeeks, 'day');
-    }
-
-    return dates;
-  };
-
-  const getRotationDescription = type => {
+  const getRotationDescription = () => {
     const timeStr = formData.rotation_time
       ? formData.rotation_time.format('h:mm A')
       : '9:00 AM';
 
-    switch (type) {
+    switch (formData.rotation_type) {
       case 'daily':
-        return `Rotates every day at ${timeStr}`;
+        return `Every day at ${timeStr}`;
       case 'weekly':
-        const weeklyNext = getNextRotationDate();
-        return `Rotates every ${getDayName(formData.rotation_day)} at ${timeStr}${
-          weeklyNext ? ` (next: ${weeklyNext.format('MMM D, YYYY')})` : ''
-        }`;
+        return `Every ${getDayName(formData.rotation_day)} at ${timeStr}`;
       case 'biweekly':
-        const biweeklyNext = getNextRotationDate();
-        return `Rotates every other ${getDayName(formData.rotation_day)} at ${timeStr}${
-          biweeklyNext ? ` (next: ${biweeklyNext.format('MMM D, YYYY')})` : ''
-        }`;
+        return `Every other ${getDayName(formData.rotation_day)} at ${timeStr}`;
       case 'monthly':
-        return `Rotates monthly on the same date at ${timeStr}`;
+        return `Monthly on the same date at ${timeStr}`;
       case 'custom':
-        return `Custom rotation interval (every ${formData.rotation_interval_hours} hours)`;
+        return `Every ${formData.rotation_interval_hours} hours`;
       default:
         return '';
     }
@@ -373,13 +331,504 @@ export default function CreateOnCallSchedulePage() {
   if (success) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert severity="success" sx={{ mb: 2 }}>
-          On-call schedule created successfully! Redirecting to on-call
-          dashboard...
-        </Alert>
+        <Paper sx={{ p: 4, textAlign: 'center', maxWidth: 600, mx: 'auto' }}>
+          <CheckCircleIcon
+            sx={{ fontSize: 64, color: 'success.main', mb: 2 }}
+          />
+          <Typography variant="h5" gutterBottom>
+            Schedule Created Successfully!
+          </Typography>
+          <Typography variant="body1" color="text.secondary" mb={3}>
+            Your on-call schedule has been created and is now active.
+            Redirecting to the on-call dashboard...
+          </Typography>
+          <CircularProgress />
+        </Paper>
       </Box>
     );
   }
+
+  const renderStepContent = step => {
+    switch (step) {
+      case 0:
+        return (
+          <Stack spacing={3}>
+            {!selectedOrganization && (
+              <Alert severity="warning">
+                Please select an organization from the dropdown in the
+                navigation bar.
+              </Alert>
+            )}
+            {selectedOrganization && (
+              <Alert severity="success" icon={<CheckCircleIcon />}>
+                Creating schedule for:{' '}
+                <strong>{selectedOrganization.name}</strong>
+              </Alert>
+            )}
+
+            <TextField
+              fullWidth
+              label="Schedule Name"
+              value={formData.name}
+              onChange={e => handleInputChange('name', e.target.value)}
+              error={!!formErrors.name}
+              helperText={
+                formErrors.name ||
+                'A descriptive name for this on-call schedule'
+              }
+              placeholder="e.g., Engineering Team Primary On-Call"
+              required
+            />
+
+            <TextField
+              fullWidth
+              multiline
+              rows={3}
+              label="Description"
+              value={formData.description}
+              onChange={e => handleInputChange('description', e.target.value)}
+              helperText="Describe the purpose and scope of this on-call schedule"
+              placeholder="Primary on-call rotation for critical production incidents..."
+            />
+          </Stack>
+        );
+
+      case 1:
+        return (
+          <Stack spacing={3}>
+            <Typography variant="h6" color="primary">
+              📅 Schedule Timing
+            </Typography>
+
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <DateTimePicker
+                  label="Start Date & Time"
+                  value={formData.start_date}
+                  onChange={newValue =>
+                    handleInputChange('start_date', newValue)
+                  }
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      error: !!formErrors.start_date,
+                      helperText:
+                        formErrors.start_date ||
+                        'When this schedule becomes active',
+                      required: true,
+                    },
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <DateTimePicker
+                  label="End Date & Time (optional)"
+                  value={formData.end_date}
+                  onChange={newValue => handleInputChange('end_date', newValue)}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      error: !!formErrors.end_date,
+                      helperText:
+                        formErrors.end_date ||
+                        'Leave empty for ongoing schedule',
+                    },
+                  }}
+                />
+              </Grid>
+            </Grid>
+
+            <Divider />
+
+            <Typography variant="h6" color="primary">
+              🔄 Rotation Settings
+            </Typography>
+
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Rotation Type</InputLabel>
+                  <Select
+                    value={formData.rotation_type}
+                    label="Rotation Type"
+                    onChange={e =>
+                      handleInputChange('rotation_type', e.target.value)
+                    }
+                  >
+                    <MenuItem value="daily">Daily</MenuItem>
+                    <MenuItem value="weekly">Weekly</MenuItem>
+                    <MenuItem value="biweekly">Bi-weekly</MenuItem>
+                    <MenuItem value="monthly">Monthly</MenuItem>
+                    <MenuItem value="custom">Custom</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              {['weekly', 'biweekly'].includes(formData.rotation_type) && (
+                <Grid item xs={12} md={6}>
+                  <FormControl fullWidth>
+                    <InputLabel>Rotation Day</InputLabel>
+                    <Select
+                      value={formData.rotation_day}
+                      label="Rotation Day"
+                      onChange={e =>
+                        handleInputChange('rotation_day', e.target.value)
+                      }
+                    >
+                      {[
+                        'Sunday',
+                        'Monday',
+                        'Tuesday',
+                        'Wednesday',
+                        'Thursday',
+                        'Friday',
+                        'Saturday',
+                      ].map((day, index) => (
+                        <MenuItem key={index} value={index}>
+                          {day}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+              )}
+
+              {formData.rotation_type !== 'custom' && (
+                <Grid item xs={12} md={6}>
+                  <TimePicker
+                    label="Rotation Time"
+                    value={formData.rotation_time}
+                    onChange={newValue =>
+                      handleInputChange('rotation_time', newValue)
+                    }
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        helperText: 'Time of day when rotation occurs',
+                      },
+                    }}
+                  />
+                </Grid>
+              )}
+
+              {formData.rotation_type === 'custom' && (
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Rotation Interval (hours)"
+                    value={formData.rotation_interval_hours}
+                    onChange={e =>
+                      handleInputChange(
+                        'rotation_interval_hours',
+                        parseInt(e.target.value)
+                      )
+                    }
+                    helperText="How often to rotate in hours"
+                    inputProps={{ min: 1, max: 8760 }}
+                  />
+                </Grid>
+              )}
+            </Grid>
+
+            <Paper
+              sx={{
+                p: 3,
+                bgcolor: 'primary.light',
+                color: 'primary.contrastText',
+              }}
+            >
+              <Typography
+                variant="subtitle1"
+                sx={{ fontWeight: 'bold', mb: 1 }}
+              >
+                📋 Rotation Schedule
+              </Typography>
+              <Typography variant="body2">
+                {getRotationDescription()}
+              </Typography>
+            </Paper>
+          </Stack>
+        );
+
+      case 2:
+        return (
+          <Stack spacing={3}>
+            <Typography variant="h6" color="primary">
+              👥 On-Call Team Members
+            </Typography>
+
+            <Paper sx={{ p: 3, bgcolor: 'grey.50' }}>
+              <Typography
+                variant="subtitle1"
+                gutterBottom
+                sx={{ fontWeight: 'bold' }}
+              >
+                Add Team Members
+              </Typography>
+
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={2}
+                alignItems="flex-end"
+              >
+                <Autocomplete
+                  fullWidth
+                  options={organizationMembers.filter(
+                    member =>
+                      !formData.participants.find(p => p.id === member.id)
+                  )}
+                  getOptionLabel={option => option.name || option.email}
+                  value={selectedMember}
+                  onChange={(event, newValue) => setSelectedMember(newValue)}
+                  renderInput={params => (
+                    <TextField
+                      {...params}
+                      label="Select Team Member"
+                      placeholder="Choose a team member..."
+                    />
+                  )}
+                  renderOption={(props, option) => (
+                    <li {...props}>
+                      <Avatar sx={{ mr: 2, width: 32, height: 32 }}>
+                        {(option.name || option.email).charAt(0).toUpperCase()}
+                      </Avatar>
+                      <Box>
+                        <Typography variant="body1">
+                          {option.name || option.email}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {option.role === 'owner'
+                            ? 'Owner'
+                            : option.role === 'admin'
+                              ? 'Admin'
+                              : 'Member'}
+                        </Typography>
+                      </Box>
+                    </li>
+                  )}
+                  noOptionsText="No available team members"
+                />
+
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={handleAddParticipant}
+                  disabled={!selectedMember}
+                  sx={{ whiteSpace: 'nowrap' }}
+                >
+                  Add
+                </Button>
+              </Stack>
+            </Paper>
+
+            {formErrors.participants && (
+              <Alert severity="error">{formErrors.participants}</Alert>
+            )}
+
+            {formData.participants.length === 0 ? (
+              <Paper
+                sx={{
+                  p: 4,
+                  textAlign: 'center',
+                  border: '2px dashed',
+                  borderColor: 'primary.main',
+                }}
+              >
+                <PersonIcon
+                  sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }}
+                />
+                <Typography variant="h6" gutterBottom>
+                  No Team Members Added
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Add at least one team member to create the on-call rotation.
+                </Typography>
+              </Paper>
+            ) : (
+              <Paper sx={{ p: 0, overflow: 'hidden' }}>
+                <Box
+                  sx={{
+                    p: 2,
+                    bgcolor: 'primary.main',
+                    color: 'primary.contrastText',
+                  }}
+                >
+                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                    Rotation Order ({formData.participants.length} members)
+                  </Typography>
+                </Box>
+
+                <List>
+                  {formData.participants.map((participant, index) => (
+                    <ListItem
+                      key={participant.id}
+                      divider={index < formData.participants.length - 1}
+                    >
+                      <ListItemAvatar>
+                        <Avatar>
+                          {(participant.name || participant.email)
+                            .charAt(0)
+                            .toUpperCase()}
+                        </Avatar>
+                      </ListItemAvatar>
+
+                      <ListItemText
+                        primary={
+                          <Box display="flex" alignItems="center" gap={1}>
+                            <Chip
+                              label={`#${index + 1}`}
+                              size="small"
+                              color="primary"
+                            />
+                            <Typography variant="body1">
+                              {participant.name || participant.email}
+                            </Typography>
+                          </Box>
+                        }
+                        secondary={participant.role || 'Member'}
+                      />
+
+                      <ListItemSecondaryAction>
+                        <Tooltip title="Remove from rotation">
+                          <IconButton
+                            edge="end"
+                            onClick={() =>
+                              handleRemoveParticipant(participant.id)
+                            }
+                            color="error"
+                            size="small"
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </ListItemSecondaryAction>
+                    </ListItem>
+                  ))}
+                </List>
+
+                {formData.participants.length > 0 && (
+                  <Box sx={{ p: 2, bgcolor: 'success.light' }}>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ fontWeight: 'bold', mb: 1 }}
+                    >
+                      🎯 Rotation Preview
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Starting on-call:</strong>{' '}
+                      {formData.participants[0]?.name ||
+                        formData.participants[0]?.email}
+                      <br />
+                      <strong>Rotation:</strong> {getRotationDescription()}
+                      {formData.participants.length === 1 && (
+                        <>
+                          <br />
+                          <em>
+                            ⚠️ Single person schedule - no rotation will occur
+                          </em>
+                        </>
+                      )}
+                    </Typography>
+                  </Box>
+                )}
+              </Paper>
+            )}
+          </Stack>
+        );
+
+      case 3:
+        return (
+          <Stack spacing={3}>
+            <Typography variant="h6" color="primary">
+              ⚙️ Final Settings
+            </Typography>
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.is_active}
+                  onChange={e =>
+                    handleInputChange('is_active', e.target.checked)
+                  }
+                  color="primary"
+                />
+              }
+              label="Activate this schedule immediately"
+            />
+
+            <TextField
+              fullWidth
+              label="Timezone"
+              value={formData.timezone}
+              disabled
+              helperText="Schedule timezone (auto-detected)"
+            />
+
+            <Divider />
+
+            <Typography variant="h6" color="primary">
+              📋 Review Summary
+            </Typography>
+
+            <Paper sx={{ p: 3, bgcolor: 'grey.50' }}>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Schedule Name
+                  </Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                    {formData.name || 'Unnamed Schedule'}
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Organization
+                  </Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                    {selectedOrganization?.name || 'Not selected'}
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Rotation Type
+                  </Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                    {getRotationDescription()}
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Team Members
+                  </Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                    {formData.participants.length} members
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Start Date
+                  </Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                    {formData.start_date
+                      ? formData.start_date.format('MMMM D, YYYY [at] h:mm A')
+                      : 'Not set'}
+                  </Typography>
+                </Grid>
+              </Grid>
+            </Paper>
+          </Stack>
+        );
+
+      default:
+        return null;
+    }
+  };
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -392,7 +841,7 @@ export default function CreateOnCallSchedulePage() {
             startIcon={<ArrowBackIcon />}
             variant="outlined"
           >
-            Back to On-Call
+            Back
           </Button>
           <Typography variant="h4" component="h1">
             Create On-Call Schedule
@@ -401,552 +850,88 @@ export default function CreateOnCallSchedulePage() {
 
         {/* Error Alert */}
         {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Alert severity="error" sx={{ mb: 3 }}>
             {error}
           </Alert>
         )}
 
-        {/* Form */}
-        <Card>
-          <CardContent>
-            <form onSubmit={handleSubmit}>
-              <Grid container spacing={3}>
-                {/* Organization Info */}
-                <Grid item xs={12}>
-                  {selectedOrganization ? (
-                    <Alert severity="success" sx={{ mb: 2 }}>
-                      <strong>Creating schedule for:</strong> 🏢{' '}
-                      {selectedOrganization.name}
-                    </Alert>
-                  ) : (
-                    <Alert severity="warning" sx={{ mb: 2 }}>
-                      <strong>Please select an organization</strong> from the
-                      dropdown in the top navigation bar to create an on-call
-                      schedule.
-                    </Alert>
-                  )}
-                  {formErrors.organization && (
-                    <Alert severity="error" sx={{ mb: 2 }}>
-                      {formErrors.organization}
-                    </Alert>
-                  )}
-                </Grid>
-
-                {/* Schedule Name */}
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Schedule Name *"
-                    value={formData.name}
-                    onChange={e => handleInputChange('name', e.target.value)}
-                    error={!!formErrors.name}
-                    helperText={
-                      formErrors.name ||
-                      'A descriptive name for this on-call schedule'
-                    }
-                    placeholder="e.g., Engineering Team Primary On-Call"
-                  />
-                </Grid>
-
-                {/* Description */}
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    multiline
-                    rows={3}
-                    label="Description"
-                    value={formData.description}
-                    onChange={e =>
-                      handleInputChange('description', e.target.value)
-                    }
-                    helperText="Describe the purpose and scope of this on-call schedule"
-                    placeholder="Primary on-call rotation for critical production incidents..."
-                  />
-                </Grid>
-
-                <Grid item xs={12}>
-                  <Divider sx={{ my: 2 }} />
-                  <Typography variant="h6" gutterBottom>
-                    Schedule Configuration
-                  </Typography>
-                </Grid>
-
-                {/* Start and End Dates */}
-                <Grid item xs={12} md={6}>
-                  <DateTimePicker
-                    label="Start Date & Time *"
-                    value={formData.start_date}
-                    onChange={newValue =>
-                      handleInputChange('start_date', newValue)
-                    }
-                    slotProps={{
-                      textField: {
-                        fullWidth: true,
-                        error: !!formErrors.start_date,
-                        helperText:
-                          formErrors.start_date ||
-                          'When this schedule becomes active',
-                      },
-                    }}
-                  />
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                  <Box display="flex" alignItems="flex-start" gap={1}>
-                    <DateTimePicker
-                      label="End Date & Time (optional)"
-                      value={formData.end_date}
-                      onChange={newValue =>
-                        handleInputChange('end_date', newValue)
-                      }
-                      slotProps={{
-                        textField: {
-                          fullWidth: true,
-                          error: !!formErrors.end_date,
-                          helperText:
-                            formErrors.end_date ||
-                            'When this schedule expires (leave empty for no end)',
-                        },
-                      }}
-                    />
-                    {formData.end_date && (
-                      <IconButton
-                        onClick={() => handleInputChange('end_date', null)}
-                        size="small"
-                        sx={{ mt: 0.5 }}
-                        title="Clear end date"
-                      >
-                        <ClearIcon fontSize="small" />
-                      </IconButton>
-                    )}
-                  </Box>
-                </Grid>
-
-                {/* Rotation Type */}
-                <Grid item xs={12} md={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Rotation Type</InputLabel>
-                    <Select
-                      value={formData.rotation_type}
-                      label="Rotation Type"
-                      onChange={e =>
-                        handleInputChange('rotation_type', e.target.value)
-                      }
-                    >
-                      <MenuItem value="daily">Daily</MenuItem>
-                      <MenuItem value="weekly">Weekly</MenuItem>
-                      <MenuItem value="biweekly">Bi-weekly</MenuItem>
-                      <MenuItem value="monthly">Monthly</MenuItem>
-                      <MenuItem value="custom">Custom</MenuItem>
-                    </Select>
-                    <FormHelperText>
-                      {getRotationDescription(formData.rotation_type)}
-                    </FormHelperText>
-                  </FormControl>
-                </Grid>
-
-                {/* Rotation Day (Weekly/Bi-weekly) */}
-                {['weekly', 'biweekly'].includes(formData.rotation_type) && (
-                  <Grid item xs={12} md={6}>
-                    <FormControl fullWidth>
-                      <InputLabel>Rotation Day</InputLabel>
-                      <Select
-                        value={formData.rotation_day}
-                        label="Rotation Day"
-                        onChange={e =>
-                          handleInputChange('rotation_day', e.target.value)
-                        }
-                      >
-                        <MenuItem value={0}>Sunday</MenuItem>
-                        <MenuItem value={1}>Monday</MenuItem>
-                        <MenuItem value={2}>Tuesday</MenuItem>
-                        <MenuItem value={3}>Wednesday</MenuItem>
-                        <MenuItem value={4}>Thursday</MenuItem>
-                        <MenuItem value={5}>Friday</MenuItem>
-                        <MenuItem value={6}>Saturday</MenuItem>
-                      </Select>
-                      <FormHelperText>
-                        Day of the week when rotation occurs
-                      </FormHelperText>
-                    </FormControl>
-                  </Grid>
-                )}
-
-                {/* Rotation Time */}
-                {formData.rotation_type !== 'custom' && (
-                  <Grid item xs={12} md={6}>
-                    <TimePicker
-                      label="Rotation Time"
-                      value={formData.rotation_time}
-                      onChange={newValue =>
-                        handleInputChange('rotation_time', newValue)
-                      }
-                      slotProps={{
-                        textField: {
-                          fullWidth: true,
-                          helperText: 'Time of day when rotation occurs',
-                        },
-                      }}
-                    />
-                  </Grid>
-                )}
-
-                {/* Rotation Interval (Custom) */}
-                {formData.rotation_type === 'custom' && (
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      type="number"
-                      label="Rotation Interval (hours)"
-                      value={formData.rotation_interval_hours}
-                      onChange={e =>
-                        handleInputChange(
-                          'rotation_interval_hours',
-                          parseInt(e.target.value)
-                        )
-                      }
-                      error={!!formErrors.rotation_interval_hours}
-                      helperText={
-                        formErrors.rotation_interval_hours ||
-                        'How often to rotate in hours'
-                      }
-                      inputProps={{ min: 1, max: 8760 }}
-                    />
-                  </Grid>
-                )}
-
-                {/* Timezone */}
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    label="Timezone"
-                    value={formData.timezone}
-                    onChange={e =>
-                      handleInputChange('timezone', e.target.value)
-                    }
-                    helperText="Schedule timezone (auto-detected)"
-                    disabled
-                  />
-                </Grid>
-
-                <Grid item xs={12}>
-                  <Divider sx={{ my: 2 }} />
-                  <Typography variant="h6" gutterBottom>
-                    👥 On-Call Responders
-                  </Typography>
-                  <Alert severity="info" sx={{ mb: 2 }}>
-                    <strong>How it works:</strong> Add team members who will
-                    respond to incidents. They&apos;ll rotate in the order you
-                    set them (Person #1 → Person #2 → Person #3...). The first
-                    person added will be on-call when the schedule starts.
-                  </Alert>
-                </Grid>
-
-                {/* Add Participants */}
-                <Grid item xs={12}>
-                  <Card
-                    variant="outlined"
-                    sx={{ p: 2, mb: 2, backgroundColor: 'grey.50' }}
-                  >
-                    <Typography
-                      variant="subtitle1"
-                      gutterBottom
-                      sx={{ fontWeight: 'bold' }}
-                    >
-                      ➕ Add Responders to Rotation
-                    </Typography>
-                    <Box display="flex" gap={2} alignItems="center">
-                      <Autocomplete
-                        options={(() => {
-                          const availableMembers = organizationMembers.filter(
-                            member =>
-                              !formData.participants.find(
-                                p => p.id === member.id
-                              )
-                          );
-                          console.log(
-                            'Available members for dropdown:',
-                            availableMembers
-                          );
-                          console.log(
-                            'Organization members total:',
-                            organizationMembers.length
-                          );
-                          console.log(
-                            'Current participants:',
-                            formData.participants.map(p => p.id)
-                          );
-                          return availableMembers;
-                        })()}
-                        getOptionLabel={option => option.name || option.email}
-                        value={selectedMember}
-                        onChange={(event, newValue) =>
-                          setSelectedMember(newValue)
-                        }
-                        renderInput={params => (
-                          <TextField
-                            {...params}
-                            label="🔍 Search Team Members"
-                            placeholder="Type to search for team members..."
-                            sx={{ flexGrow: 1, minWidth: 300 }}
+        {/* Main Content */}
+        <Grid container spacing={4}>
+          {/* Stepper Sidebar */}
+          <Grid item xs={12} md={4} lg={3}>
+            <Paper sx={{ p: 3, position: 'sticky', top: 20 }}>
+              <Stepper activeStep={activeStep} orientation="vertical">
+                {steps.map((step, index) => (
+                  <Step key={step.label}>
+                    <StepLabel
+                      icon={step.icon}
+                      optional={
+                        index < activeStep ? (
+                          <CheckCircleIcon
+                            sx={{ color: 'success.main', fontSize: 16 }}
                           />
-                        )}
-                        renderOption={(props, option) => (
-                          <li {...props}>
-                            <PersonIcon
-                              sx={{
-                                mr: 1,
-                                color:
-                                  option.role === 'owner'
-                                    ? 'warning.main'
-                                    : 'primary.main',
-                              }}
-                            />
-                            <div>
-                              <Typography variant="body1">
-                                {option.name || option.email}
-                                {option.role === 'owner' && ' 👑'}
-                              </Typography>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                              >
-                                {option.role === 'owner'
-                                  ? 'Organization Owner'
-                                  : option.role === 'admin'
-                                    ? 'Admin'
-                                    : 'Member'}{' '}
-                                • Available for on-call
-                              </Typography>
-                            </div>
-                          </li>
-                        )}
-                        noOptionsText={
-                          organizationMembers.length === 0
-                            ? 'No team members found. Go to Organizations to invite team members or check if you&apos;re in the correct organization.'
-                            : 'All team members are already in the rotation.'
-                        }
-                      />
-                      <Button
-                        startIcon={<AddIcon />}
-                        onClick={handleAddParticipant}
-                        disabled={!selectedMember}
-                        variant="contained"
-                        size="large"
-                      >
-                        Add to Rotation
-                      </Button>
-                    </Box>
-                  </Card>
-
-                  {formErrors.participants && (
-                    <Alert severity="error" sx={{ mb: 2 }}>
-                      {formErrors.participants}
-                    </Alert>
-                  )}
-
-                  {/* Empty State */}
-                  {formData.participants.length === 0 && (
-                    <Card
-                      variant="outlined"
-                      sx={{
-                        mb: 2,
-                        border: '2px dashed',
-                        borderColor: 'primary.main',
-                      }}
+                        ) : null
+                      }
                     >
-                      <CardContent sx={{ textAlign: 'center', py: 4 }}>
-                        <PersonIcon
-                          sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }}
-                        />
-                        <Typography variant="h6" gutterBottom>
-                          No Responders Added Yet
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Use the dropdown above to add team members to the
-                          on-call rotation. You need at least one person to
-                          create the schedule.
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  )}
+                      <Typography variant="subtitle2">{step.label}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {step.description}
+                      </Typography>
+                    </StepLabel>
+                  </Step>
+                ))}
+              </Stepper>
+            </Paper>
+          </Grid>
 
-                  {/* Participants List */}
-                  {formData.participants.length > 0 && (
-                    <Card variant="outlined">
-                      <CardContent>
-                        <Typography variant="subtitle1" gutterBottom>
-                          On-Call Rotation Order ({formData.participants.length}{' '}
-                          members)
-                        </Typography>
-                        <List dense>
-                          {formData.participants.map((participant, index) => (
-                            <ListItem
-                              key={participant.id}
-                              divider={index < formData.participants.length - 1}
-                            >
-                              <Chip
-                                label={`#${index + 1}`}
-                                size="small"
-                                color="primary"
-                                sx={{ mr: 2 }}
-                              />
-                              <ListItemText
-                                primary={participant.name || participant.email}
-                                secondary={participant.role || 'Member'}
-                              />
-                              <ListItemSecondaryAction>
-                                <IconButton
-                                  edge="end"
-                                  onClick={() =>
-                                    handleRemoveParticipant(participant.id)
-                                  }
-                                  color="error"
-                                  size="small"
-                                >
-                                  <DeleteIcon />
-                                </IconButton>
-                              </ListItemSecondaryAction>
-                            </ListItem>
-                          ))}
-                        </List>
+          {/* Form Content */}
+          <Grid item xs={12} md={8} lg={9}>
+            <Paper sx={{ p: 4 }}>
+              {renderStepContent(activeStep)}
 
-                        {formData.participants.length > 0 && (
-                          <Box
-                            sx={{
-                              mt: 2,
-                              p: 2,
-                              backgroundColor: 'success.light',
-                              borderRadius: 1,
-                            }}
-                          >
-                            <Typography
-                              variant="subtitle2"
-                              sx={{ fontWeight: 'bold', mb: 1 }}
-                            >
-                              🔄 Rotation Schedule Preview:
-                            </Typography>
-                            <Typography
-                              variant="body2"
-                              color="success.contrastText"
-                            >
-                              <strong>Starting on-call:</strong>{' '}
-                              {formData.participants[0]?.name ||
-                                formData.participants[0]?.email}
-                              {formData.participants.length > 1 && (
-                                <>
-                                  <br />
-                                  <strong>Next up:</strong>{' '}
-                                  {formData.participants[1]?.name ||
-                                    formData.participants[1]?.email}
-                                  {formData.participants.length > 2 &&
-                                    ` → ${formData.participants[2]?.name || formData.participants[2]?.email}`}
-                                  {formData.participants.length > 3 && ' → ...'}
-                                </>
-                              )}
-                              <br />
-                              <strong>Rotation schedule:</strong>{' '}
-                              {getRotationDescription(formData.rotation_type)}
-                              {formData.participants.length === 1 && (
-                                <>
-                                  <br />
-                                  <em>
-                                    ⚠️ Only one person - no rotation will occur
-                                  </em>
-                                </>
-                              )}
-                            </Typography>
+              {/* Navigation Buttons */}
+              <Box
+                sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}
+              >
+                <Button
+                  disabled={activeStep === 0}
+                  onClick={handleBack}
+                  variant="outlined"
+                >
+                  Back
+                </Button>
 
-                            {/* Upcoming rotation dates */}
-                            {getRotationDates().length > 0 && (
-                              <Box
-                                sx={{
-                                  mt: 2,
-                                  pt: 2,
-                                  borderTop: '1px solid rgba(255,255,255,0.2)',
-                                }}
-                              >
-                                <Typography
-                                  variant="caption"
-                                  sx={{
-                                    fontWeight: 'bold',
-                                    mb: 1,
-                                    display: 'block',
-                                  }}
-                                >
-                                  📅 Upcoming Rotations:
-                                </Typography>
-                                {getRotationDates().map((rotation, index) => (
-                                  <Typography
-                                    key={index}
-                                    variant="caption"
-                                    sx={{ display: 'block', mb: 0.5 }}
-                                  >
-                                    <strong>
-                                      {rotation.date.format('MMM D, YYYY')}
-                                    </strong>{' '}
-                                    →{' '}
-                                    {rotation.participant.name ||
-                                      rotation.participant.email}
-                                  </Typography>
-                                ))}
-                              </Box>
-                            )}
-                          </Box>
-                        )}
-                      </CardContent>
-                    </Card>
-                  )}
-                </Grid>
-
-                {/* Status */}
-                <Grid item xs={12}>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={formData.is_active}
-                        onChange={e =>
-                          handleInputChange('is_active', e.target.checked)
-                        }
-                      />
-                    }
-                    label="Enable this on-call schedule"
-                  />
-                </Grid>
-
-                {/* Submit Buttons */}
-                <Grid item xs={12}>
-                  <Box
-                    display="flex"
-                    gap={2}
-                    justifyContent="flex-end"
-                    sx={{ mt: 2 }}
+                <Box display="flex" gap={2}>
+                  <Button
+                    component={Link}
+                    href="/on-call"
+                    variant="outlined"
+                    color="inherit"
                   >
+                    Cancel
+                  </Button>
+
+                  {activeStep === steps.length - 1 ? (
                     <Button
-                      component={Link}
-                      href="/on-call"
-                      variant="outlined"
-                      disabled={loading}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
                       variant="contained"
+                      onClick={handleSubmit}
+                      disabled={loading}
                       startIcon={
                         loading ? <CircularProgress size={20} /> : <SaveIcon />
                       }
-                      disabled={loading}
-                      color="primary"
                     >
                       {loading ? 'Creating...' : 'Create Schedule'}
                     </Button>
-                  </Box>
-                </Grid>
-              </Grid>
-            </form>
-          </CardContent>
-        </Card>
+                  ) : (
+                    <Button variant="contained" onClick={handleNext}>
+                      Next
+                    </Button>
+                  )}
+                </Box>
+              </Box>
+            </Paper>
+          </Grid>
+        </Grid>
       </Box>
     </LocalizationProvider>
   );
