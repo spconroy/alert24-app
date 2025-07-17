@@ -5,7 +5,7 @@ import { SupabaseClient } from '../../../../lib/db-supabase.js';
 
 const db = new SupabaseClient();
 
-export const runtime = 'edge';
+// Note: Removed Edge Runtime export to fix crypto module compatibility issue with NextAuth v4
 
 export const authOptions = {
   providers: [
