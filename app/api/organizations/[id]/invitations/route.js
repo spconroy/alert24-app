@@ -13,6 +13,8 @@ function generateInvitationToken() {
   return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
 }
 
+export const runtime = 'edge';
+
 // GET - List pending invitations for an organization
 export async function GET(req, { params }) {
   try {

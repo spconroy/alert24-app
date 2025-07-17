@@ -32,6 +32,8 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useSession } from 'next-auth/react';
 import { useOrganization } from '@/contexts/OrganizationContext';
 
+export const runtime = 'edge';
+
 export default function EditMonitoringCheckPage() {
   const router = useRouter();
   const params = useParams();

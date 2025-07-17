@@ -5,6 +5,8 @@ import { authOptions } from '../auth/[...nextauth]/route.js';
 
 const db = new SupabaseClient();
 
+export const runtime = 'edge';
+
 export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);

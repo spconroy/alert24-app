@@ -29,7 +29,7 @@ import {
 import {
   Link as LinkIcon,
   LinkOff as LinkOffIcon,
-  Monitoring as MonitoringIcon,
+  Monitor as MonitoringIcon,
   Web as WebIcon,
   Delete as DeleteIcon,
   Add as AddIcon,

@@ -5,8 +5,7 @@ import { authOptions } from '../auth/[...nextauth]/route.js';
 
 const db = new SupabaseClient();
 
-// TODO: Re-enable Edge Runtime after upgrading to NextAuth v5
-// export const runtime = 'edge';
+export const runtime = 'edge';
 
 export async function GET(request) {
   try {

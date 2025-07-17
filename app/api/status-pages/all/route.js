@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth';
 import { db } from '@/lib/db-supabase.js';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route.js';
 
+export const runtime = 'edge';
+
 export async function GET(req) {
   try {
     const session = await getServerSession(authOptions);

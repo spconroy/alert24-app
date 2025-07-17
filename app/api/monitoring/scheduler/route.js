@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 import { SupabaseClient } from '../../../../lib/db-supabase.js';
+import { authOptions } from '../../auth/[...nextauth]/route.js';
 import { emailService } from '../../../../lib/email-service.js';
 
 const db = new SupabaseClient();
+
+export const runtime = 'edge';
 
 // Update the status of a service linked to this monitoring check
 async function updateLinkedServiceStatus(check, result) {

@@ -1,5 +1,12 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db-supabase.js';
+import { getServerSession } from 'next-auth';
+import { SupabaseClient } from '../../../lib/db-supabase.js';
+import { authOptions } from '../auth/[...nextauth]/route.js';
+import { emailService } from '../../../lib/email-service.js';
+
+const db = new SupabaseClient();
+
+export const runtime = 'edge';
 
 export async function POST(req) {
   try {

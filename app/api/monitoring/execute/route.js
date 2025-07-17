@@ -5,6 +5,8 @@ import { authOptions } from '../../auth/[...nextauth]/route.js';
 
 const db = new SupabaseClient();
 
+export const runtime = 'edge';
+
 // Execute a single monitoring check
 async function executeMonitoringCheck(check) {
   const startTime = Date.now();

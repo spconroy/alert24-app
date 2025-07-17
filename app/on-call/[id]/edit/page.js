@@ -43,6 +43,8 @@ import { useOrganization } from '@/contexts/OrganizationContext';
 import dayjs from 'dayjs';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
+export const runtime = 'edge';
+
 export default function EditOnCallSchedulePage() {
   const router = useRouter();
   const params = useParams();

@@ -26,6 +26,8 @@ import SaveIcon from '@mui/icons-material/Save';
 import { useSession } from 'next-auth/react';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
+export const runtime = 'edge';
+
 export default function EditIncidentPage() {
   const params = useParams();
   const router = useRouter();

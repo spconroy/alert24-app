@@ -13,8 +13,7 @@ import { emailService } from '../../../lib/email-service.js';
 
 const db = new SupabaseClient();
 
-// TODO: Re-enable Edge Runtime after making email service compatible
-// export const runtime = 'edge';
+export const runtime = 'edge';
 
 // Send incident notifications to organization members
 async function sendIncidentNotifications(incident, organizationId) {

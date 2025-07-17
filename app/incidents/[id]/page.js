@@ -50,6 +50,8 @@ import { useSession } from 'next-auth/react';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 
+export const runtime = 'edge';
+
 dayjs.extend(relativeTime);
 
 export default function IncidentDetailPage() {

@@ -1,6 +1,12 @@
-import { notFound } from 'next/navigation';
+'use client';
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import PublicStatusPage from '../../../components/PublicStatusPage';
+import { Box, CircularProgress, Alert } from '@mui/material';
+import { notFound } from 'next/navigation';
 import { SupabaseClient } from '../../../lib/db-supabase.js';
+
+export const runtime = 'edge';
 
 const db = new SupabaseClient();
 
@@ -56,10 +62,57 @@ async function getStatusPageData(slug) {
   }
 }
 
-export default async function StatusPagePublic({ params }) {
-  const { slug } = params;
+export default function StatusPageView() {
+  const { slug } = useParams();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [data, setData] = useState(null);
 
-  const data = await getStatusPageData(slug);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const fetchedData = await getStatusPageData(slug);
+        setData(fetchedData);
+      } catch (err) {
+        setError(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '100vh',
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '100vh',
+        }}
+      >
+        <Alert severity="error">{error.message}</Alert>
+      </Box>
+    );
+  }
 
   if (!data) {
     notFound();

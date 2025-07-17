@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db-supabase.js';
 
+export const runtime = 'edge';
+
 export async function GET() {
   try {
     console.log('Testing Supabase connection...');

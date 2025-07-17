@@ -5,6 +5,8 @@ import { authOptions } from '../../auth/[...nextauth]/route.js';
 
 const db = new SupabaseClient();
 
+export const runtime = 'edge';
+
 async function getStatusPageAndCheckOrg(id, userEmail) {
   try {
     // Get user

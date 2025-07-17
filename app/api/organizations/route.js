@@ -3,8 +3,7 @@ import { SupabaseClient } from '../../../lib/db-supabase.js';
 
 const db = new SupabaseClient();
 
-// Remove edge runtime for now to avoid Supabase compatibility issues
-// export const runtime = 'edge';
+export const runtime = 'edge';
 
 export async function GET(request) {
   try {

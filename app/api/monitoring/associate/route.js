@@ -12,6 +12,8 @@ import {
 
 const db = new SupabaseClient();
 
+export const runtime = 'edge';
+
 // GET - Get associations for monitoring checks
 export const GET = withErrorHandler(async request => {
   const session = await Auth.requireAuth(authOptions);
