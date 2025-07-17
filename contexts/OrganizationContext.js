@@ -127,11 +127,40 @@ export function OrganizationProvider({ children }) {
           }
         }
 
+        // Check for default organization if no localStorage selection
+        if (!orgToSelect && orgs.length > 1) {
+          console.log('🔍 Checking for default organization...');
+          try {
+            const defaultResponse = await fetch(
+              '/api/user/default-organization'
+            );
+            if (defaultResponse.ok) {
+              const defaultData = await defaultResponse.json();
+              if (defaultData.hasDefault) {
+                const defaultOrg = orgs.find(
+                  org => org.id === defaultData.defaultOrganization.id
+                );
+                if (defaultOrg) {
+                  orgToSelect = defaultOrg;
+                  console.log(
+                    '⭐ Found default organization:',
+                    defaultOrg.name
+                  );
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Error fetching default organization:', error);
+          }
+        }
+
         // Fallback selection logic
         if (orgToSelect) {
-          // Restore from localStorage
-          console.log('✅ Restored organization:', orgToSelect.name);
+          // Restore from localStorage or select default
+          console.log('✅ Selected organization:', orgToSelect.name);
           setSelectedOrganization(orgToSelect);
+          // Save to localStorage for future sessions
+          setStoredOrganizationId(orgToSelect.id);
         } else if (orgs.length === 1) {
           // Auto-select if only one organization
           const singleOrg = orgs[0];

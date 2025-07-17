@@ -249,6 +249,28 @@ export default function HelpPage() {
           "User can't accept? Ensure they're signed in with the correct email",
           'Need to change role? Delete and resend with correct permissions',
         ],
+        defaultOrganization: {
+          overview:
+            'Set a default organization to automatically select it when you sign in, saving time when switching between sessions.',
+          settingDefault: [
+            '1. Use the organization selector dropdown in the top navigation bar',
+            '2. Click the star icon (checkbox) next to any organization name',
+            '3. The organization will be marked with a filled star and set as default',
+            '4. When you sign in next time, this organization will be automatically selected',
+          ],
+          benefits: [
+            'Automatic selection on sign-in saves time',
+            'Consistent experience across browser sessions',
+            'Still allows manual switching to other organizations',
+            'Overrides localStorage-based selection for better consistency',
+          ],
+          notes: [
+            'Only one organization can be set as default at a time',
+            'Setting a new default automatically removes the previous one',
+            'Default setting is stored on the server, not locally',
+            'You can remove the default by unchecking the star icon',
+          ],
+        },
       },
     },
     {
@@ -678,6 +700,84 @@ export default function HelpPage() {
                         <ListItemText primary={item} />
                       </ListItem>
                     ))}
+                  </List>
+                </Box>
+              )}
+
+              {/* Default Organization */}
+              {section.content.defaultOrganization && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography
+                    variant="h6"
+                    gutterBottom
+                    sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                  >
+                    <CheckIcon color="success" />
+                    Default Organization
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 2 }}>
+                    {section.content.defaultOrganization.overview}
+                  </Typography>
+
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ mb: 1, fontWeight: 'bold' }}
+                  >
+                    How to Set Default:
+                  </Typography>
+                  <List dense>
+                    {section.content.defaultOrganization.settingDefault.map(
+                      (step, index) => (
+                        <ListItem key={index}>
+                          <ListItemIcon>
+                            <Chip
+                              label={index + 1}
+                              size="small"
+                              color="primary"
+                            />
+                          </ListItemIcon>
+                          <ListItemText primary={step} />
+                        </ListItem>
+                      )
+                    )}
+                  </List>
+
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ mb: 1, mt: 2, fontWeight: 'bold' }}
+                  >
+                    Benefits:
+                  </Typography>
+                  <List dense>
+                    {section.content.defaultOrganization.benefits.map(
+                      (benefit, index) => (
+                        <ListItem key={index}>
+                          <ListItemIcon>
+                            <CheckIcon color="success" />
+                          </ListItemIcon>
+                          <ListItemText primary={benefit} />
+                        </ListItem>
+                      )
+                    )}
+                  </List>
+
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ mb: 1, mt: 2, fontWeight: 'bold' }}
+                  >
+                    Important Notes:
+                  </Typography>
+                  <List dense>
+                    {section.content.defaultOrganization.notes.map(
+                      (note, index) => (
+                        <ListItem key={index}>
+                          <ListItemIcon>
+                            <InfoIcon color="info" />
+                          </ListItemIcon>
+                          <ListItemText primary={note} />
+                        </ListItem>
+                      )
+                    )}
                   </List>
                 </Box>
               )}

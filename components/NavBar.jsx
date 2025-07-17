@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
@@ -11,6 +11,11 @@ import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import CircularProgress from '@mui/material/CircularProgress';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Tooltip from '@mui/material/Tooltip';
+import StarIcon from '@mui/icons-material/Star';
+import StarBorderIcon from '@mui/icons-material/StarBorder';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -21,6 +26,67 @@ export default function NavBar() {
   const pathname = usePathname();
   const { selectedOrganization, organizations, loading, selectOrganization } =
     useOrganization();
+
+  const [defaultOrganizationId, setDefaultOrganizationId] = useState(null);
+  const [settingDefault, setSettingDefault] = useState(false);
+
+  // Fetch default organization when session is available
+  useEffect(() => {
+    if (session) {
+      fetchDefaultOrganization();
+    }
+  }, [session]);
+
+  const fetchDefaultOrganization = async () => {
+    try {
+      const response = await fetch('/api/user/default-organization');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.hasDefault) {
+          setDefaultOrganizationId(data.defaultOrganization.id);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching default organization:', error);
+    }
+  };
+
+  const handleSetDefault = async (organizationId, isDefault) => {
+    if (settingDefault) return; // Prevent multiple simultaneous requests
+
+    setSettingDefault(true);
+    try {
+      if (isDefault) {
+        // Set as default
+        const response = await fetch('/api/user/default-organization', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ organizationId }),
+        });
+
+        if (response.ok) {
+          setDefaultOrganizationId(organizationId);
+        } else {
+          console.error('Failed to set default organization');
+        }
+      } else {
+        // Remove default
+        const response = await fetch('/api/user/default-organization', {
+          method: 'DELETE',
+        });
+
+        if (response.ok) {
+          setDefaultOrganizationId(null);
+        } else {
+          console.error('Failed to remove default organization');
+        }
+      }
+    } catch (error) {
+      console.error('Error setting default organization:', error);
+    } finally {
+      setSettingDefault(false);
+    }
+  };
 
   const navigationItems = [
     { label: 'Dashboard', href: '/', icon: '📊' },
@@ -130,11 +196,52 @@ export default function NavBar() {
                   },
                 }}
               >
-                {organizations.map(org => (
-                  <MenuItem key={org.id} value={org.id}>
-                    🏢 {org.name}
-                  </MenuItem>
-                ))}
+                {organizations.map(org => {
+                  const isDefault = defaultOrganizationId === org.id;
+                  return (
+                    <MenuItem key={org.id} value={org.id}>
+                      <Box
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="space-between"
+                        width="100%"
+                        onClick={e => e.stopPropagation()} // Prevent dropdown close on checkbox click
+                      >
+                        <Box display="flex" alignItems="center" gap={1}>
+                          🏢 {org.name}
+                          {isDefault && (
+                            <Tooltip title="Default organization">
+                              <StarIcon fontSize="small" color="primary" />
+                            </Tooltip>
+                          )}
+                        </Box>
+                        <Tooltip
+                          title={
+                            isDefault ? 'Remove as default' : 'Set as default'
+                          }
+                        >
+                          <Checkbox
+                            size="small"
+                            checked={isDefault}
+                            disabled={settingDefault}
+                            icon={<StarBorderIcon fontSize="small" />}
+                            checkedIcon={<StarIcon fontSize="small" />}
+                            onChange={e => {
+                              e.stopPropagation(); // Prevent dropdown close
+                              handleSetDefault(org.id, e.target.checked);
+                            }}
+                            sx={{
+                              color: 'primary.main',
+                              '&.Mui-checked': {
+                                color: 'primary.main',
+                              },
+                            }}
+                          />
+                        </Tooltip>
+                      </Box>
+                    </MenuItem>
+                  );
+                })}
               </Select>
             </FormControl>
           </Box>
