@@ -47,6 +47,7 @@ import { useOrganization } from '@/contexts/OrganizationContext';
 import MonitoringServiceAssociation from '@/components/MonitoringServiceAssociation';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { STATUS_PAGE_PROVIDERS } from '@/lib/status-page-providers';
 
 export default function MonitoringPage() {
   const [monitoringChecks, setMonitoringChecks] = useState([]);
@@ -476,9 +477,25 @@ export default function MonitoringPage() {
         return 'info';
       case 'ssl':
         return 'warning';
+      case 'status_page':
+        return 'success';
       default:
         return 'default';
     }
+  };
+
+  const getTargetDisplay = check => {
+    // For status page checks, show the provider's status page URL
+    if (check.check_type === 'status_page' && check.status_page_config) {
+      const { provider } = check.status_page_config;
+      const providerConfig = STATUS_PAGE_PROVIDERS[provider];
+      if (providerConfig) {
+        return providerConfig.url;
+      }
+    }
+
+    // For regular checks, show the target URL
+    return check.target_url || 'N/A';
   };
 
   const formatResponseTime = timeMs => {
@@ -814,7 +831,7 @@ export default function MonitoringPage() {
                                   textOverflow: 'ellipsis',
                                 }}
                               >
-                                {check.target_url}
+                                {getTargetDisplay(check)}
                               </Typography>
                             </TableCell>
                             <TableCell>
