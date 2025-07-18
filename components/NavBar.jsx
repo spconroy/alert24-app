@@ -502,7 +502,6 @@ export default function NavBar() {
                         alignItems="center"
                         justifyContent="space-between"
                         width="100%"
-                        onClick={e => e.stopPropagation()} // Prevent dropdown close on checkbox click
                       >
                         <Box display="flex" alignItems="center" gap={1}>
                           🏢 {org.name}
@@ -521,6 +520,9 @@ export default function NavBar() {
                             onChange={e => {
                               e.stopPropagation(); // Prevent dropdown close
                               handleSetDefault(org.id, e.target.checked);
+                            }}
+                            onClick={e => {
+                              e.stopPropagation(); // Prevent organization selection when clicking checkbox
                             }}
                             sx={{
                               color: 'primary.main',
