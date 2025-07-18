@@ -15,12 +15,12 @@ import {
   Chip,
 } from '@mui/material';
 import {
-import { useOrganization } from '@/contexts/OrganizationContext';
   Business as OrgIcon,
   Person as PersonIcon,
   CheckCircle as AcceptIcon,
   Schedule as ClockIcon,
 } from '@mui/icons-material';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 function AcceptInvitationContent() {
   const searchParams = useSearchParams();

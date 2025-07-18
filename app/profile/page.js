@@ -25,7 +25,6 @@ import {
   CircularProgress,
 } from '@mui/material';
 import {
-import { useOrganization } from '@/contexts/OrganizationContext';
   Person as PersonIcon,
   Phone as PhoneIcon,
   Email as EmailIcon,
@@ -34,6 +33,7 @@ import { useOrganization } from '@/contexts/OrganizationContext';
   Save as SaveIcon,
   Edit as EditIcon,
 } from '@mui/icons-material';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 export default function ProfilePage() {
   const { session } = useOrganization();
