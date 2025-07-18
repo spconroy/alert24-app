@@ -1,4 +1,6 @@
 
+export const runtime = 'edge';
+
 export async function GET() {
   const HTTP_DATABASE_URL = process.env.HTTP_DATABASE_URL;
   const JWT_SECRET = process.env.JWT_SECRET;

@@ -42,6 +42,7 @@ import {
   Warning as WarningIcon,
   Error as ErrorIcon,
   Build as BuildIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
 import ServiceMonitoringConfig from './ServiceMonitoringConfig';
 import EditServiceForm from './EditServiceForm';
@@ -77,6 +78,11 @@ const ServiceList = forwardRef(function ServiceList({ statusPageId }, ref) {
   const [newStatus, setNewStatus] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
   const [statusUpdateLoading, setStatusUpdateLoading] = useState(false);
+
+  // Delete service modal state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [serviceToDelete, setServiceToDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const fetchServices = async () => {
     setLoading(true);
@@ -140,6 +146,47 @@ const ServiceList = forwardRef(function ServiceList({ statusPageId }, ref) {
   const handleEditService = service => {
     setSelectedService(service);
     setEditModalOpen(true);
+  };
+
+  const handleDeleteService = service => {
+    setServiceToDelete(service);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDeleteService = async () => {
+    if (!serviceToDelete) return;
+
+    try {
+      setDeleteLoading(true);
+      
+      const response = await fetch(`/api/services/${serviceToDelete.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete service');
+      }
+
+      // Remove the deleted service from the local state
+      setServices(prevServices =>
+        prevServices.filter(service => service.id !== serviceToDelete.id)
+      );
+
+      // Close the modal and clear state
+      setDeleteModalOpen(false);
+      setServiceToDelete(null);
+      
+      console.log('Service deleted successfully:', serviceToDelete.name);
+    } catch (err) {
+      console.error('Error deleting service:', err);
+      setError(err.message);
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   const handleServiceUpdated = updatedService => {
@@ -364,6 +411,16 @@ const ServiceList = forwardRef(function ServiceList({ statusPageId }, ref) {
                       </IconButton>
                     </Tooltip>
 
+                    <Tooltip title="Delete Service">
+                      <IconButton
+                        onClick={() => handleDeleteService(service)}
+                        color="error"
+                        size="small"
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Tooltip>
+
                     {monitoringCount > 0 && (
                       <IconButton
                         onClick={() => handleExpandService(service.id)}
@@ -420,17 +477,105 @@ const ServiceList = forwardRef(function ServiceList({ statusPageId }, ref) {
                   </Button>
                 </Box>
 
-                {/* Expanded Monitoring Details */}
+                {/* Monitoring Checks Section - Always visible when checks exist */}
+                {monitoringCount > 0 && (
+                  <Box sx={{ mt: 3 }}>
+                    <Divider sx={{ mb: 2 }} />
+                    <Typography
+                      variant="subtitle2"
+                      gutterBottom
+                      color="text.secondary"
+                      sx={{ mb: 2 }}
+                    >
+                      Monitoring Checks ({monitoringCount})
+                    </Typography>
+                    <Grid container spacing={2}>
+                      {service.monitoring_checks?.map(check => (
+                        <Grid item xs={12} sm={6} md={4} key={check.id}>
+                          <Box
+                            sx={{
+                              p: 2,
+                              border: '1px solid',
+                              borderColor: 'grey.200',
+                              borderRadius: 1,
+                              backgroundColor: 'background.paper',
+                              '&:hover': {
+                                backgroundColor: 'grey.50',
+                              },
+                            }}
+                          >
+                            <Box
+                              display="flex"
+                              alignItems="center"
+                              justifyContent="space-between"
+                              mb={1}
+                            >
+                              <Typography variant="body2" fontWeight="medium">
+                                {check.name}
+                              </Typography>
+                              <Chip
+                                label={check.current_status || 'unknown'}
+                                size="small"
+                                color={
+                                  check.current_status === 'up'
+                                    ? 'success'
+                                    : check.current_status === 'down'
+                                      ? 'error'
+                                      : check.current_status === 'warning'
+                                        ? 'warning'
+                                        : check.current_status === 'pending'
+                                          ? 'info'
+                                          : 'default'
+                                }
+                                variant="outlined"
+                              />
+                            </Box>
+                            
+                            <Typography variant="caption" display="block" color="text.secondary" mb={1}>
+                              {check.check_type?.toUpperCase()} • {check.target_url}
+                            </Typography>
+                            
+                            {check.last_check_time && (
+                              <Typography variant="caption" display="block" color="text.secondary">
+                                Last check: {new Date(check.last_check_time).toLocaleString()}
+                              </Typography>
+                            )}
+                            
+                            {check.last_response_time && (
+                              <Typography variant="caption" display="block" color="text.secondary">
+                                Response: {check.last_response_time < 1000 
+                                  ? `${check.last_response_time}ms` 
+                                  : `${(check.last_response_time / 1000).toFixed(2)}s`}
+                              </Typography>
+                            )}
+                            
+                            {check.failure_message && (
+                              <Typography
+                                variant="caption"
+                                display="block"
+                                color="error.main"
+                                sx={{ mt: 1, fontStyle: 'italic' }}
+                              >
+                                {check.failure_message}
+                              </Typography>
+                            )}
+                          </Box>
+                        </Grid>
+                      ))}
+                    </Grid>
+                  </Box>
+                )}
+
+                {/* Expanded Monitoring Details (Legacy - kept for backward compatibility) */}
                 {monitoringCount > 0 && (
                   <Collapse in={isExpanded} timeout="auto" unmountOnExit>
-                    <Box pt={3}>
-                      <Divider sx={{ mb: 2 }} />
+                    <Box pt={2}>
                       <Typography
                         variant="subtitle2"
                         gutterBottom
                         color="text.secondary"
                       >
-                        Associated Monitoring Checks
+                        Detailed Monitoring Information
                       </Typography>
                       <List dense>
                         {service.monitoring_checks?.map(check => (
@@ -458,16 +603,20 @@ const ServiceList = forwardRef(function ServiceList({ statusPageId }, ref) {
                               secondary={
                                 <Box>
                                   <Typography variant="caption" display="block">
-                                    Threshold: {check.failure_threshold || 5}{' '}
-                                    minutes
+                                    Interval: {check.check_interval_seconds 
+                                      ? `${check.check_interval_seconds}s` 
+                                      : 'Unknown'}
+                                  </Typography>
+                                  <Typography variant="caption" display="block">
+                                    Timeout: {check.timeout_seconds || 30}s
                                   </Typography>
                                   {check.failure_message && (
                                     <Typography
                                       variant="caption"
                                       display="block"
-                                      color="text.secondary"
+                                      color="error.main"
                                     >
-                                      Message: {check.failure_message}
+                                      Error: {check.failure_message}
                                     </Typography>
                                   )}
                                 </Box>
@@ -601,6 +750,131 @@ const ServiceList = forwardRef(function ServiceList({ statusPageId }, ref) {
             }
           >
             {statusUpdateLoading ? 'Updating...' : 'Update Status'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setServiceToDelete(null);
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle 
+          sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 2,
+            pb: 1
+          }}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 48,
+              height: 48,
+              borderRadius: '50%',
+              backgroundColor: 'error.light',
+              color: 'error.contrastText'
+            }}
+          >
+            <DeleteIcon />
+          </Box>
+          <Box>
+            <Typography variant="h6" component="div">
+              Delete Service
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              This action cannot be undone
+            </Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body1" gutterBottom>
+              Are you sure you want to delete this service?
+            </Typography>
+            
+            {serviceToDelete && (
+              <Box
+                sx={{
+                  mt: 2,
+                  p: 2,
+                  backgroundColor: 'grey.50',
+                  borderRadius: 1,
+                  border: '1px solid',
+                  borderColor: 'grey.200'
+                }}
+              >
+                <Typography variant="subtitle2" fontWeight="medium" gutterBottom>
+                  {serviceToDelete.name}
+                </Typography>
+                {serviceToDelete.description && (
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    {serviceToDelete.description}
+                  </Typography>
+                )}
+                <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                  <Chip
+                    label={statusLabels[serviceToDelete.status]}
+                    color={statusColors[serviceToDelete.status]}
+                    size="small"
+                  />
+                  {getMonitoringCheckCount(serviceToDelete) > 0 && (
+                    <Chip
+                      icon={<MonitorHeart />}
+                      label={`${getMonitoringCheckCount(serviceToDelete)} monitoring checks`}
+                      size="small"
+                      variant="outlined"
+                    />
+                  )}
+                </Box>
+              </Box>
+            )}
+          </Box>
+          
+          <Alert severity="warning" sx={{ mt: 2 }}>
+            <Typography variant="body2">
+              This will permanently remove the service and all associated monitoring configurations, 
+              uptime history, and status updates. Any linked monitoring checks will be disconnected.
+            </Typography>
+          </Alert>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3, pt: 1, gap: 1 }}>
+          <Button
+            onClick={() => {
+              setDeleteModalOpen(false);
+              setServiceToDelete(null);
+            }}
+            disabled={deleteLoading}
+            variant="outlined"
+            size="large"
+            sx={{ minWidth: 100 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={confirmDeleteService}
+            color="error"
+            variant="contained"
+            disabled={deleteLoading}
+            startIcon={
+              deleteLoading ? (
+                <CircularProgress size={16} color="inherit" />
+              ) : (
+                <DeleteIcon />
+              )
+            }
+            size="large"
+            sx={{ minWidth: 120 }}
+          >
+            {deleteLoading ? 'Deleting...' : 'Delete Service'}
           </Button>
         </DialogActions>
       </Dialog>

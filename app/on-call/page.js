@@ -31,6 +31,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import EditIcon from '@mui/icons-material/Edit';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import PersonIcon from '@mui/icons-material/Person';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
@@ -107,6 +108,29 @@ export default function OnCallPage() {
   const handleActionClose = () => {
     setActionMenuAnchor(null);
     setSelectedSchedule(null);
+  };
+
+  const handleDeleteSchedule = async (scheduleId) => {
+    if (!confirm('Are you sure you want to delete this on-call schedule? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/on-call-schedules/${scheduleId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete schedule');
+      }
+
+      // Refresh schedules after successful deletion
+      fetchSchedules();
+      handleActionClose();
+    } catch (err) {
+      console.error('Error deleting schedule:', err);
+      setError(err.message);
+    }
   };
 
   const formatDateTime = dateString => {
@@ -424,6 +448,17 @@ export default function OnCallPage() {
                 }}
               >
                 {selectedSchedule?.is_active ? 'Disable' : 'Enable'} Schedule
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  if (selectedSchedule) {
+                    handleDeleteSchedule(selectedSchedule.id);
+                  }
+                }}
+                sx={{ color: 'error.main' }}
+              >
+                <DeleteIcon sx={{ mr: 1 }} />
+                Delete Schedule
               </MenuItem>
             </Menu>
           </>

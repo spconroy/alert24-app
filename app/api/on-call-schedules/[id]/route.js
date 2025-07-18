@@ -58,6 +58,74 @@ export async function GET(request, { params }) {
   }
 }
 
+export async function PATCH(request, { params }) {
+  try {
+    const session = await auth();
+
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    const { id } = params;
+    const body = await request.json();
+
+    // Get user
+    const user = await db.getUserByEmail(session.user.email);
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Check if schedule exists and user has access
+    const existingSchedule = await db.getOnCallScheduleById(id, user.id);
+    if (!existingSchedule) {
+      return NextResponse.json(
+        { error: 'Schedule not found or access denied' },
+        { status: 404 }
+      );
+    }
+
+    // Check permissions
+    const membership = await db.getOrganizationMember(
+      existingSchedule.organization_id,
+      user.id
+    );
+    if (!membership || !['owner', 'admin'].includes(membership.role)) {
+      return NextResponse.json(
+        {
+          error:
+            'Access denied - only owners and admins can update on-call schedules',
+        },
+        { status: 403 }
+      );
+    }
+
+    // Update on-call schedule
+    const updatedSchedule = await db.updateOnCallSchedule(id, {
+      ...body,
+      updated_at: new Date().toISOString(),
+    });
+
+    return NextResponse.json({
+      success: true,
+      schedule: updatedSchedule,
+      message: 'On-call schedule updated successfully',
+    });
+  } catch (error) {
+    console.error('Error updating on-call schedule:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to update on-call schedule',
+        details: error.message,
+      },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PUT(request, { params }) {
   try {
     const session = await auth();

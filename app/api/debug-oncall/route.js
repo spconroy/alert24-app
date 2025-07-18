@@ -45,8 +45,7 @@ export async function GET(req) {
         is_active: true,
         timezone: 'UTC',
         rotation_config: { type: 'weekly' },
-        members: [{ user_id: '3b3e5e75-a6ca-4680-83b0-35455901f1d1', order: 1 }],
-        created_by: '3b3e5e75-a6ca-4680-83b0-35455901f1d1'
+        members: [{ user_id: '3b3e5e75-a6ca-4680-83b0-35455901f1d1', order: 1 }]
       };
       
       const { data, error } = await db.client
