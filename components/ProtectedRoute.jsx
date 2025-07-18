@@ -4,15 +4,16 @@ import Box from '@mui/material/Box';
 import { useOrganization } from '@/contexts/OrganizationContext';
 
 export default function ProtectedRoute({ children }) {
-  const { session } = useOrganization();
+  const { session, sessionStatus } = useOrganization();
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      signIn('google');
+    if (sessionStatus === 'unauthenticated') {
+      // Redirect to sign in page
+      window.location.href = '/api/auth/signin';
     }
-  }, [status]);
+  }, [sessionStatus]);
 
-  if (status === 'loading') {
+  if (sessionStatus === 'loading') {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
         <CircularProgress />

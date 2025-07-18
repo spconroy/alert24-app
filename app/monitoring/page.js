@@ -86,6 +86,46 @@ export default function MonitoringPage() {
     return () => clearInterval(interval);
   }, [session, selectedOrganization]);
 
+  // Auto-execute pending checks every 2 minutes when page is active
+  useEffect(() => {
+    if (!session || !selectedOrganization) return;
+
+    const executePendingChecks = async () => {
+      try {
+        // Call the cron endpoint to execute any due checks
+        const response = await fetch('/api/monitoring/cron');
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Auto-execution result:', data);
+          
+          // Refresh monitoring data after execution
+          if (data.summary && data.summary.executed > 0) {
+            setTimeout(() => {
+              fetchMonitoringData();
+            }, 2000); // Wait 2 seconds then refresh
+          }
+        }
+      } catch (error) {
+        console.error('Auto-execution error:', error);
+      }
+    };
+
+    // Execute immediately if there are pending checks
+    const pendingChecks = monitoringChecks.filter(check => 
+      check.current_status === 'pending' || check.current_status === 'unknown'
+    );
+    
+    if (pendingChecks.length > 0) {
+      console.log(`Found ${pendingChecks.length} pending checks, triggering auto-execution...`);
+      executePendingChecks();
+    }
+
+    // Set up interval for auto-execution
+    const autoExecInterval = setInterval(executePendingChecks, 120000); // 2 minutes
+
+    return () => clearInterval(autoExecInterval);
+  }, [session, selectedOrganization, monitoringChecks]);
+
   // Debug: Track state changes
   useEffect(() => {
     console.log('🔍 deleteDialogOpen changed:', deleteDialogOpen);
@@ -113,6 +153,9 @@ export default function MonitoringPage() {
         params.append('organization_id', selectedOrganization.id);
       }
 
+      console.log('Fetching monitoring data with params:', params.toString());
+      console.log('Selected organization:', selectedOrganization);
+
       // Fetch monitoring checks
       const response = await fetch(`/api/monitoring?${params.toString()}`);
       if (!response.ok) {
@@ -120,7 +163,9 @@ export default function MonitoringPage() {
       }
 
       const data = await response.json();
+      console.log('Monitoring API response:', data);
       setMonitoringChecks(data.monitoring_checks || []);
+      console.log('Set monitoring checks:', data.monitoring_checks || []);
 
       // Fetch active incidents
       const incidentParams = new URLSearchParams();
@@ -229,8 +274,10 @@ export default function MonitoringPage() {
   };
 
   const handleMenuOpen = (event, check) => {
+    console.log('🔗 Menu opened for check:', check?.id, check?.name);
     setAnchorEl(event.currentTarget);
     setSelectedCheck(check);
+    console.log('🔗 Set selectedCheck to:', check);
   };
 
   const handleMenuClose = () => {
@@ -272,8 +319,12 @@ export default function MonitoringPage() {
   };
 
   const handleDeleteCheck = async () => {
+    console.log('🎯 handleDeleteCheck called');
+    console.log('🎯 selectedCheck:', selectedCheck);
+    console.log('🎯 deleteDialogOpen:', deleteDialogOpen);
+    
     if (!selectedCheck) {
-      console.error('No check selected for deletion');
+      console.error('❌ No check selected for deletion');
       return;
     }
 
@@ -322,9 +373,10 @@ export default function MonitoringPage() {
       console.log('🔄 Refreshing monitoring data...');
       await fetchMonitoringData();
 
-      console.log('🔒 Closing dialog and menu...');
+      console.log('🔒 Closing dialog and clearing selected check...');
       setDeleteDialogOpen(false);
-      handleMenuClose();
+      setSelectedCheck(null); // Clear the selected check
+      setAnchorEl(null); // Close any open menus
 
       console.log('✅ Delete process completed successfully');
     } catch (err) {
@@ -352,8 +404,19 @@ export default function MonitoringPage() {
   };
 
   const openDeleteDialog = () => {
+    console.log('🔓 Opening delete dialog');
+    console.log('🔓 Selected check:', selectedCheck);
+    console.log('🔓 Current deleteDialogOpen state:', deleteDialogOpen);
+    
+    if (!selectedCheck) {
+      console.error('❌ Cannot open delete dialog: no check selected');
+      return;
+    }
+    
     setDeleteDialogOpen(true);
-    handleMenuClose();
+    console.log('🔓 Set deleteDialogOpen to true');
+    // Don't call handleMenuClose here - let the dialog handle closing the menu
+    setAnchorEl(null); // Just close the menu without clearing selectedCheck
   };
 
   const getStatusIcon = status => {
@@ -366,8 +429,11 @@ export default function MonitoringPage() {
         return <WarningIcon color="warning" />;
       case 'inactive':
         return <PauseIcon color="disabled" />;
+      case 'pending':
+        return <CircularProgress size={20} color="info" />;
+      case 'unknown':
       default:
-        return <CircularProgress size={20} />;
+        return <WarningIcon color="disabled" />;
     }
   };
 
@@ -381,6 +447,9 @@ export default function MonitoringPage() {
         return 'warning';
       case 'inactive':
         return 'default';
+      case 'pending':
+        return 'info';
+      case 'unknown':
       default:
         return 'default';
     }
@@ -826,7 +895,10 @@ export default function MonitoringPage() {
                             </TableCell>
                             <TableCell>
                               <IconButton
-                                onClick={event => handleMenuOpen(event, check)}
+                                onClick={event => {
+                                  console.log('🔗 Actions button clicked for check:', check.id, check.name);
+                                  handleMenuOpen(event, check);
+                                }}
                                 size="small"
                                 disabled={
                                   executingCheckId === check.id ||
@@ -881,7 +953,12 @@ export default function MonitoringPage() {
                 <EditIcon sx={{ mr: 1 }} />
                 Edit
               </MenuItem>
-              <MenuItem onClick={openDeleteDialog} sx={{ color: 'error.main' }}>
+              <MenuItem onClick={(e) => {
+                console.log('🖱️ Delete menu item clicked');
+                console.log('🖱️ Event:', e);
+                console.log('🖱️ selectedCheck:', selectedCheck);
+                openDeleteDialog();
+              }} sx={{ color: 'error.main' }}>
                 <DeleteIcon sx={{ mr: 1 }} />
                 Delete
               </MenuItem>
@@ -892,7 +969,10 @@ export default function MonitoringPage() {
               open={deleteDialogOpen}
               onClose={() => {
                 console.log('🔒 Dialog onClose triggered');
+                console.log('🔒 Current deleteDialogOpen state:', deleteDialogOpen);
                 setDeleteDialogOpen(false);
+                setSelectedCheck(null); // Clear the selected check
+                console.log('🔒 Dialog closed and selectedCheck cleared');
               }}
               aria-labelledby="delete-dialog-title"
               aria-describedby="delete-dialog-description"
@@ -910,17 +990,26 @@ export default function MonitoringPage() {
                   onClick={() => {
                     console.log('❌ Cancel button clicked');
                     setDeleteDialogOpen(false);
+                    setSelectedCheck(null); // Clear the selected check
+                    console.log('❌ Dialog cancelled and selectedCheck cleared');
                   }}
                   disabled={deletingCheckId === selectedCheck?.id}
                 >
                   Cancel
                 </Button>
                 <Button
-                  onClick={() => {
+                  onClick={(e) => {
                     console.log('🖱️ Delete button clicked');
+                    console.log('🔍 Event:', e);
                     console.log('🔍 Current selectedCheck:', selectedCheck);
                     console.log('🔍 Current deletingCheckId:', deletingCheckId);
-                    handleDeleteCheck();
+                    console.log('🔍 Delete dialog open:', deleteDialogOpen);
+                    
+                    try {
+                      handleDeleteCheck();
+                    } catch (error) {
+                      console.error('🔥 Error in delete handler:', error);
+                    }
                   }}
                   color="error"
                   variant="contained"

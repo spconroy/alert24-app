@@ -9,12 +9,29 @@ ALTER TABLE services DISABLE ROW LEVEL SECURITY;
 ALTER TABLE incidents DISABLE ROW LEVEL SECURITY;
 ALTER TABLE status_pages DISABLE ROW LEVEL SECURITY;
 ALTER TABLE status_updates DISABLE ROW LEVEL SECURITY;
+ALTER TABLE on_call_schedules DISABLE ROW LEVEL SECURITY;
+ALTER TABLE monitoring_checks DISABLE ROW LEVEL SECURITY;
+ALTER TABLE check_results DISABLE ROW LEVEL SECURITY;
 
 -- Drop any existing problematic policies
 DROP POLICY IF EXISTS "Organization members can view org" ON organizations;
 DROP POLICY IF EXISTS "Organization members can view membership" ON organization_members;
 DROP POLICY IF EXISTS "Users can view organizations they belong to" ON organizations;
 DROP POLICY IF EXISTS "Users can view their memberships" ON organization_members;
+
+-- Drop on-call schedule policies
+DROP POLICY IF EXISTS "Users can view on-call schedules for their organizations" ON on_call_schedules;
+DROP POLICY IF EXISTS "Users can insert on-call schedules for their organizations" ON on_call_schedules;
+DROP POLICY IF EXISTS "Users can update on-call schedules for their organizations" ON on_call_schedules;
+DROP POLICY IF EXISTS "Users can delete on-call schedules for their organizations" ON on_call_schedules;
+
+-- Drop monitoring policies
+DROP POLICY IF EXISTS "Users can view monitoring checks for their organizations" ON monitoring_checks;
+DROP POLICY IF EXISTS "Users can insert monitoring checks for their organizations" ON monitoring_checks;
+DROP POLICY IF EXISTS "Users can update monitoring checks for their organizations" ON monitoring_checks;
+DROP POLICY IF EXISTS "Users can delete monitoring checks for their organizations" ON monitoring_checks;
+DROP POLICY IF EXISTS "Users can view check results for their organizations" ON check_results;
+DROP POLICY IF EXISTS "Authenticated users can insert check results" ON check_results;
 
 -- Insert some basic test data if tables are empty
 -- Check if we have any organizations

@@ -70,6 +70,13 @@ export async function POST(req) {
       description = '',
       organization_id,
       rotation_config = {},
+      rotation_type,
+      rotation_interval_hours,
+      rotation_day,
+      rotation_time,
+      participants = [],
+      start_date,
+      end_date,
       is_active = true,
       timezone = 'UTC',
     } = body;
@@ -78,6 +85,13 @@ export async function POST(req) {
     if (!name || !organization_id) {
       return NextResponse.json(
         { error: 'Name and organization_id are required' },
+        { status: 400 }
+      );
+    }
+
+    if (!participants || participants.length === 0) {
+      return NextResponse.json(
+        { error: 'At least one participant is required' },
         { status: 400 }
       );
     }
@@ -100,12 +114,29 @@ export async function POST(req) {
       );
     }
 
+    // Transform frontend data to database format
+    const transformedRotationConfig = rotation_type ? {
+      type: rotation_type,
+      duration_hours: rotation_interval_hours || 168,
+      start_time: rotation_time ? `${rotation_time.hour.toString().padStart(2, '0')}:${rotation_time.minute.toString().padStart(2, '0')}` : '09:00',
+      handoff_time: rotation_time ? `${rotation_time.hour.toString().padStart(2, '0')}:${rotation_time.minute.toString().padStart(2, '0')}` : '09:00',
+      rotation_day: rotation_day,
+      schedule_start: start_date,
+      schedule_end: end_date
+    } : rotation_config;
+
+    const transformedMembers = participants.map((participant, index) => ({
+      user_id: participant.id || participant,
+      order: index + 1
+    }));
+
     // Create on-call schedule
     const scheduleData = {
       name,
       description,
       organization_id,
-      rotation_config,
+      rotation_config: transformedRotationConfig,
+      members: transformedMembers,
       is_active,
       timezone,
     };

@@ -172,6 +172,10 @@ export default function CreateMonitoringCheckPage() {
         target_port: formData.check_type === 'tcp' ? 80 : null,
       };
 
+      console.log('Form - selectedOrganization:', selectedOrganization);
+      console.log('Form - formData:', formData);
+      console.log('Form - submitData:', submitData);
+
       const response = await fetch('/api/monitoring', {
         method: 'POST',
         headers: {
@@ -182,7 +186,21 @@ export default function CreateMonitoringCheckPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create monitoring check');
+        console.error('API Error Response:', errorData);
+        
+        // Provide more detailed error message
+        let errorMessage = 'Failed to create monitoring check';
+        if (errorData.error) {
+          errorMessage = errorData.error;
+        }
+        if (errorData.details) {
+          errorMessage += `: ${errorData.details}`;
+        }
+        if (errorData.debug) {
+          console.error('Debug info:', errorData.debug);
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();

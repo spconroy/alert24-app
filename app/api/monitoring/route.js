@@ -35,9 +35,13 @@ export async function GET(req) {
       offset,
     };
 
+    console.log('Monitoring API - Filters:', filters);
+    console.log('Monitoring API - User ID:', user.id);
+
     let monitoringChecks = [];
     try {
       monitoringChecks = await db.getMonitoringChecks(user.id, filters);
+      console.log('Monitoring API - Raw result count:', monitoringChecks.length);
     } catch (dbError) {
       console.warn(
         'Database error fetching monitoring checks, returning empty array:',
@@ -130,7 +134,7 @@ export async function POST(req) {
     const checkData = {
       name,
       check_type,
-      url: target_url,
+      target_url, // Use target_url directly, not url
       organization_id,
       is_active: is_active !== undefined ? is_active : true,
       // SSL Certificate checking
@@ -143,18 +147,15 @@ export async function POST(req) {
       keyword_match,
       keyword_match_type,
       http_headers: http_headers || {},
+      // Set timing fields directly in seconds
+      check_interval_seconds: check_interval_seconds || 300,
+      timeout_seconds: timeout_seconds || 30,
+      // Set required fields for RLS
+      created_by: user.id,
     };
 
-    // Add other fields that are likely to exist
-    if (check_interval_seconds) {
-      checkData.check_interval = Math.floor(check_interval_seconds / 60);
-    }
-    if (timeout_seconds) {
-      checkData.timeout = timeout_seconds;
-    }
-    if (user.id) {
-      checkData.created_by = user.id;
-    }
+    console.log('Monitoring API - Request body:', body);
+    console.log('Monitoring API - Processed checkData:', checkData);
 
     console.log('Creating monitoring check with minimal data:', checkData);
     const monitoringCheck = await db.createMonitoringCheck(checkData);
