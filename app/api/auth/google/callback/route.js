@@ -82,15 +82,15 @@ export async function GET(request) {
       picture: user.avatar_url,
     });
 
-    // Set cookie and redirect
-    const response = Response.redirect(`${process.env.NEXTAUTH_URL}/`);
-    response.headers.set(
-      'Set-Cookie',
-      sessionManager.createSessionCookie(sessionToken)
-    );
-
+    // Create redirect response with cookie header included from the start
     console.log('✅ Authentication successful, redirecting to app');
-    return response;
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: `${process.env.NEXTAUTH_URL}/`,
+        'Set-Cookie': sessionManager.createSessionCookie(sessionToken),
+      },
+    });
   } catch (error) {
     console.error('❌ OAuth callback error:', error);
     return Response.redirect(

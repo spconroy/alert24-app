@@ -8,11 +8,16 @@ export async function POST() {
 
     const sessionManager = new SessionManager();
 
-    const response = Response.json({ success: true });
-    response.headers.set('Set-Cookie', sessionManager.clearSessionCookie());
-
     console.log('✅ User signed out');
-    return response;
+
+    // Create response with cleared cookie from the start
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Set-Cookie': sessionManager.clearSessionCookie(),
+      },
+    });
   } catch (error) {
     console.error('❌ Sign out error:', error);
     return Response.json({ error: 'Sign out failed' }, { status: 500 });
