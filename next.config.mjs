@@ -12,7 +12,7 @@ const nextConfig = {
     unoptimized: true,
   },
   experimental: {
-    serverComponentsExternalPackages: ['pg'],
+    serverComponentsExternalPackages: ['pg', 'stripe'],
   },
   // Ensure compatibility with Cloudflare
   webpack: (config, { isServer }) => {

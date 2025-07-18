@@ -32,6 +32,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import HelpIcon from '@mui/icons-material/Help';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import BugReportIcon from '@mui/icons-material/BugReport';
+import PaymentIcon from '@mui/icons-material/Payment';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useOrganization } from '@/contexts/OrganizationContext';
@@ -188,6 +189,11 @@ export default function NavBar() {
       label: 'Settings',
       href: '/settings',
       icon: <SettingsIcon />,
+    },
+    {
+      label: 'Billing',
+      href: '/billing',
+      icon: <PaymentIcon />,
     },
     {
       label: 'Debug',
@@ -437,6 +443,25 @@ export default function NavBar() {
               }}
             >
               Settings
+            </Button>
+
+            {/* Billing */}
+            <Button
+              component={Link}
+              href="/billing"
+              variant={isActivePath('/billing') ? 'contained' : 'text'}
+              color={isActivePath('/billing') ? 'primary' : 'inherit'}
+              size="small"
+              startIcon={<PaymentIcon />}
+              sx={{
+                minWidth: 'auto',
+                px: 2,
+                py: 1,
+                fontSize: '0.75rem',
+                fontWeight: isActivePath('/billing') ? 600 : 400,
+              }}
+            >
+              Billing
             </Button>
 
             {/* Help */}
