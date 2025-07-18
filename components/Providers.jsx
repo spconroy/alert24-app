@@ -2,6 +2,8 @@
 
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { OrganizationProvider } from '@/contexts/OrganizationContext';
 
 const theme = createTheme({
@@ -19,7 +21,9 @@ export default function Providers({ children }) {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <OrganizationProvider>{children}</OrganizationProvider>
+      <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <OrganizationProvider>{children}</OrganizationProvider>
+      </LocalizationProvider>
     </ThemeProvider>
   );
 }
