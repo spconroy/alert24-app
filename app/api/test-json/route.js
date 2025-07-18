@@ -1,16 +1,14 @@
-export const runtime = 'edge';
-
 export async function GET() {
   try {
     return Response.json({
-      status: 'working',
+      message: 'Basic JSON endpoint working',
       timestamp: new Date().toISOString(),
-      message: 'Minimal test endpoint is functional',
+      status: 'success',
     });
   } catch (error) {
     return new Response(
       JSON.stringify({
-        error: 'Failed',
+        error: 'Basic test failed',
         message: error.message,
       }),
       {
