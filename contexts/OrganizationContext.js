@@ -88,10 +88,15 @@ export function OrganizationProvider({ children }) {
       if (status === 'authenticated' && session?.user?.email) {
         try {
           console.log('🔍 Fetching organizations for:', session.user.email);
-          const response = await fetch('/api/organizations');
 
-          if (response.ok) {
-            const data = await response.json();
+          // Fetch both organizations and default organization in parallel
+          const [orgsResponse, defaultOrgResponse] = await Promise.all([
+            fetch('/api/organizations'),
+            fetch('/api/user/default-organization'),
+          ]);
+
+          if (orgsResponse.ok) {
+            const data = await orgsResponse.json();
             console.log('📥 Organizations API response:', data);
 
             // Handle different response formats
@@ -110,18 +115,47 @@ export function OrganizationProvider({ children }) {
             console.log('📊 Organizations processed:', orgs.length, orgs);
             setOrganizations(orgs);
 
-            // Set current organization from localStorage or default to first
-            const storedId = getStoredOrganizationId();
+            // Determine which organization to select
             let selectedOrg = null;
 
-            if (storedId) {
-              selectedOrg = orgs.find(org => org.id === storedId);
-              console.log('🎯 Found stored organization:', selectedOrg?.name);
+            // 1. First priority: User's default organization from database
+            if (defaultOrgResponse.ok) {
+              const defaultData = await defaultOrgResponse.json();
+              if (defaultData.success && defaultData.defaultOrganizationId) {
+                selectedOrg = orgs.find(
+                  org => org.id === defaultData.defaultOrganizationId
+                );
+                if (selectedOrg) {
+                  console.log(
+                    '🎯 Using user default organization:',
+                    selectedOrg.name
+                  );
+                  setStoredOrganizationId(selectedOrg.id); // Update localStorage to match
+                }
+              }
             }
 
+            // 2. Second priority: Stored organization from localStorage
+            if (!selectedOrg) {
+              const storedId = getStoredOrganizationId();
+              if (storedId) {
+                selectedOrg = orgs.find(org => org.id === storedId);
+                if (selectedOrg) {
+                  console.log(
+                    '💾 Found stored organization:',
+                    selectedOrg.name
+                  );
+                }
+              }
+            }
+
+            // 3. Last resort: First available organization
             if (!selectedOrg && orgs.length > 0) {
               selectedOrg = orgs[0];
-              console.log('🏠 Using default organization:', selectedOrg.name);
+              console.log(
+                '🏠 Using first available organization:',
+                selectedOrg.name
+              );
               setStoredOrganizationId(selectedOrg.id);
             }
 
@@ -129,8 +163,8 @@ export function OrganizationProvider({ children }) {
           } else {
             console.error(
               'Failed to fetch organizations:',
-              response.status,
-              response.statusText
+              orgsResponse.status,
+              orgsResponse.statusText
             );
           }
         } catch (error) {
@@ -149,12 +183,30 @@ export function OrganizationProvider({ children }) {
     fetchOrganizations();
   }, [session, status]);
 
-  const switchOrganization = organizationId => {
+  const switchOrganization = async organizationId => {
     const org = organizations.find(o => o.id === organizationId);
     if (org) {
       console.log('🔄 Switching to organization:', org.name);
       setSelectedOrganization(org);
       setStoredOrganizationId(organizationId);
+
+      // Update the user's default organization in the database
+      try {
+        await fetch('/api/user/default-organization', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ organizationId }),
+        });
+        console.log('✅ Default organization updated in database');
+      } catch (error) {
+        console.warn(
+          '⚠️ Failed to update default organization in database:',
+          error
+        );
+        // Don't throw error - localStorage update still works
+      }
     }
   };
 
@@ -162,9 +214,14 @@ export function OrganizationProvider({ children }) {
     if (session?.user?.email) {
       setLoading(true);
       try {
-        const response = await fetch('/api/organizations');
-        if (response.ok) {
-          const data = await response.json();
+        // Fetch both organizations and default organization
+        const [orgsResponse, defaultOrgResponse] = await Promise.all([
+          fetch('/api/organizations'),
+          fetch('/api/user/default-organization'),
+        ]);
+
+        if (orgsResponse.ok) {
+          const data = await orgsResponse.json();
 
           // Handle different response formats
           let orgs = [];
@@ -178,12 +235,32 @@ export function OrganizationProvider({ children }) {
 
           setOrganizations(orgs);
 
-          // Update selected organization if it still exists
-          if (selectedOrganization) {
-            const updatedSelected = orgs.find(
-              o => o.id === selectedOrganization.id
-            );
-            setSelectedOrganization(updatedSelected || orgs[0] || null);
+          // Determine which organization should be selected
+          let updatedSelected = null;
+
+          // 1. Check if user's default organization from database exists
+          if (defaultOrgResponse.ok) {
+            const defaultData = await defaultOrgResponse.json();
+            if (defaultData.success && defaultData.defaultOrganizationId) {
+              updatedSelected = orgs.find(
+                org => org.id === defaultData.defaultOrganizationId
+              );
+            }
+          }
+
+          // 2. Fall back to current selected organization if it still exists
+          if (!updatedSelected && selectedOrganization) {
+            updatedSelected = orgs.find(o => o.id === selectedOrganization.id);
+          }
+
+          // 3. Fall back to first organization
+          if (!updatedSelected && orgs.length > 0) {
+            updatedSelected = orgs[0];
+          }
+
+          setSelectedOrganization(updatedSelected);
+          if (updatedSelected) {
+            setStoredOrganizationId(updatedSelected.id);
           }
         }
       } catch (error) {
