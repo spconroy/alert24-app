@@ -1,54 +1,32 @@
-import { handlers } from '../../../../auth.js';
+// OLD NEXTAUTH ROUTE - DISABLED
+// We're now using custom Google OAuth implementation
+// Redirect any NextAuth requests to our custom auth
 
 export const runtime = 'edge';
 
-export const GET = async req => {
-  try {
-    console.log('🔵 NextAuth GET handler called');
-    console.log('🔵 Request URL:', req.url);
-    console.log('🔵 Environment check:', {
-      hasGoogleClientId: !!process.env.GOOGLE_CLIENT_ID,
-      hasGoogleClientSecret: !!process.env.GOOGLE_CLIENT_SECRET,
-      hasNextAuthSecret: !!process.env.NEXTAUTH_SECRET,
-    });
+export async function GET(request) {
+  const url = new URL(request.url);
 
-    return await handlers.GET(req);
-  } catch (error) {
-    console.error('❌ NextAuth GET handler error:', error);
-    return new Response(
-      JSON.stringify({
-        error: 'NextAuth GET handler failed',
-        message: error.message,
-        stack: error.stack,
-        timestamp: new Date().toISOString(),
-      }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
+  // If someone tries to access old NextAuth routes, redirect to our custom auth
+  if (url.pathname.includes('/signin') || url.pathname.includes('/callback')) {
+    return Response.redirect(`${process.env.NEXTAUTH_URL}/auth/signin`);
   }
-};
 
-export const POST = async req => {
-  try {
-    console.log('🟠 NextAuth POST handler called');
-    console.log('🟠 Request URL:', req.url);
+  return Response.json(
+    {
+      error: 'NextAuth routes disabled - using custom Google OAuth',
+      customAuthEndpoints: {
+        signin: '/api/auth/google/signin',
+        callback: '/api/auth/google/callback',
+        session: '/api/auth/session',
+        signout: '/api/auth/signout',
+      },
+    },
+    { status: 410 }
+  );
+}
 
-    return await handlers.POST(req);
-  } catch (error) {
-    console.error('❌ NextAuth POST handler error:', error);
-    return new Response(
-      JSON.stringify({
-        error: 'NextAuth POST handler failed',
-        message: error.message,
-        stack: error.stack,
-        timestamp: new Date().toISOString(),
-      }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
-  }
-};
+export async function POST(request) {
+  // Redirect POST requests as well
+  return Response.redirect(`${process.env.NEXTAUTH_URL}/auth/signin`);
+}
