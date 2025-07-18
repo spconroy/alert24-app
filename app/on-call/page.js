@@ -44,7 +44,7 @@ export default function OnCallPage() {
   const { session, selectedOrganization } = useOrganization();
 
   useEffect(() => {
-    if (session) {
+    if (session && selectedOrganization?.id) {
       fetchSchedules();
     }
   }, [session, selectedOrganization]);
@@ -54,11 +54,17 @@ export default function OnCallPage() {
       setLoading(true);
       setError(null);
 
-      const params = new URLSearchParams();
-      if (selectedOrganization?.id) {
-        params.append('organization_id', selectedOrganization.id);
+      // Safety check: Don't proceed without organization
+      if (!selectedOrganization?.id) {
+        console.log('⚠️ No organization selected, skipping schedule fetch');
+        setSchedules([]);
+        return;
       }
 
+      const params = new URLSearchParams();
+      params.append('organization_id', selectedOrganization.id);
+
+      console.log(`📅 Fetching schedules for org: ${selectedOrganization.id}`);
       const response = await fetch(
         `/api/on-call-schedules?${params.toString()}`
       );
@@ -110,8 +116,12 @@ export default function OnCallPage() {
     setSelectedSchedule(null);
   };
 
-  const handleDeleteSchedule = async (scheduleId) => {
-    if (!confirm('Are you sure you want to delete this on-call schedule? This action cannot be undone.')) {
+  const handleDeleteSchedule = async scheduleId => {
+    if (
+      !confirm(
+        'Are you sure you want to delete this on-call schedule? This action cannot be undone.'
+      )
+    ) {
       return;
     }
 

@@ -37,7 +37,7 @@ export default function EscalationPoliciesPage() {
   const { session, selectedOrganization } = useOrganization();
 
   useEffect(() => {
-    if (session && selectedOrganization) {
+    if (session && selectedOrganization?.id) {
       fetchEscalationPolicies();
     }
   }, [session, selectedOrganization]);
@@ -47,11 +47,21 @@ export default function EscalationPoliciesPage() {
       setLoading(true);
       setError(null);
 
-      const params = new URLSearchParams();
-      if (selectedOrganization?.id) {
-        params.append('organization_id', selectedOrganization.id);
+      // Safety check: Don't proceed without organization
+      if (!selectedOrganization?.id) {
+        console.log(
+          '⚠️ No organization selected, skipping escalation policies fetch'
+        );
+        setEscalationPolicies([]);
+        return;
       }
 
+      const params = new URLSearchParams();
+      params.append('organization_id', selectedOrganization.id);
+
+      console.log(
+        `🔄 Fetching escalation policies for org: ${selectedOrganization.id}`
+      );
       const response = await fetch(
         `/api/escalation-policies?${params.toString()}`
       );

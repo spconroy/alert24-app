@@ -70,14 +70,14 @@ export default function MonitoringPage() {
   }, []);
 
   useEffect(() => {
-    if (session) {
+    if (session && selectedOrganization?.id) {
       fetchMonitoringData();
     }
   }, [session, selectedOrganization]);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
-    if (!session) return;
+    if (!session || !selectedOrganization?.id) return;
 
     const interval = setInterval(() => {
       fetchMonitoringData();
@@ -88,7 +88,7 @@ export default function MonitoringPage() {
 
   // Auto-execute pending checks every 2 minutes when page is active
   useEffect(() => {
-    if (!session || !selectedOrganization) return;
+    if (!session || !selectedOrganization?.id) return;
 
     const executePendingChecks = async () => {
       try {
@@ -97,7 +97,7 @@ export default function MonitoringPage() {
         if (response.ok) {
           const data = await response.json();
           console.log('Auto-execution result:', data);
-          
+
           // Refresh monitoring data after execution
           if (data.summary && data.summary.executed > 0) {
             setTimeout(() => {
@@ -111,12 +111,15 @@ export default function MonitoringPage() {
     };
 
     // Execute immediately if there are pending checks
-    const pendingChecks = monitoringChecks.filter(check => 
-      check.current_status === 'pending' || check.current_status === 'unknown'
+    const pendingChecks = monitoringChecks.filter(
+      check =>
+        check.current_status === 'pending' || check.current_status === 'unknown'
     );
-    
+
     if (pendingChecks.length > 0) {
-      console.log(`Found ${pendingChecks.length} pending checks, triggering auto-execution...`);
+      console.log(
+        `Found ${pendingChecks.length} pending checks, triggering auto-execution...`
+      );
       executePendingChecks();
     }
 
@@ -148,12 +151,20 @@ export default function MonitoringPage() {
       setLoading(true);
       setError(null);
 
-      const params = new URLSearchParams();
-      if (selectedOrganization?.id) {
-        params.append('organization_id', selectedOrganization.id);
+      // Safety check: Don't proceed without organization
+      if (!selectedOrganization?.id) {
+        console.log('⚠️ No organization selected, skipping monitoring fetch');
+        setMonitoringChecks([]);
+        setActiveIncidents([]);
+        return;
       }
 
-      console.log('Fetching monitoring data with params:', params.toString());
+      const params = new URLSearchParams();
+      params.append('organization_id', selectedOrganization.id);
+
+      console.log(
+        `🔍 Fetching monitoring data for org: ${selectedOrganization.id}`
+      );
       console.log('Selected organization:', selectedOrganization);
 
       // Fetch monitoring checks
@@ -322,7 +333,7 @@ export default function MonitoringPage() {
     console.log('🎯 handleDeleteCheck called');
     console.log('🎯 selectedCheck:', selectedCheck);
     console.log('🎯 deleteDialogOpen:', deleteDialogOpen);
-    
+
     if (!selectedCheck) {
       console.error('❌ No check selected for deletion');
       return;
@@ -407,12 +418,12 @@ export default function MonitoringPage() {
     console.log('🔓 Opening delete dialog');
     console.log('🔓 Selected check:', selectedCheck);
     console.log('🔓 Current deleteDialogOpen state:', deleteDialogOpen);
-    
+
     if (!selectedCheck) {
       console.error('❌ Cannot open delete dialog: no check selected');
       return;
     }
-    
+
     setDeleteDialogOpen(true);
     console.log('🔓 Set deleteDialogOpen to true');
     // Don't call handleMenuClose here - let the dialog handle closing the menu
@@ -896,7 +907,11 @@ export default function MonitoringPage() {
                             <TableCell>
                               <IconButton
                                 onClick={event => {
-                                  console.log('🔗 Actions button clicked for check:', check.id, check.name);
+                                  console.log(
+                                    '🔗 Actions button clicked for check:',
+                                    check.id,
+                                    check.name
+                                  );
                                   handleMenuOpen(event, check);
                                 }}
                                 size="small"
@@ -953,12 +968,15 @@ export default function MonitoringPage() {
                 <EditIcon sx={{ mr: 1 }} />
                 Edit
               </MenuItem>
-              <MenuItem onClick={(e) => {
-                console.log('🖱️ Delete menu item clicked');
-                console.log('🖱️ Event:', e);
-                console.log('🖱️ selectedCheck:', selectedCheck);
-                openDeleteDialog();
-              }} sx={{ color: 'error.main' }}>
+              <MenuItem
+                onClick={e => {
+                  console.log('🖱️ Delete menu item clicked');
+                  console.log('🖱️ Event:', e);
+                  console.log('🖱️ selectedCheck:', selectedCheck);
+                  openDeleteDialog();
+                }}
+                sx={{ color: 'error.main' }}
+              >
                 <DeleteIcon sx={{ mr: 1 }} />
                 Delete
               </MenuItem>
@@ -969,7 +987,10 @@ export default function MonitoringPage() {
               open={deleteDialogOpen}
               onClose={() => {
                 console.log('🔒 Dialog onClose triggered');
-                console.log('🔒 Current deleteDialogOpen state:', deleteDialogOpen);
+                console.log(
+                  '🔒 Current deleteDialogOpen state:',
+                  deleteDialogOpen
+                );
                 setDeleteDialogOpen(false);
                 setSelectedCheck(null); // Clear the selected check
                 console.log('🔒 Dialog closed and selectedCheck cleared');
@@ -979,13 +1000,13 @@ export default function MonitoringPage() {
               maxWidth="sm"
               fullWidth
             >
-              <DialogTitle 
+              <DialogTitle
                 id="delete-dialog-title"
-                sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
                   gap: 2,
-                  pb: 1
+                  pb: 1,
                 }}
               >
                 <Box
@@ -997,7 +1018,7 @@ export default function MonitoringPage() {
                     height: 48,
                     borderRadius: '50%',
                     backgroundColor: 'error.light',
-                    color: 'error.contrastText'
+                    color: 'error.contrastText',
                   }}
                 >
                   <DeleteIcon />
@@ -1016,7 +1037,7 @@ export default function MonitoringPage() {
                   <Typography variant="body1" gutterBottom>
                     Are you sure you want to delete this monitoring check?
                   </Typography>
-                  
+
                   {selectedCheck && (
                     <Box
                       sx={{
@@ -1025,13 +1046,21 @@ export default function MonitoringPage() {
                         backgroundColor: 'grey.50',
                         borderRadius: 1,
                         border: '1px solid',
-                        borderColor: 'grey.200'
+                        borderColor: 'grey.200',
                       }}
                     >
-                      <Typography variant="subtitle2" fontWeight="medium" gutterBottom>
+                      <Typography
+                        variant="subtitle2"
+                        fontWeight="medium"
+                        gutterBottom
+                      >
                         {selectedCheck.name}
                       </Typography>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        gutterBottom
+                      >
                         {selectedCheck.target_url}
                       </Typography>
                       <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
@@ -1050,11 +1079,12 @@ export default function MonitoringPage() {
                     </Box>
                   )}
                 </Box>
-                
+
                 <Alert severity="warning" sx={{ mt: 2 }}>
                   <Typography variant="body2">
-                    This will permanently remove the monitoring check and all associated historical data, 
-                    including check results and incident records.
+                    This will permanently remove the monitoring check and all
+                    associated historical data, including check results and
+                    incident records.
                   </Typography>
                 </Alert>
               </DialogContent>
@@ -1064,7 +1094,9 @@ export default function MonitoringPage() {
                     console.log('❌ Cancel button clicked');
                     setDeleteDialogOpen(false);
                     setSelectedCheck(null); // Clear the selected check
-                    console.log('❌ Dialog cancelled and selectedCheck cleared');
+                    console.log(
+                      '❌ Dialog cancelled and selectedCheck cleared'
+                    );
                   }}
                   disabled={deletingCheckId === selectedCheck?.id}
                   variant="outlined"
@@ -1074,13 +1106,13 @@ export default function MonitoringPage() {
                   Cancel
                 </Button>
                 <Button
-                  onClick={(e) => {
+                  onClick={e => {
                     console.log('🖱️ Delete button clicked');
                     console.log('🔍 Event:', e);
                     console.log('🔍 Current selectedCheck:', selectedCheck);
                     console.log('🔍 Current deletingCheckId:', deletingCheckId);
                     console.log('🔍 Delete dialog open:', deleteDialogOpen);
-                    
+
                     try {
                       handleDeleteCheck();
                     } catch (error) {

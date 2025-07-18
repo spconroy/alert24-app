@@ -57,7 +57,7 @@ export default function IncidentsPage() {
   const { session, selectedOrganization } = useOrganization();
 
   useEffect(() => {
-    if (session) {
+    if (session && selectedOrganization?.id) {
       fetchIncidents();
       fetchOrganizations();
     }
