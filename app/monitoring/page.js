@@ -183,8 +183,26 @@ export default function MonitoringPage() {
 
       const data = await response.json();
       console.log('Monitoring API response:', data);
-      setMonitoringChecks(data.monitoring_checks || []);
-      console.log('Set monitoring checks:', data.monitoring_checks || []);
+
+      // Debug: Check if status_page_config is present in browser
+      const checks = data.monitoring_checks || [];
+      const statusPageChecks = checks.filter(
+        check => check.check_type === 'status_page'
+      );
+      if (statusPageChecks.length > 0) {
+        console.log(
+          '🔍 Status page checks received in browser:',
+          statusPageChecks.map(check => ({
+            name: check.name,
+            check_type: check.check_type,
+            has_status_page_config: !!check.status_page_config,
+            status_page_config: check.status_page_config,
+          }))
+        );
+      }
+
+      setMonitoringChecks(checks);
+      console.log('Set monitoring checks:', checks);
 
       // Fetch active incidents
       const incidentParams = new URLSearchParams();

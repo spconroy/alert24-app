@@ -62,6 +62,22 @@ export async function GET(req) {
       created_by_email: check.created_by_user?.email,
     }));
 
+    // Debug: Check if status_page_config is present in the final response
+    const statusPageChecks = formattedChecks.filter(
+      check => check.check_type === 'status_page'
+    );
+    if (statusPageChecks.length > 0) {
+      console.log(
+        '🔍 Status page checks in API response:',
+        statusPageChecks.map(check => ({
+          name: check.name,
+          check_type: check.check_type,
+          has_status_page_config: !!check.status_page_config,
+          status_page_config: check.status_page_config,
+        }))
+      );
+    }
+
     return NextResponse.json({
       success: true,
       monitoring_checks: formattedChecks,
