@@ -36,30 +36,27 @@ import {
 import { useOrganization } from '@/contexts/OrganizationContext';
 
 export default function ProfilePage() {
-  const { session } = useOrganization();
+  const { session, sessionStatus } = useOrganization();
   const router = useRouter();
 
   const [profileData, setProfileData] = useState({
     name: '',
     email: '',
     phone: '',
-    timezone: '',
     notification_preferences: {
-      email_incidents: true,
-      email_escalations: true,
-      sms_critical: false,
-      sms_escalations: false,
+      email: true,
+      sms: false,
+      push: true,
     },
   });
-
-  const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [saveLoading, setSaveLoading] = useState(false);
+  const [updating, setUpdating] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [editMode, setEditMode] = useState(false);
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (sessionStatus === 'unauthenticated') {
       router.push('/api/auth/signin');
       return;
     }
@@ -67,7 +64,7 @@ export default function ProfilePage() {
     if (session?.user) {
       fetchUserProfile();
     }
-  }, [session, status, router]);
+  }, [session, sessionStatus, router]);
 
   const fetchUserProfile = async () => {
     setLoading(true);
@@ -150,7 +147,7 @@ export default function ProfilePage() {
     return !phone || phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''));
   };
 
-  if (status === 'loading' || loading) {
+  if (sessionStatus === 'loading' || loading) {
     return (
       <Container maxWidth="md" sx={{ py: 4 }}>
         <Box

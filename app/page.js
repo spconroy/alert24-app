@@ -7,9 +7,9 @@ import Container from '@mui/material/Container';
 import { useOrganization } from '@/contexts/OrganizationContext';
 
 export default function Home() {
-  const { session } = useOrganization();
+  const { session, sessionStatus } = useOrganization();
 
-  if (status === 'loading') {
+  if (sessionStatus === 'loading') {
     return (
       <Box
         display="flex"
