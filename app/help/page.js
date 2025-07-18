@@ -257,6 +257,9 @@ export default function HelpPage() {
             '✅ Fixed: Monitoring checks not loading consistently',
             '✅ Fixed: Incidents page sometimes showing empty results',
             '✅ Fixed: Organization context race conditions causing API errors',
+            '✅ Fixed: Escalation policies failing to load with database relationship errors',
+            '✅ Fixed: Database join issues between escalation policies and organization members',
+            '✅ Fixed: Status pages and incidents access control problems',
           ],
         },
         generalTroubleshooting: [
