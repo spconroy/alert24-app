@@ -32,36 +32,62 @@ export async function GET(request) {
         const servicesWithMonitoring = await Promise.all(
           services.map(async (service) => {
             try {
-              // Get service monitoring associations
-              const { data: associations, error: assocError } = await db.client
-                .from('service_monitoring_checks')
-                .select('*')
-                .eq('service_id', service.id);
+              // First, check if the service_monitoring_checks table exists
+              let associations = [];
+              try {
+                const { data: assocData, error: assocError } = await db.client
+                  .from('service_monitoring_checks')
+                  .select('*')
+                  .eq('service_id', service.id);
 
-              if (assocError) {
-                console.warn(`Error fetching associations for service ${service.id}:`, assocError);
+                if (assocError) {
+                  console.warn(`Table service_monitoring_checks may not exist:`, assocError.message);
+                  // Try alternative approach using the monitoring_checks table directly
+                  const { data: directChecks, error: directError } = await db.client
+                    .from('monitoring_checks')
+                    .select('*')
+                    .eq('linked_service_id', service.id);
+                  
+                  if (directError) {
+                    console.warn(`Error fetching direct monitoring checks:`, directError.message);
+                    return { ...service, monitoring_checks: [] };
+                  }
+                  
+                  return {
+                    ...service,
+                    monitoring_checks: directChecks || []
+                  };
+                } else {
+                  associations = assocData || [];
+                }
+              } catch (tableError) {
+                console.warn(`Junction table error for service ${service.id}:`, tableError);
                 return { ...service, monitoring_checks: [] };
               }
 
               // Get monitoring checks for this service
               const monitoringChecks = [];
-              for (const assoc of associations || []) {
-                const { data: check, error: checkError } = await db.client
-                  .from('monitoring_checks')
-                  .select('*')
-                  .eq('id', assoc.monitoring_check_id)
-                  .single();
+              for (const assoc of associations) {
+                try {
+                  const { data: check, error: checkError } = await db.client
+                    .from('monitoring_checks')
+                    .select('*')
+                    .eq('id', assoc.monitoring_check_id)
+                    .single();
 
-                if (checkError) {
-                  console.warn(`Error fetching monitoring check ${assoc.monitoring_check_id}:`, checkError);
-                  continue;
+                  if (checkError) {
+                    console.warn(`Error fetching monitoring check ${assoc.monitoring_check_id}:`, checkError);
+                    continue;
+                  }
+
+                  monitoringChecks.push({
+                    ...check,
+                    failure_threshold: assoc.failure_threshold_minutes,
+                    failure_message: assoc.failure_message
+                  });
+                } catch (checkErr) {
+                  console.warn(`Error processing check ${assoc.monitoring_check_id}:`, checkErr);
                 }
-
-                monitoringChecks.push({
-                  ...check,
-                  failure_threshold: assoc.failure_threshold_minutes,
-                  failure_message: assoc.failure_message
-                });
               }
 
               return {
