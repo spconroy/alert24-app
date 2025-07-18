@@ -54,28 +54,22 @@ function useSession() {
   return { data: session, status, signOut };
 }
 
-// Utility functions for localStorage operations
+// Helper functions for localStorage
 const getStoredOrganizationId = () => {
   try {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      return localStorage.getItem('selectedOrganizationId');
-    }
+    return localStorage.getItem('selectedOrganizationId');
   } catch (error) {
     console.warn('Failed to read from localStorage:', error);
+    return null;
   }
-  return null;
 };
 
-const setStoredOrganizationId = id => {
+const setStoredOrganizationId = organizationId => {
   try {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      if (id) {
-        localStorage.setItem('selectedOrganizationId', id);
-        console.log('💾 Stored organization ID:', id);
-      } else {
-        localStorage.removeItem('selectedOrganizationId');
-        console.log('🗑️ Removed from localStorage');
-      }
+    if (organizationId) {
+      localStorage.setItem('selectedOrganizationId', organizationId);
+    } else {
+      localStorage.removeItem('selectedOrganizationId');
     }
   } catch (error) {
     console.warn('Failed to write to localStorage:', error);
@@ -97,8 +91,23 @@ export function OrganizationProvider({ children }) {
           const response = await fetch('/api/organizations');
 
           if (response.ok) {
-            const orgs = await response.json();
-            console.log('📊 Organizations fetched:', orgs.length);
+            const data = await response.json();
+            console.log('📥 Organizations API response:', data);
+
+            // Handle different response formats
+            let orgs = [];
+            if (Array.isArray(data)) {
+              orgs = data;
+            } else if (
+              data.organizations &&
+              Array.isArray(data.organizations)
+            ) {
+              orgs = data.organizations;
+            } else if (data.data && Array.isArray(data.data)) {
+              orgs = data.data;
+            }
+
+            console.log('📊 Organizations processed:', orgs.length, orgs);
             setOrganizations(orgs);
 
             // Set current organization from localStorage or default to first
@@ -118,7 +127,11 @@ export function OrganizationProvider({ children }) {
 
             setCurrentOrganization(selectedOrg);
           } else {
-            console.error('Failed to fetch organizations:', response.status);
+            console.error(
+              'Failed to fetch organizations:',
+              response.status,
+              response.statusText
+            );
           }
         } catch (error) {
           console.error('Error fetching organizations:', error);
@@ -151,7 +164,18 @@ export function OrganizationProvider({ children }) {
       try {
         const response = await fetch('/api/organizations');
         if (response.ok) {
-          const orgs = await response.json();
+          const data = await response.json();
+
+          // Handle different response formats
+          let orgs = [];
+          if (Array.isArray(data)) {
+            orgs = data;
+          } else if (data.organizations && Array.isArray(data.organizations)) {
+            orgs = data.organizations;
+          } else if (data.data && Array.isArray(data.data)) {
+            orgs = data.data;
+          }
+
           setOrganizations(orgs);
 
           // Update current organization if it still exists
