@@ -976,16 +976,89 @@ export default function MonitoringPage() {
               }}
               aria-labelledby="delete-dialog-title"
               aria-describedby="delete-dialog-description"
+              maxWidth="sm"
+              fullWidth
             >
-              <DialogTitle id="delete-dialog-title">Confirm Delete</DialogTitle>
-              <DialogContent>
-                <DialogContentText id="delete-dialog-description">
-                  Are you sure you want to delete the monitoring check &quot;
-                  {selectedCheck?.name}&quot;? This action cannot be undone and
-                  will remove all associated monitoring data.
-                </DialogContentText>
+              <DialogTitle 
+                id="delete-dialog-title"
+                sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 2,
+                  pb: 1
+                }}
+              >
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 48,
+                    height: 48,
+                    borderRadius: '50%',
+                    backgroundColor: 'error.light',
+                    color: 'error.contrastText'
+                  }}
+                >
+                  <DeleteIcon />
+                </Box>
+                <Box>
+                  <Typography variant="h6" component="div">
+                    Delete Monitoring Check
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    This action cannot be undone
+                  </Typography>
+                </Box>
+              </DialogTitle>
+              <DialogContent sx={{ pt: 2 }}>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body1" gutterBottom>
+                    Are you sure you want to delete this monitoring check?
+                  </Typography>
+                  
+                  {selectedCheck && (
+                    <Box
+                      sx={{
+                        mt: 2,
+                        p: 2,
+                        backgroundColor: 'grey.50',
+                        borderRadius: 1,
+                        border: '1px solid',
+                        borderColor: 'grey.200'
+                      }}
+                    >
+                      <Typography variant="subtitle2" fontWeight="medium" gutterBottom>
+                        {selectedCheck.name}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        {selectedCheck.target_url}
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                        <Chip
+                          label={selectedCheck.check_type?.toUpperCase()}
+                          size="small"
+                          variant="outlined"
+                          color="primary"
+                        />
+                        <Chip
+                          label={selectedCheck.current_status || 'Unknown'}
+                          size="small"
+                          color={getStatusColor(selectedCheck.current_status)}
+                        />
+                      </Box>
+                    </Box>
+                  )}
+                </Box>
+                
+                <Alert severity="warning" sx={{ mt: 2 }}>
+                  <Typography variant="body2">
+                    This will permanently remove the monitoring check and all associated historical data, 
+                    including check results and incident records.
+                  </Typography>
+                </Alert>
               </DialogContent>
-              <DialogActions>
+              <DialogActions sx={{ px: 3, pb: 3, pt: 1, gap: 1 }}>
                 <Button
                   onClick={() => {
                     console.log('❌ Cancel button clicked');
@@ -994,6 +1067,9 @@ export default function MonitoringPage() {
                     console.log('❌ Dialog cancelled and selectedCheck cleared');
                   }}
                   disabled={deletingCheckId === selectedCheck?.id}
+                  variant="outlined"
+                  size="large"
+                  sx={{ minWidth: 100 }}
                 >
                   Cancel
                 </Button>
@@ -1016,15 +1092,17 @@ export default function MonitoringPage() {
                   disabled={deletingCheckId === selectedCheck?.id}
                   startIcon={
                     deletingCheckId === selectedCheck?.id ? (
-                      <CircularProgress size={16} />
+                      <CircularProgress size={16} color="inherit" />
                     ) : (
                       <DeleteIcon />
                     )
                   }
+                  size="large"
+                  sx={{ minWidth: 120 }}
                 >
                   {deletingCheckId === selectedCheck?.id
                     ? 'Deleting...'
-                    : 'Delete'}
+                    : 'Delete Check'}
                 </Button>
               </DialogActions>
             </Dialog>
