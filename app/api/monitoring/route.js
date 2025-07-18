@@ -41,7 +41,10 @@ export async function GET(req) {
     let monitoringChecks = [];
     try {
       monitoringChecks = await db.getMonitoringChecks(user.id, filters);
-      console.log('Monitoring API - Raw result count:', monitoringChecks.length);
+      console.log(
+        'Monitoring API - Raw result count:',
+        monitoringChecks.length
+      );
     } catch (dbError) {
       console.warn(
         'Database error fetching monitoring checks, returning empty array:',
@@ -150,6 +153,10 @@ export async function POST(req) {
       // Set timing fields directly in seconds
       check_interval_seconds: check_interval_seconds || 300,
       timeout_seconds: timeout_seconds || 30,
+      // Status page configuration for status_page check type
+      status_page_config: body.status_page_config || null,
+      // Link to service if provided
+      linked_service_id: body.linked_service_id || null,
       // Set required fields for RLS
       created_by: user.id,
     };
