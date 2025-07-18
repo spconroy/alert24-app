@@ -105,7 +105,7 @@ export const POST = withErrorHandler(async request => {
   const session = await auth();
   const user = await Auth.requireUser(db, session.user.email);
 
-  const { monitoringCheckId, serviceId, organizationId } =
+  const { monitoringCheckId, serviceId, failureStatus, organizationId } =
     await parseRequestBody(request, ['monitoringCheckId', 'organizationId']);
 
   // Validate parameters
@@ -149,31 +149,39 @@ export const POST = withErrorHandler(async request => {
       }
     }
 
-    // Get current monitoring check data from services table
-    const { data: currentService, error: fetchError } = await db.client
-      .from('services')
-      .select('*')
-      .eq('id', monitoringCheckId)
-      .ilike('name', '[[]MONITORING]%')
-      .single();
+    if (serviceId) {
+      // Create association in the junction table
+      const associationData = {
+        service_id: serviceId,
+        monitoring_check_id: monitoringCheckId,
+        failure_status: failureStatus || 'degraded',
+        failure_threshold_minutes: 5,
+        failure_message: '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
 
-    if (fetchError) throw fetchError;
+      // Remove any existing association first
+      await db.client
+        .from('service_monitoring_checks')
+        .delete()
+        .eq('monitoring_check_id', monitoringCheckId);
 
-    // Parse and update the stored monitoring data
-    const checkData = JSON.parse(currentService.description);
-    checkData.linked_service_id = serviceId; // null to remove association
+      // Insert new association
+      const { error: insertError } = await db.client
+        .from('service_monitoring_checks')
+        .insert(associationData);
 
-    const dbData = {
-      description: JSON.stringify(checkData),
-      updated_at: new Date().toISOString(),
-    };
+      if (insertError) throw insertError;
+    } else {
+      // Remove association
+      const { error: deleteError } = await db.client
+        .from('service_monitoring_checks')
+        .delete()
+        .eq('monitoring_check_id', monitoringCheckId);
 
-    const { error: updateError } = await db.client
-      .from('services')
-      .update(dbData)
-      .eq('id', monitoringCheckId);
-
-    if (updateError) throw updateError;
+      if (deleteError) throw deleteError;
+    }
 
     const associationAction = serviceId
       ? 'associated with'
@@ -222,30 +230,13 @@ export const DELETE = withErrorHandler(async request => {
   ]);
 
   try {
-    // Remove association by setting linked_service_id to null
-    const { data: currentService, error: fetchError } = await db.client
-      .from('services')
-      .select('*')
-      .eq('id', monitoringCheckId)
-      .ilike('name', '[[]MONITORING]%')
-      .single();
+    // Remove association from junction table
+    const { error: deleteError } = await db.client
+      .from('service_monitoring_checks')
+      .delete()
+      .eq('monitoring_check_id', monitoringCheckId);
 
-    if (fetchError) throw fetchError;
-
-    const checkData = JSON.parse(currentService.description);
-    delete checkData.linked_service_id; // Remove the association
-
-    const dbData = {
-      description: JSON.stringify(checkData),
-      updated_at: new Date().toISOString(),
-    };
-
-    const { error: updateError } = await db.client
-      .from('services')
-      .update(dbData)
-      .eq('id', monitoringCheckId);
-
-    if (updateError) throw updateError;
+    if (deleteError) throw deleteError;
 
     return ApiResponse.success(
       { monitoring_check_id: monitoringCheckId },

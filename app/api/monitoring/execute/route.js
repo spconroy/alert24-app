@@ -379,7 +379,9 @@ async function updateLinkedServiceStatus(monitoringCheck, result) {
     // Query the service_monitoring_checks junction table to find associated services
     const { data: associations, error: associationError } = await db.client
       .from('service_monitoring_checks')
-      .select('service_id')
+      .select(
+        'service_id, failure_status, failure_threshold_minutes, failure_message'
+      )
       .eq('monitoring_check_id', monitoringCheck.id);
 
     if (associationError) {
@@ -398,6 +400,7 @@ async function updateLinkedServiceStatus(monitoringCheck, result) {
     const updateResults = [];
     for (const association of associations) {
       const serviceId = association.service_id;
+      const configuredFailureStatus = association.failure_status || 'degraded';
 
       // Get the linked service
       const { data: linkedService, error: fetchError } = await db.client
@@ -413,20 +416,14 @@ async function updateLinkedServiceStatus(monitoringCheck, result) {
         continue;
       }
 
-      // Determine new service status based on monitoring result
+      // Determine new service status based on monitoring result and configuration
       let newStatus = 'operational';
       if (!result.is_successful) {
-        // Determine severity based on error type
-        if (result.status_code >= 500) {
-          newStatus = 'down';
-        } else if (
-          result.status_code >= 400 ||
-          result.response_time_ms > 10000
-        ) {
-          newStatus = 'degraded';
-        } else {
-          newStatus = 'degraded'; // Default for any failure
-        }
+        // Use the configured failure status instead of auto-determining
+        newStatus = configuredFailureStatus;
+        console.log(
+          `Setting service ${linkedService.name} to ${newStatus} based on configured failure impact`
+        );
       }
 
       // Only update if status actually changed

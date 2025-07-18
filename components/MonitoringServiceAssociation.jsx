@@ -46,6 +46,7 @@ const MonitoringServiceAssociation = ({ organizationId }) => {
   const [associationDialogOpen, setAssociationDialogOpen] = useState(false);
   const [selectedMonitoringCheck, setSelectedMonitoringCheck] = useState('');
   const [selectedService, setSelectedService] = useState('');
+  const [failureStatus, setFailureStatus] = useState('degraded');
   const [associationLoading, setAssociationLoading] = useState(false);
 
   // Fetch associations and available services
@@ -99,6 +100,7 @@ const MonitoringServiceAssociation = ({ organizationId }) => {
         body: JSON.stringify({
           monitoringCheckId: selectedMonitoringCheck,
           serviceId: selectedService || null,
+          failureStatus: failureStatus,
           organizationId,
         }),
       });
@@ -113,6 +115,7 @@ const MonitoringServiceAssociation = ({ organizationId }) => {
       setAssociationDialogOpen(false);
       setSelectedMonitoringCheck('');
       setSelectedService('');
+      setFailureStatus('degraded');
       fetchData(); // Refresh data
     } catch (err) {
       console.error('Error creating association:', err);
@@ -420,7 +423,12 @@ const MonitoringServiceAssociation = ({ organizationId }) => {
       {/* Association Dialog */}
       <Dialog
         open={associationDialogOpen}
-        onClose={() => setAssociationDialogOpen(false)}
+        onClose={() => {
+          setAssociationDialogOpen(false);
+          setSelectedMonitoringCheck('');
+          setSelectedService('');
+          setFailureStatus('degraded');
+        }}
         maxWidth="sm"
         fullWidth
       >
@@ -485,10 +493,52 @@ const MonitoringServiceAssociation = ({ organizationId }) => {
               </Select>
             </FormControl>
 
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Failure Impact</InputLabel>
+              <Select
+                value={failureStatus}
+                onChange={e => setFailureStatus(e.target.value)}
+                label="Failure Impact"
+              >
+                <MenuItem value="degraded">
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                      Degraded Performance
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Service will be marked as degraded when this check fails
+                    </Typography>
+                  </Box>
+                </MenuItem>
+                <MenuItem value="down">
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                      Service Down
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Service will be marked as down when this check fails
+                    </Typography>
+                  </Box>
+                </MenuItem>
+                <MenuItem value="maintenance">
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                      Maintenance Mode
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Service will be marked as under maintenance when this
+                      check fails
+                    </Typography>
+                  </Box>
+                </MenuItem>
+              </Select>
+            </FormControl>
+
             <Alert severity="info" sx={{ mt: 2 }}>
               When the monitoring check fails, the linked service status will
-              automatically update to reflect the issue. When the check
-              recovers, the service status will return to operational.
+              automatically update based on the failure impact you've selected.
+              When the check recovers, the service status will return to
+              operational.
             </Alert>
           </Box>
         </DialogContent>
