@@ -36,6 +36,8 @@ import {
   Lightbulb as TipIcon,
   PlayArrow as StepIcon,
   Person as PersonIcon,
+  Speed as SpeedIcon,
+  Support as SupportIcon,
 } from '@mui/icons-material';
 
 export default function HelpPage() {
@@ -228,6 +230,53 @@ export default function HelpPage() {
           'Include multiple contact methods for critical alerts',
           'Have a final escalation to senior leadership',
           'Test escalation paths regularly',
+        ],
+      },
+    },
+    {
+      id: 'troubleshooting',
+      title: '🔧 Common Issues & Troubleshooting',
+      icon: <SettingsIcon />,
+      description: 'Solutions to frequently encountered problems and fixes.',
+      content: {
+        overview: `If you're experiencing issues with data not loading or features not working as expected, 
+        these common solutions can help resolve most problems.`,
+        organizationIssues: {
+          title: 'Organization & Data Loading Issues',
+          description:
+            'Problems with schedules, incidents, or monitoring not displaying consistently',
+          solutions: [
+            'Make sure you have selected an organization in the top navigation bar',
+            'Try switching to a different organization and back to refresh the context',
+            'Clear your browser cache and refresh the page',
+            'Sign out and sign back in to reset your session',
+            'Check that you have the correct role permissions for the organization',
+          ],
+          fixedIssues: [
+            '✅ Fixed: On-call schedules showing intermittently',
+            '✅ Fixed: Monitoring checks not loading consistently',
+            '✅ Fixed: Incidents page sometimes showing empty results',
+            '✅ Fixed: Organization context race conditions causing API errors',
+          ],
+        },
+        generalTroubleshooting: [
+          'Permission denied errors: Check your organization role and permissions',
+          'Data not loading: Ensure organization is selected in top navigation',
+          "Features missing: Verify you're logged in and part of an organization",
+          'Page errors: Try refreshing or clearing browser cache',
+          'Email notifications not working: Check profile notification preferences',
+        ],
+        performanceIssues: [
+          'Slow loading: Check your internet connection',
+          'Timeouts: Try refreshing the page after a few seconds',
+          'Browser compatibility: Use latest Chrome, Firefox, Safari, or Edge',
+          'Mobile issues: Use responsive design or desktop version for full features',
+        ],
+        contactSupport: [
+          'Still having issues? Email support@alert24.com',
+          'Include your organization name and error details',
+          'Screenshots help us diagnose problems faster',
+          'Check the browser console for error messages (F12 → Console)',
         ],
       },
     },
@@ -1006,6 +1055,138 @@ export default function HelpPage() {
                         </ListItem>
                       )
                     )}
+                  </List>
+                </Box>
+              )}
+
+              {/* Organization Issues Troubleshooting */}
+              {section.content.organizationIssues && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography
+                    variant="h6"
+                    gutterBottom
+                    sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                  >
+                    🔧 {section.content.organizationIssues.title}
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 2 }}>
+                    {section.content.organizationIssues.description}
+                  </Typography>
+
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ mb: 1, fontWeight: 'bold' }}
+                  >
+                    Solutions:
+                  </Typography>
+                  <List dense>
+                    {section.content.organizationIssues.solutions.map(
+                      (solution, index) => (
+                        <ListItem key={index}>
+                          <ListItemIcon>
+                            <CheckIcon color="primary" />
+                          </ListItemIcon>
+                          <ListItemText primary={solution} />
+                        </ListItem>
+                      )
+                    )}
+                  </List>
+
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ mb: 1, mt: 2, fontWeight: 'bold' }}
+                  >
+                    Recent Fixes:
+                  </Typography>
+                  <List dense>
+                    {section.content.organizationIssues.fixedIssues.map(
+                      (fix, index) => (
+                        <ListItem key={index}>
+                          <ListItemIcon>
+                            <CheckIcon color="success" />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={fix}
+                            sx={{
+                              '& .MuiListItemText-primary': {
+                                fontFamily: 'monospace',
+                              },
+                            }}
+                          />
+                        </ListItem>
+                      )
+                    )}
+                  </List>
+                </Box>
+              )}
+
+              {/* General Troubleshooting */}
+              {section.content.generalTroubleshooting && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography
+                    variant="h6"
+                    gutterBottom
+                    sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                  >
+                    🆘 General Troubleshooting
+                  </Typography>
+                  <List dense>
+                    {section.content.generalTroubleshooting.map(
+                      (item, index) => (
+                        <ListItem key={index}>
+                          <ListItemIcon>
+                            <InfoIcon color="info" />
+                          </ListItemIcon>
+                          <ListItemText primary={item} />
+                        </ListItem>
+                      )
+                    )}
+                  </List>
+                </Box>
+              )}
+
+              {/* Performance Issues */}
+              {section.content.performanceIssues && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography
+                    variant="h6"
+                    gutterBottom
+                    sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                  >
+                    ⚡ Performance Issues
+                  </Typography>
+                  <List dense>
+                    {section.content.performanceIssues.map((item, index) => (
+                      <ListItem key={index}>
+                        <ListItemIcon>
+                          <SpeedIcon color="warning" />
+                        </ListItemIcon>
+                        <ListItemText primary={item} />
+                      </ListItem>
+                    ))}
+                  </List>
+                </Box>
+              )}
+
+              {/* Contact Support */}
+              {section.content.contactSupport && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography
+                    variant="h6"
+                    gutterBottom
+                    sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                  >
+                    📞 Contact Support
+                  </Typography>
+                  <List dense>
+                    {section.content.contactSupport.map((item, index) => (
+                      <ListItem key={index}>
+                        <ListItemIcon>
+                          <SupportIcon color="primary" />
+                        </ListItemIcon>
+                        <ListItemText primary={item} />
+                      </ListItem>
+                    ))}
                   </List>
                 </Box>
               )}
