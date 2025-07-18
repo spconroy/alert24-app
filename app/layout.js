@@ -1,20 +1,8 @@
 import './globals.css';
 import { OrganizationProvider } from '@/contexts/OrganizationContext';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline } from '@mui/material';
+import ClientThemeProvider from '@/components/ThemeProvider';
 import NavBar from '@/components/NavBar';
 import HelpWidget from '@/components/HelpWidget';
-
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
-  },
-});
 
 export const metadata = {
   title: 'Alert24',
@@ -25,8 +13,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <ThemeProvider theme={theme}>
-          <CssBaseline />
+        <ClientThemeProvider>
           <OrganizationProvider>
             <div
               style={{
@@ -40,7 +27,7 @@ export default function RootLayout({ children }) {
               <HelpWidget />
             </div>
           </OrganizationProvider>
-        </ThemeProvider>
+        </ClientThemeProvider>
       </body>
     </html>
   );
