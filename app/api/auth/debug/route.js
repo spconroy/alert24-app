@@ -1,24 +1,37 @@
+import { auth } from '@/auth';
+
 export const runtime = 'edge';
 
 export async function GET() {
   try {
-    const envCheck = {
-      GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID ? 'present' : 'missing',
-      GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET ? 'present' : 'missing',
-      NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET ? 'present' : 'missing',
-      NODE_ENV: process.env.NODE_ENV || 'not set',
+    console.log('🔍 Debug endpoint called');
+
+    const session = await auth();
+
+    const debugInfo = {
+      timestamp: new Date().toISOString(),
+      session: session,
+      environment: {
+        hasGoogleClientId: !!process.env.GOOGLE_CLIENT_ID,
+        hasGoogleClientSecret: !!process.env.GOOGLE_CLIENT_SECRET,
+        hasNextAuthSecret: !!process.env.NEXTAUTH_SECRET,
+        hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+        hasSupabaseKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+        nodeEnv: process.env.NODE_ENV,
+        runtime: 'edge',
+      },
     };
 
-    return Response.json({
-      success: true,
-      environment: envCheck,
-      timestamp: new Date().toISOString(),
-    });
+    console.log('Debug info:', JSON.stringify(debugInfo, null, 2));
+
+    return Response.json(debugInfo);
   } catch (error) {
+    console.error('❌ Debug endpoint error:', error);
     return Response.json(
       {
-        success: false,
         error: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString(),
       },
       { status: 500 }
     );

@@ -1,8 +1,5 @@
 import NextAuth from 'next-auth';
 import Google from 'next-auth/providers/google';
-import { SupabaseClient } from './lib/db-supabase.js';
-
-const db = new SupabaseClient();
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -16,43 +13,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   secret: process.env.NEXTAUTH_SECRET,
   trustHost: true,
-  debug: process.env.NODE_ENV === 'development',
+  debug: true, // Enable debug for production debugging
   callbacks: {
     async signIn({ user, account, profile }) {
       try {
-        console.log('🔐 SignIn attempt for:', user.email);
-        // Check if user exists in our database
-        let existingUser = await db.getUserByEmail(user.email);
+        console.log('🔐 NextAuth SignIn callback triggered');
+        console.log('User:', JSON.stringify(user, null, 2));
+        console.log('Account:', JSON.stringify(account, null, 2));
+        console.log('Environment check:', {
+          hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+          hasSupabaseKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+          hasGoogleClientId: !!process.env.GOOGLE_CLIENT_ID,
+          hasNextAuthSecret: !!process.env.NEXTAUTH_SECRET,
+        });
 
-        if (!existingUser) {
-          console.log('👤 Creating new user:', user.email);
-          // Create new user if doesn't exist
-          const userData = {
-            name: user.name,
-            email: user.email,
-            avatar_url: user.image,
-            provider: 'google',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          };
-
-          const { data: newUser, error } = await db.client
-            .from('users')
-            .insert(userData)
-            .select()
-            .single();
-
-          if (error) {
-            console.error('❌ Error creating user:', error);
-            return false;
-          }
-
-          existingUser = newUser;
-          console.log('✅ User created successfully:', existingUser.id);
-        } else {
-          console.log('✅ Existing user found:', existingUser.id);
-        }
-
+        // For now, allow all Google sign-ins
+        // We'll handle user creation after successful authentication
         return true;
       } catch (error) {
         console.error('❌ SignIn callback error:', error);
@@ -60,21 +36,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
     },
     async session({ session, token }) {
-      // Get user from database to include latest data
-      if (session.user?.email) {
-        const user = await db.getUserByEmail(session.user.email);
-        if (user) {
-          session.user.id = user.id;
-          session.user.name = user.name;
-          session.user.image = user.avatar_url;
-        }
-      }
+      console.log('🔄 Session callback triggered');
+      console.log('Session:', JSON.stringify(session, null, 2));
+      console.log('Token:', JSON.stringify(token, null, 2));
       return session;
     },
     async jwt({ token, user, account }) {
-      // Persist user ID in token
+      console.log('🎫 JWT callback triggered');
       if (user) {
-        token.sub = user.id;
+        console.log('Adding user to token:', user.email);
+        token.email = user.email;
+        token.name = user.name;
+        token.picture = user.image;
       }
       return token;
     },

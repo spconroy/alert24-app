@@ -12,17 +12,43 @@ function useSession() {
     const fetchSession = async () => {
       try {
         setStatus('loading');
+        console.log('🔍 Fetching session...');
+
         const response = await fetch('/api/auth/session');
         if (response.ok) {
           const sessionData = await response.json();
+          console.log('📥 Session response:', sessionData);
+
+          if (sessionData) {
+            // If we have a session, ensure user is created in our database
+            try {
+              const postSigninResponse = await fetch('/api/auth/post-signin', {
+                method: 'POST',
+              });
+
+              if (postSigninResponse.ok) {
+                const userData = await postSigninResponse.json();
+                console.log('✅ User data confirmed:', userData);
+              } else {
+                console.warn(
+                  '⚠️ Post-signin failed:',
+                  postSigninResponse.status
+                );
+              }
+            } catch (postSigninError) {
+              console.warn('⚠️ Post-signin error:', postSigninError);
+            }
+          }
+
           setSession(sessionData);
           setStatus(sessionData ? 'authenticated' : 'unauthenticated');
         } else {
+          console.log('❌ Session fetch failed:', response.status);
           setSession(null);
           setStatus('unauthenticated');
         }
       } catch (error) {
-        console.error('Error fetching session:', error);
+        console.error('❌ Error fetching session:', error);
         setSession(null);
         setStatus('unauthenticated');
       }
