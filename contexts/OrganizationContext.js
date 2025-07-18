@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 
 const OrganizationContext = createContext();
 
-// Custom hook to replace NextAuth v5 useSession
+// Custom hook for session management (replaces NextAuth useSession)
 function useSession() {
   const [session, setSession] = useState(null);
   const [status, setStatus] = useState('loading');
@@ -18,27 +18,6 @@ function useSession() {
         if (response.ok) {
           const sessionData = await response.json();
           console.log('📥 Session response:', sessionData);
-
-          if (sessionData) {
-            // If we have a session, ensure user is created in our database
-            try {
-              const postSigninResponse = await fetch('/api/auth/post-signin', {
-                method: 'POST',
-              });
-
-              if (postSigninResponse.ok) {
-                const userData = await postSigninResponse.json();
-                console.log('✅ User data confirmed:', userData);
-              } else {
-                console.warn(
-                  '⚠️ Post-signin failed:',
-                  postSigninResponse.status
-                );
-              }
-            } catch (postSigninError) {
-              console.warn('⚠️ Post-signin error:', postSigninError);
-            }
-          }
 
           setSession(sessionData);
           setStatus(sessionData ? 'authenticated' : 'unauthenticated');
@@ -61,7 +40,18 @@ function useSession() {
     return () => clearInterval(interval);
   }, []);
 
-  return { data: session, status };
+  const signOut = async () => {
+    try {
+      await fetch('/api/auth/signout', { method: 'POST' });
+      setSession(null);
+      setStatus('unauthenticated');
+      window.location.href = '/auth/signin';
+    } catch (error) {
+      console.error('❌ Sign out error:', error);
+    }
+  };
+
+  return { data: session, status, signOut };
 }
 
 // Utility functions for localStorage operations
@@ -76,204 +66,118 @@ const getStoredOrganizationId = () => {
   return null;
 };
 
-const setStoredOrganizationId = orgId => {
+const setStoredOrganizationId = id => {
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
-      if (orgId) {
-        localStorage.setItem('selectedOrganizationId', orgId);
-        console.log('✅ Saved to localStorage:', orgId);
-        return true;
+      if (id) {
+        localStorage.setItem('selectedOrganizationId', id);
+        console.log('💾 Stored organization ID:', id);
       } else {
         localStorage.removeItem('selectedOrganizationId');
         console.log('🗑️ Removed from localStorage');
-        return true;
       }
     }
   } catch (error) {
     console.warn('Failed to write to localStorage:', error);
   }
-  return false;
 };
 
 export function OrganizationProvider({ children }) {
   const { data: session, status } = useSession();
-  const [selectedOrganization, setSelectedOrganization] = useState(null);
   const [organizations, setOrganizations] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [isClient, setIsClient] = useState(false);
+  const [currentOrganization, setCurrentOrganization] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Client-side mounting detection
+  // Fetch organizations when user is authenticated
   useEffect(() => {
-    setIsClient(true);
-  }, []);
+    const fetchOrganizations = async () => {
+      if (status === 'authenticated' && session?.user?.email) {
+        try {
+          console.log('🔍 Fetching organizations for:', session.user.email);
+          const response = await fetch('/api/organizations');
 
-  // Additional restoration check when client is ready and organizations are available
-  useEffect(() => {
-    if (isClient && organizations.length > 0 && !selectedOrganization) {
-      console.log('🔍 Client-side restoration check...');
-      const savedOrgId = getStoredOrganizationId();
-      if (savedOrgId) {
-        const orgToRestore = organizations.find(org => org.id === savedOrgId);
-        if (orgToRestore) {
-          console.log(
-            '🔄 Client-side restoration successful:',
-            orgToRestore.name
-          );
-          setSelectedOrganization(orgToRestore);
-        } else {
-          console.log(
-            '⚠️ Saved organization no longer available, clearing storage'
-          );
-          setStoredOrganizationId(null);
+          if (response.ok) {
+            const orgs = await response.json();
+            console.log('📊 Organizations fetched:', orgs.length);
+            setOrganizations(orgs);
+
+            // Set current organization from localStorage or default to first
+            const storedId = getStoredOrganizationId();
+            let selectedOrg = null;
+
+            if (storedId) {
+              selectedOrg = orgs.find(org => org.id === storedId);
+              console.log('🎯 Found stored organization:', selectedOrg?.name);
+            }
+
+            if (!selectedOrg && orgs.length > 0) {
+              selectedOrg = orgs[0];
+              console.log('🏠 Using default organization:', selectedOrg.name);
+              setStoredOrganizationId(selectedOrg.id);
+            }
+
+            setCurrentOrganization(selectedOrg);
+          } else {
+            console.error('Failed to fetch organizations:', response.status);
+          }
+        } catch (error) {
+          console.error('Error fetching organizations:', error);
         }
+      } else if (status === 'unauthenticated') {
+        console.log('🚪 User not authenticated - clearing organizations');
+        setOrganizations([]);
+        setCurrentOrganization(null);
+        setStoredOrganizationId(null);
       }
-    }
-  }, [isClient, organizations, selectedOrganization]);
 
-  // Fetch organizations when user session is available
-  useEffect(() => {
-    console.log(
-      '🔄 OrganizationContext:',
-      session?.user?.email || 'no session',
-      `[${status}]`
-    );
+      setLoading(false);
+    };
 
-    if (session && status === 'authenticated') {
-      fetchOrganizations();
-    } else if (status === 'unauthenticated') {
-      // Only clear when user is explicitly unauthenticated (logged out)
-      console.log('🚪 User logged out - clearing organizations');
-      setOrganizations([]);
-      setSelectedOrganization(null);
-      // Clear localStorage when user logs out
-      setStoredOrganizationId(null);
-    }
-    // If status is 'loading', don't clear anything - preserve localStorage
+    fetchOrganizations();
   }, [session, status]);
 
-  const fetchOrganizations = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      // API now handles authentication internally via session
-      const url = '/api/organizations';
-
-      const response = await fetch(url);
-      if (response.ok) {
-        const data = await response.json();
-        const orgs = data.organizations || [];
-        setOrganizations(orgs);
-
-        // Try to restore selected organization from localStorage
-        let orgToSelect = null;
-        const savedOrgId = getStoredOrganizationId();
-        console.log(
-          '🔍 Checking localStorage for saved organization:',
-          savedOrgId
-        );
-        if (savedOrgId) {
-          orgToSelect = orgs.find(org => org.id === savedOrgId);
-          if (orgToSelect) {
-            console.log(
-              '🎯 Found matching organization for restoration:',
-              orgToSelect.name
-            );
-          } else {
-            console.log(
-              '⚠️ Saved organization ID not found in current organizations, clearing localStorage'
-            );
-            setStoredOrganizationId(null);
-          }
-        }
-
-        // Check for default organization if no localStorage selection
-        if (!orgToSelect && orgs.length > 1) {
-          console.log('🔍 Checking for default organization...');
-          try {
-            const defaultResponse = await fetch(
-              '/api/user/default-organization'
-            );
-            if (defaultResponse.ok) {
-              const defaultData = await defaultResponse.json();
-              if (defaultData.hasDefault) {
-                const defaultOrg = orgs.find(
-                  org => org.id === defaultData.defaultOrganization.id
-                );
-                if (defaultOrg) {
-                  orgToSelect = defaultOrg;
-                  console.log(
-                    '⭐ Found default organization:',
-                    defaultOrg.name
-                  );
-                }
-              }
-            }
-          } catch (error) {
-            console.error('Error fetching default organization:', error);
-          }
-        }
-
-        // Fallback selection logic
-        if (orgToSelect) {
-          // Restore from localStorage or select default
-          console.log('✅ Selected organization:', orgToSelect.name);
-          setSelectedOrganization(orgToSelect);
-          // Save to localStorage for future sessions
-          setStoredOrganizationId(orgToSelect.id);
-        } else if (orgs.length === 1) {
-          // Auto-select if only one organization
-          const singleOrg = orgs[0];
-          console.log('🔄 Auto-selecting single organization:', singleOrg.name);
-          setSelectedOrganization(singleOrg);
-          // Save to localStorage
-          setStoredOrganizationId(singleOrg.id);
-        } else if (orgs.length === 0) {
-          console.log('📭 No organizations available');
-          setSelectedOrganization(null);
-        } else {
-          console.log(
-            '🤔 Multiple organizations available, waiting for user selection'
-          );
-        }
-        // For multiple orgs with no saved selection, let user choose
-      } else {
-        console.error(
-          'Failed to fetch organizations:',
-          response.status,
-          response.statusText
-        );
-        setError('Failed to fetch organizations');
-        // Don't break the app - set empty organizations
-        setOrganizations([]);
-      }
-    } catch (err) {
-      console.error('Error fetching organizations:', err);
-      setError(err.message);
-      // Don't break the app - set empty organizations
-      setOrganizations([]);
-    } finally {
-      setLoading(false);
+  const switchOrganization = organizationId => {
+    const org = organizations.find(o => o.id === organizationId);
+    if (org) {
+      console.log('🔄 Switching to organization:', org.name);
+      setCurrentOrganization(org);
+      setStoredOrganizationId(organizationId);
     }
   };
 
-  const selectOrganization = organization => {
-    console.log('💾 Selecting organization:', organization?.name || 'none');
-    setSelectedOrganization(organization);
+  const refreshOrganizations = async () => {
+    if (session?.user?.email) {
+      setLoading(true);
+      try {
+        const response = await fetch('/api/organizations');
+        if (response.ok) {
+          const orgs = await response.json();
+          setOrganizations(orgs);
 
-    // Save to localStorage for persistence across page refreshes
-    setStoredOrganizationId(organization?.id || null);
+          // Update current organization if it still exists
+          if (currentOrganization) {
+            const updatedCurrent = orgs.find(
+              o => o.id === currentOrganization.id
+            );
+            setCurrentOrganization(updatedCurrent || orgs[0] || null);
+          }
+        }
+      } catch (error) {
+        console.error('Error refreshing organizations:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
   };
 
   const value = {
-    selectedOrganization,
-    organizations,
-    loading,
-    error,
-    selectOrganization,
-    refreshOrganizations: fetchOrganizations,
     session,
-    sessionStatus: status,
+    status,
+    organizations,
+    currentOrganization,
+    loading,
+    switchOrganization,
+    refreshOrganizations,
   };
 
   return (
@@ -285,10 +189,13 @@ export function OrganizationProvider({ children }) {
 
 export function useOrganization() {
   const context = useContext(OrganizationContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error(
       'useOrganization must be used within an OrganizationProvider'
     );
   }
   return context;
 }
+
+// Export the custom useSession hook
+export { useSession };

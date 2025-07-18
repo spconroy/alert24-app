@@ -1,6 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { signIn, getProviders } from 'next-auth/react';
+import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Container,
@@ -14,27 +13,15 @@ import {
 import { Google as GoogleIcon } from '@mui/icons-material';
 
 export default function SignInPage() {
-  const [providers, setProviders] = useState(null);
   const [loading, setLoading] = useState(false);
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
-  const callbackUrl = searchParams.get('callbackUrl') || '/';
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await getProviders();
-        setProviders(res);
-      } catch (error) {
-        console.error('Error fetching providers:', error);
-      }
-    })();
-  }, []);
 
   const handleSignIn = async () => {
     setLoading(true);
     try {
-      await signIn('google', { callbackUrl });
+      // Redirect to our custom Google OAuth endpoint
+      window.location.href = '/api/auth/google/signin';
     } catch (error) {
       console.error('Sign in error:', error);
       setLoading(false);
@@ -43,12 +30,14 @@ export default function SignInPage() {
 
   const getErrorMessage = error => {
     switch (error) {
-      case 'Configuration':
-        return 'There is a problem with the server configuration. Please contact support.';
+      case 'OAuthSignin':
+        return 'Error occurred during Google sign-in process.';
+      case 'OAuthCallback':
+        return 'Error occurred during the OAuth callback.';
+      case 'OAuthCreateAccount':
+        return 'Could not create your account. Please try again.';
       case 'AccessDenied':
         return 'Access denied. You may not have permission to sign in.';
-      case 'Verification':
-        return 'The verification token has expired or already been used.';
       default:
         return 'An unexpected error occurred. Please try again.';
     }
@@ -79,7 +68,7 @@ export default function SignInPage() {
               loading ? <CircularProgress size={20} /> : <GoogleIcon />
             }
             onClick={handleSignIn}
-            disabled={loading || !providers}
+            disabled={loading}
             fullWidth
             sx={{ py: 1.5 }}
           >
