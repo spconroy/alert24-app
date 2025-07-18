@@ -1,6 +1,8 @@
 
 import { query } from '@/lib/db-edge';
 
+export const runtime = 'edge';
+
 export async function GET() {
   try {
     // Test database connection

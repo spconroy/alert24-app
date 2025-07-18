@@ -152,6 +152,10 @@ export default function ServiceMonitoringConfig({
     setError(null);
 
     try {
+      console.log('🔄 Saving monitoring configuration...');
+      console.log('📋 Associated checks:', associatedChecks);
+      console.log('⚙️ Check configs:', checkConfigs);
+
       // Prepare associations data
       const associations = associatedChecks.map(checkId => ({
         monitoring_check_id: checkId,
@@ -159,6 +163,8 @@ export default function ServiceMonitoringConfig({
           checkConfigs[checkId]?.failure_threshold_minutes || 5,
         failure_message: checkConfigs[checkId]?.failure_message || '',
       }));
+
+      console.log('📤 Sending associations:', associations);
 
       const response = await fetch(`/api/services/${service.id}/monitoring`, {
         method: 'PUT',
@@ -168,12 +174,18 @@ export default function ServiceMonitoringConfig({
         body: JSON.stringify({ associations }),
       });
 
+      console.log('📥 Response status:', response.status);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('❌ Error response:', errorData);
         throw new Error(
           errorData.error || 'Failed to save monitoring configuration'
         );
       }
+
+      const result = await response.json();
+      console.log('✅ Save successful:', result);
 
       // Notify parent component to refresh
       onConfigUpdated?.();

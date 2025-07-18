@@ -1,6 +1,8 @@
 
 import { query, healthCheck, testConnection } from '@/lib/db-http';
 
+export const runtime = 'edge';
+
 export async function GET() {
   try {
     console.log('Testing HTTP database connection...');

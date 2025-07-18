@@ -2,6 +2,8 @@ import { auth } from '@/auth';
 import { ApiResponse, Validator } from '@/lib/api-utils';
 import { SupabaseClient } from '@/lib/db-supabase';
 
+export const runtime = 'edge';
+
 const db = new SupabaseClient();
 
 /**

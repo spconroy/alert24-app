@@ -50,10 +50,10 @@ export default function ProfilePage() {
     },
   });
   const [loading, setLoading] = useState(false);
-  const [updating, setUpdating] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [editMode, setEditMode] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     if (sessionStatus === 'unauthenticated') {

@@ -1,0 +1,1 @@
+var e={},d=(n,_,r)=>(e.__chunk_31=(c,s,t)=>{"use strict";t.d(s,{Z:()=>l});var a=t(8560),o=t(926);let l=(0,a.Z)((0,o.jsx)("path",{d:"M16.59 8.59 12 13.17 7.41 8.59 6 10l6 6 6-6z"}),"ExpandMore")},e);export{d as __getNamedExports};
