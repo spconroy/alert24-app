@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 
-import { SupabaseClient } from '../../../lib/db-supabase.js';
+import { SupabaseClient } from '@/lib/db-supabase';
 
 const db = new SupabaseClient();
 

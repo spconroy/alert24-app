@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { SupabaseClient } from '../../../lib/db-supabase.js';
+import { SupabaseClient } from '@/lib/db-supabase';
 
 const db = new SupabaseClient();
 
@@ -16,24 +16,24 @@ export async function GET(req) {
 
     // Test database connection
     const testConnection = await db.testConnection();
-    
+
     // Test user fetch
     let userTest = null;
     let userError = null;
-    
+
     try {
       const user = await db.getUserByEmail(session.user.email);
       if (user) {
-        userTest = { 
-          success: true, 
+        userTest = {
+          success: true,
           user: {
             id: user.id,
             name: user.name,
             email: user.email,
             phone_number: user.phone_number,
             timezone: user.timezone,
-            notification_preferences: user.notification_preferences
-          }
+            notification_preferences: user.notification_preferences,
+          },
         };
       } else {
         userError = { error: 'User not found in database' };
@@ -45,20 +45,20 @@ export async function GET(req) {
     // Test profile update
     let updateTest = null;
     let updateError = null;
-    
+
     try {
       const user = await db.getUserByEmail(session.user.email);
       if (user) {
         const { data: updatedUser, error } = await db.client
           .from('users')
-          .update({ 
+          .update({
             updated_at: new Date().toISOString(),
-            name: user.name || 'Test User'
+            name: user.name || 'Test User',
           })
           .eq('id', user.id)
           .select()
           .single();
-        
+
         if (error) {
           updateError = error;
         } else {
@@ -74,19 +74,22 @@ export async function GET(req) {
       timestamp: new Date().toISOString(),
       session: {
         user: session.user,
-        authenticated: true
+        authenticated: true,
       },
       tests: {
         connection: testConnection,
         userFetch: userTest || { success: false, error: userError },
-        updateTest: updateTest || { success: false, error: updateError }
-      }
+        updateTest: updateTest || { success: false, error: updateError },
+      },
     });
   } catch (error) {
-    return NextResponse.json({
-      success: false,
-      error: error.message,
-      timestamp: new Date().toISOString()
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: error.message,
+        timestamp: new Date().toISOString(),
+      },
+      { status: 500 }
+    );
   }
 }

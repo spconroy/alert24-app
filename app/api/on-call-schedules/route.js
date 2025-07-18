@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { SupabaseClient } from '../../../lib/db-supabase.js';
+import { SupabaseClient } from '@/lib/db-supabase';
 
 const db = new SupabaseClient();
 
@@ -115,19 +115,25 @@ export async function POST(req) {
     }
 
     // Transform frontend data to database format
-    const transformedRotationConfig = rotation_type ? {
-      type: rotation_type,
-      duration_hours: rotation_interval_hours || 168,
-      start_time: rotation_time ? `${rotation_time.hour.toString().padStart(2, '0')}:${rotation_time.minute.toString().padStart(2, '0')}` : '09:00',
-      handoff_time: rotation_time ? `${rotation_time.hour.toString().padStart(2, '0')}:${rotation_time.minute.toString().padStart(2, '0')}` : '09:00',
-      rotation_day: rotation_day,
-      schedule_start: start_date,
-      schedule_end: end_date
-    } : rotation_config;
+    const transformedRotationConfig = rotation_type
+      ? {
+          type: rotation_type,
+          duration_hours: rotation_interval_hours || 168,
+          start_time: rotation_time
+            ? `${rotation_time.hour.toString().padStart(2, '0')}:${rotation_time.minute.toString().padStart(2, '0')}`
+            : '09:00',
+          handoff_time: rotation_time
+            ? `${rotation_time.hour.toString().padStart(2, '0')}:${rotation_time.minute.toString().padStart(2, '0')}`
+            : '09:00',
+          rotation_day: rotation_day,
+          schedule_start: start_date,
+          schedule_end: end_date,
+        }
+      : rotation_config;
 
     const transformedMembers = participants.map((participant, index) => ({
       user_id: participant.id || participant,
-      order: index + 1
+      order: index + 1,
     }));
 
     // Create on-call schedule

@@ -1,4 +1,4 @@
-import { SupabaseClient } from '../../../lib/db-supabase.js';
+import { SupabaseClient } from '@/lib/db-supabase';
 import { auth } from '@/auth';
 import { NextResponse } from 'next/server';
 

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 
-import { SupabaseClient } from '../../../../../lib/db-supabase.js';
-import { emailService } from '../../../../../lib/email-service.js';
+import { SupabaseClient } from '@/lib/db-supabase';
+import { emailService } from '@/lib/email-service';
 
 const db = new SupabaseClient();
 

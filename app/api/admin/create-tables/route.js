@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { SupabaseClient } from '../../../../lib/db-supabase.js';
+import { SupabaseClient } from '@/lib/db-supabase';
 
 const db = new SupabaseClient();
 
@@ -33,21 +33,24 @@ export async function GET(request) {
     `;
 
     // Run table creation
-    const { error: createError } = await db.client.rpc('exec_sql', { 
-      sql: createTableSQL 
+    const { error: createError } = await db.client.rpc('exec_sql', {
+      sql: createTableSQL,
     });
 
     if (createError) {
       console.error('Error creating table:', createError);
-      return NextResponse.json({ 
-        error: 'Failed to create table', 
-        details: createError.message 
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: 'Failed to create table',
+          details: createError.message,
+        },
+        { status: 500 }
+      );
     }
 
     // Run index creation
-    const { error: indexError } = await db.client.rpc('exec_sql', { 
-      sql: createIndexesSQL 
+    const { error: indexError } = await db.client.rpc('exec_sql', {
+      sql: createIndexesSQL,
     });
 
     if (indexError) {
@@ -59,7 +62,11 @@ export async function GET(request) {
       .from('information_schema.tables')
       .select('table_name')
       .eq('table_schema', 'public')
-      .in('table_name', ['service_monitoring_checks', 'monitoring_checks', 'services']);
+      .in('table_name', [
+        'service_monitoring_checks',
+        'monitoring_checks',
+        'services',
+      ]);
 
     if (checkError) {
       console.error('Error checking tables:', checkError);
@@ -69,14 +76,16 @@ export async function GET(request) {
       success: true,
       message: 'Tables created successfully',
       tables: tables?.map(t => t.table_name) || [],
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
     });
-
   } catch (error) {
     console.error('Error in create-tables API:', error);
-    return NextResponse.json({
-      error: 'Failed to create tables',
-      details: error.message
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: 'Failed to create tables',
+        details: error.message,
+      },
+      { status: 500 }
+    );
   }
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { SupabaseClient } from '../../../../../lib/db-supabase.js';
+import { SupabaseClient } from '@/lib/db-supabase';
 
 const db = new SupabaseClient();
 

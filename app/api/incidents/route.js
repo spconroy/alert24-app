@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
-import { SupabaseClient } from '../../../lib/db-supabase.js';
+import { SupabaseClient } from '@/lib/db-supabase';
 import {
   withErrorHandler,
   ApiResponse,
   Auth,
   Validator,
   parseRequestBody,
-} from '../../../lib/api-utils.js';
-import { emailService } from '../../../lib/email-service.js';
+} from '@/lib/api-utils';
+import { emailService } from '@/lib/email-service';
 
 const db = new SupabaseClient();
 

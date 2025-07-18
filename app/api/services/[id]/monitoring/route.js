@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { SupabaseClient } from '../../../../../lib/db-supabase.js';
+import { SupabaseClient } from '@/lib/db-supabase';
 
 const db = new SupabaseClient();
 
@@ -145,7 +145,7 @@ export async function POST(request, { params }) {
 // Helper function to clear existing associations for a service
 async function clearExistingAssociations(serviceId) {
   console.log(`🧹 Clearing existing associations for service ${serviceId}`);
-  
+
   try {
     // Delete all existing associations for this service from the junction table
     const { error } = await db.client
@@ -158,7 +158,9 @@ async function clearExistingAssociations(serviceId) {
       throw error;
     }
 
-    console.log(`✅ Cleared all existing associations for service ${serviceId}`);
+    console.log(
+      `✅ Cleared all existing associations for service ${serviceId}`
+    );
   } catch (error) {
     console.error('Error in clearExistingAssociations:', error);
     throw error;
@@ -171,8 +173,10 @@ async function createMonitoringAssociation(
   serviceId,
   config
 ) {
-  console.log(`🔗 Creating association: check ${monitoringCheckId} -> service ${serviceId}`);
-  
+  console.log(
+    `🔗 Creating association: check ${monitoringCheckId} -> service ${serviceId}`
+  );
+
   try {
     // Verify the monitoring check exists
     const { data: monitoringCheck, error: fetchError } = await db.client
@@ -214,7 +218,6 @@ async function createMonitoringAssociation(
     console.log(
       `✅ Created association: monitoring check "${monitoringCheck.name}" (${monitoringCheckId}) -> service ${serviceId}`
     );
-    
   } catch (error) {
     console.error('Error in createMonitoringAssociation:', error);
     throw error;

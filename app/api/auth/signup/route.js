@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { SupabaseClient } from '../../../../lib/db-supabase.js';
-import { hashPassword } from '../../../../lib/password-edge.js';
+import { SupabaseClient } from '@/lib/db-supabase';
+import { hashPassword } from '@/lib/password-edge';
 
 const db = new SupabaseClient();
 
