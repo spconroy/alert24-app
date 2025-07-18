@@ -28,48 +28,43 @@ export async function GET(request) {
 
     console.log('✅ User found, checking default organization for:', user.id);
 
-    // Get the user's default organization using Supabase client
-    const { data: userData, error } = await db.client
-      .from('users')
-      .select('default_organization_id')
-      .eq('id', user.id)
+    // Get the user's default organization from organization_members table
+    const { data: defaultMembership, error } = await db.client
+      .from('organization_members')
+      .select(
+        `
+        organization_id,
+        organizations (
+          id,
+          name,
+          slug
+        )
+      `
+      )
+      .eq('user_id', user.id)
+      .eq('is_default', true)
+      .eq('is_active', true)
       .single();
 
-    if (error) {
-      console.log(
-        '⚠️ Error fetching user default org (column might not exist):',
-        error
-      );
+    if (error && error.code !== 'PGRST116') {
+      // PGRST116 = no rows found
+      console.log('⚠️ Error fetching default organization membership:', error);
       return NextResponse.json({
         success: true,
         defaultOrganizationId: null,
       });
     }
 
-    const defaultOrgId = userData?.default_organization_id;
-    console.log('📋 User default organization ID:', defaultOrgId);
-
-    if (!defaultOrgId) {
+    if (!defaultMembership) {
+      console.log('📋 No default organization set');
       return NextResponse.json({
         success: true,
         defaultOrganizationId: null,
       });
     }
 
-    // Verify the organization exists and user has access
-    const organizations = await db.getOrganizations(user.id);
-    const defaultOrg = organizations.find(org => org.id === defaultOrgId);
-
-    if (!defaultOrg) {
-      console.log(
-        '⚠️ Default organization not found or no access:',
-        defaultOrgId
-      );
-      return NextResponse.json({
-        success: true,
-        defaultOrganizationId: null,
-      });
-    }
+    const defaultOrgId = defaultMembership.organization_id;
+    const defaultOrg = defaultMembership.organizations;
 
     console.log('✅ Default organization found:', defaultOrg.name);
 
@@ -119,12 +114,17 @@ export async function POST(request) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Validate that the user has access to this organization
+    // Validate that the user has access to this organization (if organizationId is provided)
     if (organizationId) {
-      const organizations = await db.getOrganizations(user.id);
-      const targetOrg = organizations.find(org => org.id === organizationId);
+      const { data: membership, error: membershipError } = await db.client
+        .from('organization_members')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('organization_id', organizationId)
+        .eq('is_active', true)
+        .single();
 
-      if (!targetOrg) {
+      if (membershipError || !membership) {
         console.log(
           '❌ User does not have access to organization:',
           organizationId
@@ -135,47 +135,52 @@ export async function POST(request) {
         );
       }
 
-      console.log('✅ User has access to organization:', targetOrg.name);
+      console.log('✅ User has access to organization:', organizationId);
     }
 
-    // Update the user's default organization using Supabase client
-    const { error } = await db.client
-      .from('users')
+    // First, clear any existing default for this user
+    const { error: clearError } = await db.client
+      .from('organization_members')
       .update({
-        default_organization_id: organizationId,
+        is_default: false,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', user.id);
+      .eq('user_id', user.id);
 
-    if (error) {
-      console.error('❌ Error updating default organization:', error);
+    if (clearError) {
+      console.error('❌ Error clearing existing defaults:', clearError);
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Failed to clear existing defaults',
+          details: clearError.message,
+        },
+        { status: 500 }
+      );
+    }
 
-      // If column doesn't exist, try to add it
-      if (
-        error.message.includes(
-          'column "default_organization_id" does not exist'
-        )
-      ) {
-        console.log('🔧 Column does not exist, user must add it manually');
+    // If organizationId is provided, set it as default
+    if (organizationId) {
+      const { error: setError } = await db.client
+        .from('organization_members')
+        .update({
+          is_default: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id)
+        .eq('organization_id', organizationId);
+
+      if (setError) {
+        console.error('❌ Error setting new default:', setError);
         return NextResponse.json(
           {
-            error:
-              'Database schema needs update - default_organization_id column missing',
-            details:
-              'Please add the column: ALTER TABLE alert24_schema.users ADD COLUMN default_organization_id UUID;',
+            success: false,
+            error: 'Failed to set new default',
+            details: setError.message,
           },
           { status: 500 }
         );
       }
-
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Failed to set default organization',
-          details: error.message,
-        },
-        { status: 500 }
-      );
     }
 
     console.log('✅ Default organization updated successfully');
