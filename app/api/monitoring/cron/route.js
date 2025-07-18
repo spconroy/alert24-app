@@ -11,7 +11,7 @@ export const runtime = 'edge';
 export async function GET(req) {
   try {
     console.log('🕐 Starting monitoring cron job...');
-    
+
     // Get all active monitoring checks that need to be executed
     const { data: checks, error } = await db.client
       .from('monitoring_checks')
@@ -33,7 +33,7 @@ export async function GET(req) {
       try {
         // Determine if this check should run
         let shouldRun = false;
-        
+
         if (!check.last_check_at) {
           // Never been checked
           shouldRun = true;
@@ -41,19 +41,19 @@ export async function GET(req) {
           const lastCheck = new Date(check.last_check_at);
           const intervalMs = (check.check_interval_seconds || 300) * 1000;
           const nextCheckDue = new Date(lastCheck.getTime() + intervalMs);
-          
+
           shouldRun = now >= nextCheckDue;
         }
 
         if (shouldRun) {
           console.log(`⚡ Executing check: ${check.name}`);
-          
+
           // Execute the check directly using the same logic as the execute endpoint
           const executeResult = await executeMonitoringCheckDirect(check);
-          
+
           // Update the monitoring check status
           await updateMonitoringCheckStatus(check.id, executeResult);
-          
+
           results.push({
             checkId: check.id,
             checkName: check.name,
@@ -66,12 +66,19 @@ export async function GET(req) {
             },
           });
         } else {
-          const lastCheck = check.last_check_at ? new Date(check.last_check_at) : null;
-          const nextDue = lastCheck ? 
-            new Date(lastCheck.getTime() + (check.check_interval_seconds || 300) * 1000) : 
-            'Never checked';
-          
-          console.log(`⏳ Skipping check: ${check.name} (next due: ${nextDue})`);
+          const lastCheck = check.last_check_at
+            ? new Date(check.last_check_at)
+            : null;
+          const nextDue = lastCheck
+            ? new Date(
+                lastCheck.getTime() +
+                  (check.check_interval_seconds || 300) * 1000
+              )
+            : 'Never checked';
+
+          console.log(
+            `⏳ Skipping check: ${check.name} (next due: ${nextDue})`
+          );
           results.push({
             checkId: check.id,
             checkName: check.name,
@@ -94,7 +101,9 @@ export async function GET(req) {
     const skipped = results.filter(r => r.status === 'skipped').length;
     const errors = results.filter(r => r.status === 'error').length;
 
-    console.log(`✅ Cron completed: ${executed} executed, ${skipped} skipped, ${errors} errors`);
+    console.log(
+      `✅ Cron completed: ${executed} executed, ${skipped} skipped, ${errors} errors`
+    );
 
     return NextResponse.json({
       success: true,
@@ -107,7 +116,6 @@ export async function GET(req) {
       results,
       executedAt: now.toISOString(),
     });
-
   } catch (error) {
     console.error('Monitoring cron error:', error);
     return NextResponse.json(
@@ -135,7 +143,9 @@ async function executeMonitoringCheckDirect(check) {
   };
 
   try {
-    console.log(`Executing ${check.check_type} check: ${check.name} -> ${check.target_url}`);
+    console.log(
+      `Executing ${check.check_type} check: ${check.name} -> ${check.target_url}`
+    );
 
     // Handle different check types
     if (check.check_type === 'http') {
@@ -327,7 +337,7 @@ async function executeSslCheck(check, result, startTime) {
   return result;
 }
 
-// Update monitoring check status
+// Update monitoring check status and associated service statuses
 async function updateMonitoringCheckStatus(checkId, result) {
   try {
     // Store result in check_results table if it exists
@@ -344,6 +354,18 @@ async function updateMonitoringCheckStatus(checkId, result) {
       console.warn('Could not store check result:', resultError.message);
     }
 
+    // Get current monitoring check from the monitoring_checks table
+    const { data: monitoringCheck, error: fetchError } = await db.client
+      .from('monitoring_checks')
+      .select('*')
+      .eq('id', checkId)
+      .single();
+
+    if (fetchError || !monitoringCheck) {
+      console.error('Error fetching monitoring check:', fetchError);
+      return;
+    }
+
     // Update monitoring check status
     const updateData = {
       current_status: result.is_successful ? 'up' : 'down',
@@ -353,9 +375,15 @@ async function updateMonitoringCheckStatus(checkId, result) {
 
     if (result.is_successful) {
       updateData.last_success_at = new Date().toISOString();
+      updateData.consecutive_successes =
+        (monitoringCheck.consecutive_successes || 0) + 1;
+      updateData.consecutive_failures = 0;
       updateData.failure_message = null;
     } else {
       updateData.last_failure_at = new Date().toISOString();
+      updateData.consecutive_failures =
+        (monitoringCheck.consecutive_failures || 0) + 1;
+      updateData.consecutive_successes = 0;
       updateData.failure_message = result.error_message;
     }
 
@@ -371,7 +399,149 @@ async function updateMonitoringCheckStatus(checkId, result) {
         `Updated check ${checkId}: ${result.is_successful ? 'SUCCESS' : 'FAILED'} (${result.response_time_ms}ms)`
       );
     }
+
+    // Update associated service statuses via junction table
+    await updateLinkedServiceStatus(monitoringCheck, result);
   } catch (error) {
     console.error('Error updating monitoring check status:', error);
+  }
+}
+
+// Update linked service status based on monitoring check result
+async function updateLinkedServiceStatus(monitoringCheck, result) {
+  try {
+    // Query the service_monitoring_checks junction table to find associated services
+    const { data: associations, error: associationError } = await db.client
+      .from('service_monitoring_checks')
+      .select('service_id')
+      .eq('monitoring_check_id', monitoringCheck.id);
+
+    if (associationError) {
+      console.error('Error fetching service associations:', associationError);
+      return;
+    }
+
+    if (!associations || associations.length === 0) {
+      console.log(
+        `No service associations found for monitoring check ${monitoringCheck.id}`
+      );
+      return;
+    }
+
+    // Update all associated services
+    const updateResults = [];
+    for (const association of associations) {
+      const serviceId = association.service_id;
+
+      // Get the linked service
+      const { data: linkedService, error: fetchError } = await db.client
+        .from('services')
+        .select('*')
+        .eq('id', serviceId)
+        .single();
+
+      if (fetchError || !linkedService) {
+        console.warn(
+          `Associated service ${serviceId} not found or not accessible`
+        );
+        continue;
+      }
+
+      // Determine new service status based on monitoring result
+      let newStatus = 'operational';
+      if (!result.is_successful) {
+        // Determine severity based on error type
+        if (result.status_code >= 500) {
+          newStatus = 'down';
+        } else if (
+          result.status_code >= 400 ||
+          result.response_time_ms > 10000
+        ) {
+          newStatus = 'degraded';
+        } else {
+          newStatus = 'degraded'; // Default for any failure
+        }
+      }
+
+      // Only update if status actually changed
+      if (linkedService.status !== newStatus) {
+        const { error: updateError } = await db.client
+          .from('services')
+          .update({
+            status: newStatus,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', serviceId);
+
+        if (updateError) {
+          console.error(
+            'Error updating associated service status:',
+            updateError
+          );
+        } else {
+          console.log(
+            `🔗 Updated associated service ${linkedService.name}: ${linkedService.status} → ${newStatus}`
+          );
+
+          updateResults.push({
+            serviceName: linkedService.name,
+            oldStatus: linkedService.status,
+            newStatus: newStatus,
+          });
+
+          // Create status update for the service change
+          await createServiceStatusUpdate(
+            linkedService,
+            newStatus,
+            monitoringCheck,
+            result
+          );
+        }
+      }
+    }
+
+    return updateResults;
+  } catch (error) {
+    console.error('Error updating linked service status:', error);
+  }
+}
+
+// Create a status update entry for service status changes
+async function createServiceStatusUpdate(
+  service,
+  newStatus,
+  monitoringCheck,
+  result
+) {
+  try {
+    // Only create status updates for degraded or down states
+    if (newStatus === 'operational') {
+      return;
+    }
+
+    const statusMessage =
+      newStatus === 'down'
+        ? `Service is down due to monitoring check failure: ${result.error_message}`
+        : `Service is degraded due to monitoring check issues: ${result.error_message}`;
+
+    const { error } = await db.client.from('status_updates').insert({
+      service_id: service.id,
+      status: newStatus,
+      message: statusMessage,
+      created_by: monitoringCheck.created_by,
+      organization_id:
+        service.organization_id || monitoringCheck.organization_id,
+      created_at: new Date().toISOString(),
+    });
+
+    if (error) {
+      console.error('Error creating status update:', error);
+    } else {
+      console.log(
+        `📝 Created status update for service ${service.name}: ${statusMessage}`
+      );
+    }
+  } catch (error) {
+    console.error('Error creating service status update:', error);
   }
 }

@@ -260,6 +260,46 @@ async function executeSslCheck(check, result, startTime) {
   return result;
 }
 
+// Create a status update entry for service status changes
+async function createServiceStatusUpdate(
+  service,
+  newStatus,
+  monitoringCheck,
+  result
+) {
+  try {
+    // Only create status updates for degraded or down states
+    if (newStatus === 'operational') {
+      return;
+    }
+
+    const statusMessage =
+      newStatus === 'down'
+        ? `Service is down due to monitoring check failure: ${result.error_message}`
+        : `Service is degraded due to monitoring check issues: ${result.error_message}`;
+
+    const { error } = await db.client.from('status_updates').insert({
+      service_id: service.id,
+      status: newStatus,
+      message: statusMessage,
+      created_by: monitoringCheck.created_by,
+      organization_id:
+        service.organization_id || monitoringCheck.organization_id,
+      created_at: new Date().toISOString(),
+    });
+
+    if (error) {
+      console.error('Error creating status update:', error);
+    } else {
+      console.log(
+        `📝 Created status update for service ${service.name}: ${statusMessage}`
+      );
+    }
+  } catch (error) {
+    console.error('Error creating service status update:', error);
+  }
+}
+
 // Update monitoring check status and linked service status based on result
 async function updateMonitoringCheckStatus(checkId, result) {
   try {
@@ -326,10 +366,8 @@ async function updateMonitoringCheckStatus(checkId, result) {
       );
     }
 
-    // Update linked service status if association exists
-    if (monitoringCheck.linked_service_id) {
-      await updateLinkedServiceStatus(monitoringCheck, result);
-    }
+    // Update associated service statuses via junction table
+    await updateLinkedServiceStatus(monitoringCheck, result);
   } catch (error) {
     console.error('Error updating monitoring check status:', error);
   }
@@ -338,63 +376,97 @@ async function updateMonitoringCheckStatus(checkId, result) {
 // Update linked service status based on monitoring check result
 async function updateLinkedServiceStatus(monitoringCheck, result) {
   try {
-    const linkedServiceId = monitoringCheck.linked_service_id;
-    if (!linkedServiceId) {
-      return; // No linked service
+    // Query the service_monitoring_checks junction table to find associated services
+    const { data: associations, error: associationError } = await db.client
+      .from('service_monitoring_checks')
+      .select('service_id')
+      .eq('monitoring_check_id', monitoringCheck.id);
+
+    if (associationError) {
+      console.error('Error fetching service associations:', associationError);
+      return;
     }
 
-    // Get the linked service
-    const { data: linkedService, error: fetchError } = await db.client
-      .from('services')
-      .select('*')
-      .eq('id', linkedServiceId)
-      .not('name', 'ilike', '[[]MONITORING]%')
-      .single();
-
-    if (fetchError || !linkedService) {
-      console.warn(
-        `Linked service ${linkedServiceId} not found or not accessible`
+    if (!associations || associations.length === 0) {
+      console.log(
+        `No service associations found for monitoring check ${monitoringCheck.id}`
       );
       return;
     }
 
-    // Determine new service status based on monitoring result
-    let newStatus = 'operational';
-    if (!result.is_successful) {
-      // Determine severity based on error type
-      if (result.status_code >= 500) {
-        newStatus = 'down';
-      } else if (result.status_code >= 400 || result.response_time_ms > 10000) {
-        newStatus = 'degraded';
-      } else {
-        newStatus = 'degraded'; // Default for any failure
-      }
-    }
+    // Update all associated services
+    const updateResults = [];
+    for (const association of associations) {
+      const serviceId = association.service_id;
 
-    // Only update if status actually changed
-    if (linkedService.status !== newStatus) {
-      const { error: updateError } = await db.client
+      // Get the linked service
+      const { data: linkedService, error: fetchError } = await db.client
         .from('services')
-        .update({
-          status: newStatus,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', linkedServiceId);
+        .select('*')
+        .eq('id', serviceId)
+        .single();
 
-      if (updateError) {
-        console.error('Error updating linked service status:', updateError);
-      } else {
-        console.log(
-          `🔗 Updated linked service ${linkedService.name}: ${linkedService.status} → ${newStatus}`
+      if (fetchError || !linkedService) {
+        console.warn(
+          `Associated service ${serviceId} not found or not accessible`
         );
+        continue;
+      }
 
-        return {
-          serviceName: linkedService.name,
-          oldStatus: linkedService.status,
-          newStatus: newStatus,
-        };
+      // Determine new service status based on monitoring result
+      let newStatus = 'operational';
+      if (!result.is_successful) {
+        // Determine severity based on error type
+        if (result.status_code >= 500) {
+          newStatus = 'down';
+        } else if (
+          result.status_code >= 400 ||
+          result.response_time_ms > 10000
+        ) {
+          newStatus = 'degraded';
+        } else {
+          newStatus = 'degraded'; // Default for any failure
+        }
+      }
+
+      // Only update if status actually changed
+      if (linkedService.status !== newStatus) {
+        const { error: updateError } = await db.client
+          .from('services')
+          .update({
+            status: newStatus,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', serviceId);
+
+        if (updateError) {
+          console.error(
+            'Error updating associated service status:',
+            updateError
+          );
+        } else {
+          console.log(
+            `🔗 Updated associated service ${linkedService.name}: ${linkedService.status} → ${newStatus}`
+          );
+
+          updateResults.push({
+            serviceName: linkedService.name,
+            oldStatus: linkedService.status,
+            newStatus: newStatus,
+          });
+
+          // Create status update for the service change
+          await createServiceStatusUpdate(
+            linkedService,
+            newStatus,
+            monitoringCheck,
+            result
+          );
+        }
       }
     }
+
+    return updateResults;
   } catch (error) {
     console.error('Error updating linked service status:', error);
   }
