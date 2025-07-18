@@ -374,97 +374,118 @@ export default function CreateOnCallSchedulePage() {
               Configure when and how often the schedule should rotate
             </Typography>
 
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
-                <DateTimePicker
-                  label="Start Date & Time"
-                  value={formData.start_date}
-                  onChange={newValue =>
-                    handleInputChange('start_date', newValue)
-                  }
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      error: !!formErrors.start_date,
-                      helperText: formErrors.start_date,
-                    },
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <DateTimePicker
-                  label="End Date & Time (Optional)"
-                  value={formData.end_date}
-                  onChange={newValue => handleInputChange('end_date', newValue)}
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      error: !!formErrors.end_date,
-                      helperText: formErrors.end_date,
-                    },
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Rotation Type</InputLabel>
-                  <Select
-                    value={formData.rotation_type}
-                    label="Rotation Type"
-                    onChange={e =>
-                      handleInputChange('rotation_type', e.target.value)
-                    }
-                  >
-                    <MenuItem value="daily">Daily</MenuItem>
-                    <MenuItem value="weekly">Weekly</MenuItem>
-                    <MenuItem value="biweekly">Bi-weekly</MenuItem>
-                    <MenuItem value="monthly">Monthly</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              {formData.rotation_type !== 'daily' && (
-                <Grid item xs={12} md={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Rotation Day</InputLabel>
-                    <Select
-                      value={formData.rotation_day}
-                      label="Rotation Day"
-                      onChange={e =>
-                        handleInputChange('rotation_day', e.target.value)
+            <Stack spacing={3}>
+              {/* Schedule Timing */}
+              <Box>
+                <Typography variant="subtitle1" gutterBottom>
+                  Schedule Timing
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={6}>
+                    <DateTimePicker
+                      label="Start Date & Time"
+                      value={formData.start_date}
+                      onChange={newValue =>
+                        handleInputChange('start_date', newValue)
                       }
-                    >
-                      {[0, 1, 2, 3, 4, 5, 6].map(day => (
-                        <MenuItem key={day} value={day}>
-                          {getDayName(day)}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          size: 'small',
+                          error: !!formErrors.start_date,
+                          helperText: formErrors.start_date,
+                        },
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <DateTimePicker
+                      label="End Date & Time (Optional)"
+                      value={formData.end_date}
+                      onChange={newValue =>
+                        handleInputChange('end_date', newValue)
+                      }
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          size: 'small',
+                          error: !!formErrors.end_date,
+                          helperText: formErrors.end_date,
+                        },
+                      }}
+                    />
+                  </Grid>
                 </Grid>
-              )}
-              <Grid item xs={12} md={6}>
-                <TimePicker
-                  label="Rotation Time"
-                  value={formData.rotation_time}
-                  onChange={newValue =>
-                    handleInputChange('rotation_time', newValue)
-                  }
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                    },
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <Alert severity="info">
-                  <Typography variant="body2">
-                    <strong>Rotation Schedule:</strong>{' '}
-                    {getRotationDescription()}
-                  </Typography>
-                </Alert>
-              </Grid>
-            </Grid>
+              </Box>
+
+              {/* Rotation Settings */}
+              <Box>
+                <Typography variant="subtitle1" gutterBottom>
+                  Rotation Settings
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel>Rotation Type</InputLabel>
+                      <Select
+                        value={formData.rotation_type}
+                        label="Rotation Type"
+                        onChange={e =>
+                          handleInputChange('rotation_type', e.target.value)
+                        }
+                      >
+                        <MenuItem value="daily">Daily</MenuItem>
+                        <MenuItem value="weekly">Weekly</MenuItem>
+                        <MenuItem value="biweekly">Bi-weekly</MenuItem>
+                        <MenuItem value="monthly">Monthly</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  {formData.rotation_type !== 'daily' && (
+                    <Grid item xs={12} md={6}>
+                      <FormControl fullWidth size="small">
+                        <InputLabel>Rotation Day</InputLabel>
+                        <Select
+                          value={formData.rotation_day}
+                          label="Rotation Day"
+                          onChange={e =>
+                            handleInputChange('rotation_day', e.target.value)
+                          }
+                        >
+                          {[0, 1, 2, 3, 4, 5, 6].map(day => (
+                            <MenuItem key={day} value={day}>
+                              {getDayName(day)}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                  )}
+                  <Grid item xs={12} md={6}>
+                    <TimePicker
+                      label="Rotation Time"
+                      value={formData.rotation_time}
+                      onChange={newValue =>
+                        handleInputChange('rotation_time', newValue)
+                      }
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          size: 'small',
+                        },
+                      }}
+                    />
+                  </Grid>
+                </Grid>
+              </Box>
+
+              {/* Schedule Preview */}
+              <Alert severity="info" sx={{ bgcolor: 'primary.50' }}>
+                <Typography variant="body2">
+                  <strong>Schedule Preview:</strong> {getRotationDescription()}
+                </Typography>
+              </Alert>
+            </Stack>
           </Box>
         );
 
@@ -484,8 +505,12 @@ export default function CreateOnCallSchedulePage() {
               </Alert>
             )}
 
-            <Grid container spacing={3}>
-              <Grid item xs={12}>
+            <Stack spacing={3}>
+              {/* Add Member Section */}
+              <Box>
+                <Typography variant="subtitle1" gutterBottom>
+                  Add Team Members
+                </Typography>
                 <Box display="flex" gap={2} alignItems="flex-end">
                   <Autocomplete
                     options={organizationMembers.filter(
@@ -501,8 +526,9 @@ export default function CreateOnCallSchedulePage() {
                     renderInput={params => (
                       <TextField
                         {...params}
-                        label="Add Team Member"
-                        placeholder="Search for team members..."
+                        label="Search team members"
+                        placeholder="Type to search..."
+                        size="small"
                       />
                     )}
                   />
@@ -511,62 +537,85 @@ export default function CreateOnCallSchedulePage() {
                     onClick={handleAddParticipant}
                     disabled={!selectedMember}
                     startIcon={<AddIcon />}
+                    size="small"
                   >
                     Add
                   </Button>
                 </Box>
-              </Grid>
+              </Box>
 
+              {/* Members List */}
               {formData.participants.length > 0 && (
-                <Grid item xs={12}>
-                  <Typography variant="h6" sx={{ mb: 2 }}>
+                <Box>
+                  <Typography variant="subtitle1" gutterBottom>
                     Rotation Order ({formData.participants.length} members)
                   </Typography>
-                  <List>
-                    {formData.participants.map((participant, index) => (
-                      <ListItem
-                        key={participant.id}
-                        sx={{
-                          border: 1,
-                          borderColor: 'divider',
-                          borderRadius: 1,
-                          mb: 1,
-                        }}
-                      >
-                        <ListItemAvatar>
-                          <Avatar>
+                  <Paper variant="outlined" sx={{ p: 2 }}>
+                    <Stack spacing={1}>
+                      {formData.participants.map((participant, index) => (
+                        <Box
+                          key={participant.id}
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 2,
+                            p: 1.5,
+                            borderRadius: 1,
+                            bgcolor: 'grey.50',
+                            '&:hover': {
+                              bgcolor: 'grey.100',
+                            },
+                          }}
+                        >
+                          <Chip
+                            label={index + 1}
+                            size="small"
+                            color="primary"
+                            sx={{ minWidth: 32 }}
+                          />
+                          <Avatar sx={{ width: 32, height: 32 }}>
                             <PersonIcon />
                           </Avatar>
-                        </ListItemAvatar>
-                        <ListItemText
-                          primary={
-                            <Box display="flex" alignItems="center" gap={1}>
-                              <Chip
-                                label={`#${index + 1}`}
-                                size="small"
-                                color="primary"
-                              />
+                          <Box sx={{ flexGrow: 1 }}>
+                            <Typography variant="body2" fontWeight="medium">
                               {participant.name}
-                            </Box>
-                          }
-                          secondary={participant.email}
-                        />
-                        <ListItemSecondaryAction>
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              {participant.email}
+                            </Typography>
+                          </Box>
                           <IconButton
-                            edge="end"
+                            size="small"
                             onClick={() =>
                               handleRemoveParticipant(participant.id)
                             }
+                            sx={{ color: 'error.main' }}
                           >
                             <DeleteIcon />
                           </IconButton>
-                        </ListItemSecondaryAction>
-                      </ListItem>
-                    ))}
-                  </List>
-                </Grid>
+                        </Box>
+                      ))}
+                    </Stack>
+                  </Paper>
+                </Box>
               )}
-            </Grid>
+
+              {/* Empty State */}
+              {formData.participants.length === 0 && (
+                <Box textAlign="center" py={4}>
+                  <GroupIcon
+                    sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }}
+                  />
+                  <Typography variant="body2" color="text.secondary">
+                    No team members added yet. Add members to create the
+                    rotation order.
+                  </Typography>
+                </Box>
+              )}
+            </Stack>
           </Box>
         );
 
@@ -699,93 +748,80 @@ export default function CreateOnCallSchedulePage() {
             </Alert>
           )}
 
-          {/* Main Content */}
-          <Grid container spacing={4}>
-            {/* Stepper Sidebar */}
-            <Grid item xs={12} md={4} lg={3}>
-              <Paper sx={{ p: 3, position: 'sticky', top: 20 }}>
-                <Stepper activeStep={activeStep} orientation="vertical">
-                  {steps.map((step, index) => (
-                    <Step key={step.label}>
-                      <StepLabel
-                        icon={step.icon}
-                        optional={
-                          index < activeStep ? (
-                            <CheckCircleIcon
-                              sx={{ color: 'success.main', fontSize: 16 }}
-                            />
-                          ) : null
-                        }
-                      >
-                        <Typography variant="subtitle2">
-                          {step.label}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {step.description}
-                        </Typography>
-                      </StepLabel>
-                    </Step>
-                  ))}
-                </Stepper>
-              </Paper>
-            </Grid>
-
-            {/* Form Content */}
-            <Grid item xs={12} md={8} lg={9}>
-              <Paper sx={{ p: 4 }}>
-                {renderStepContent(activeStep)}
-
-                {/* Navigation Buttons */}
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    mt: 4,
-                  }}
-                >
-                  <Button
-                    disabled={activeStep === 0}
-                    onClick={handleBack}
-                    variant="outlined"
+          {/* Progress Stepper */}
+          <Paper sx={{ p: 3, mb: 4 }}>
+            <Stepper activeStep={activeStep} alternativeLabel>
+              {steps.map((step, index) => (
+                <Step key={step.label}>
+                  <StepLabel
+                    icon={step.icon}
+                    optional={
+                      index < activeStep ? (
+                        <CheckCircleIcon
+                          sx={{ color: 'success.main', fontSize: 16 }}
+                        />
+                      ) : null
+                    }
                   >
-                    Back
+                    <Typography variant="subtitle2">{step.label}</Typography>
+                  </StepLabel>
+                </Step>
+              ))}
+            </Stepper>
+          </Paper>
+
+          {/* Main Content */}
+          <Paper sx={{ p: 4 }}>
+            {renderStepContent(activeStep)}
+
+            {/* Navigation Buttons */}
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                mt: 4,
+                pt: 3,
+                borderTop: 1,
+                borderColor: 'divider',
+              }}
+            >
+              <Button
+                disabled={activeStep === 0}
+                onClick={handleBack}
+                variant="outlined"
+              >
+                Back
+              </Button>
+
+              <Box display="flex" gap={2}>
+                <Button
+                  component={Link}
+                  href="/on-call"
+                  variant="outlined"
+                  color="inherit"
+                >
+                  Cancel
+                </Button>
+
+                {activeStep === steps.length - 1 ? (
+                  <Button
+                    variant="contained"
+                    onClick={handleSubmit}
+                    disabled={loading}
+                    startIcon={
+                      loading ? <CircularProgress size={20} /> : <SaveIcon />
+                    }
+                  >
+                    {loading ? 'Creating...' : 'Create Schedule'}
                   </Button>
-
-                  <Box display="flex" gap={2}>
-                    <Button
-                      component={Link}
-                      href="/on-call"
-                      variant="outlined"
-                      color="inherit"
-                    >
-                      Cancel
-                    </Button>
-
-                    {activeStep === steps.length - 1 ? (
-                      <Button
-                        variant="contained"
-                        onClick={handleSubmit}
-                        disabled={loading}
-                        startIcon={
-                          loading ? (
-                            <CircularProgress size={20} />
-                          ) : (
-                            <SaveIcon />
-                          )
-                        }
-                      >
-                        {loading ? 'Creating...' : 'Create Schedule'}
-                      </Button>
-                    ) : (
-                      <Button variant="contained" onClick={handleNext}>
-                        Next
-                      </Button>
-                    )}
-                  </Box>
-                </Box>
-              </Paper>
-            </Grid>
-          </Grid>
+                ) : (
+                  <Button variant="contained" onClick={handleNext}>
+                    Next
+                  </Button>
+                )}
+              </Box>
+            </Box>
+          </Paper>
         </Box>
       </LocalizationProvider>
     </ProtectedRoute>
