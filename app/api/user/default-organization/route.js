@@ -28,13 +28,25 @@ export async function GET(request) {
 
     console.log('✅ User found, checking default organization for:', user.id);
 
-    // Get the user's default organization
-    const result = await db.query(
-      `SELECT default_organization_id FROM alert24_schema.users WHERE id = $1`,
-      [user.id]
-    );
+    // Get the user's default organization using Supabase client
+    const { data: userData, error } = await db.client
+      .from('users')
+      .select('default_organization_id')
+      .eq('id', user.id)
+      .single();
 
-    const defaultOrgId = result.rows[0]?.default_organization_id;
+    if (error) {
+      console.log(
+        '⚠️ Error fetching user default org (column might not exist):',
+        error
+      );
+      return NextResponse.json({
+        success: true,
+        defaultOrganizationId: null,
+      });
+    }
+
+    const defaultOrgId = userData?.default_organization_id;
     console.log('📋 User default organization ID:', defaultOrgId);
 
     if (!defaultOrgId) {
@@ -126,11 +138,45 @@ export async function POST(request) {
       console.log('✅ User has access to organization:', targetOrg.name);
     }
 
-    // Update the user's default organization
-    await db.query(
-      `UPDATE alert24_schema.users SET default_organization_id = $1, updated_at = NOW() WHERE id = $2`,
-      [organizationId, user.id]
-    );
+    // Update the user's default organization using Supabase client
+    const { error } = await db.client
+      .from('users')
+      .update({
+        default_organization_id: organizationId,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', user.id);
+
+    if (error) {
+      console.error('❌ Error updating default organization:', error);
+
+      // If column doesn't exist, try to add it
+      if (
+        error.message.includes(
+          'column "default_organization_id" does not exist'
+        )
+      ) {
+        console.log('🔧 Column does not exist, user must add it manually');
+        return NextResponse.json(
+          {
+            error:
+              'Database schema needs update - default_organization_id column missing',
+            details:
+              'Please add the column: ALTER TABLE alert24_schema.users ADD COLUMN default_organization_id UUID;',
+          },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Failed to set default organization',
+          details: error.message,
+        },
+        { status: 500 }
+      );
+    }
 
     console.log('✅ Default organization updated successfully');
 
