@@ -1,156 +1,156 @@
-import { auth } from '@/auth';
-import { ApiResponse, Validator } from '@/lib/api-utils';
+import { NextResponse } from 'next/server';
+import { SessionManager } from '@/lib/session-manager';
 import { SupabaseClient } from '@/lib/db-supabase';
-
-export const runtime = 'edge';
 
 const db = new SupabaseClient();
 
-/**
- * GET /api/user/default-organization
- * Get the current user's default organization
- */
-export async function GET() {
+export const runtime = 'edge';
+
+export async function GET(request) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return ApiResponse.error('Authentication required', 401);
+    // Use our custom session manager instead of NextAuth
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(request);
+
+    if (!session || !session.user?.email) {
+      console.log('❌ No valid session found for default organization API');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data, error } = await db.client
-      .from('organization_members')
-      .select(
-        `
-        organization_id,
-        role,
-        organizations!inner (
-          id,
-          name,
-          slug
-        )
-      `
-      )
-      .eq('user_id', session.user.id)
-      .eq('is_default', true)
-      .eq('is_active', true)
-      .single();
+    console.log('✅ Valid session found for default org:', session.user.email);
 
-    if (error && error.code !== 'PGRST116') {
-      // PGRST116 = no rows returned
-      console.error('Error fetching default organization:', error);
-      return ApiResponse.error('Failed to fetch default organization', 500);
+    // Get user by email from session
+    const user = await db.getUserByEmail(session.user.email);
+    if (!user) {
+      console.log('❌ User not found in database:', session.user.email);
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    if (!data) {
-      return ApiResponse.success({
-        hasDefault: false,
-        defaultOrganization: null,
+    console.log('✅ User found, checking default organization for:', user.id);
+
+    // Get the user's default organization
+    const result = await db.query(
+      `SELECT default_organization_id FROM alert24_schema.users WHERE id = $1`,
+      [user.id]
+    );
+
+    const defaultOrgId = result.rows[0]?.default_organization_id;
+    console.log('📋 User default organization ID:', defaultOrgId);
+
+    if (!defaultOrgId) {
+      return NextResponse.json({
+        success: true,
+        defaultOrganizationId: null,
       });
     }
 
-    return ApiResponse.success({
-      hasDefault: true,
-      defaultOrganization: {
-        id: data.organizations.id,
-        name: data.organizations.name,
-        slug: data.organizations.slug,
-        role: data.role,
-      },
+    // Verify the organization exists and user has access
+    const organizations = await db.getOrganizations(user.id);
+    const defaultOrg = organizations.find(org => org.id === defaultOrgId);
+
+    if (!defaultOrg) {
+      console.log(
+        '⚠️ Default organization not found or no access:',
+        defaultOrgId
+      );
+      return NextResponse.json({
+        success: true,
+        defaultOrganizationId: null,
+      });
+    }
+
+    console.log('✅ Default organization found:', defaultOrg.name);
+
+    return NextResponse.json({
+      success: true,
+      defaultOrganizationId: defaultOrgId,
+      defaultOrganization: defaultOrg,
     });
   } catch (error) {
-    console.error('Error in GET /api/user/default-organization:', error);
-    return ApiResponse.error('Internal server error', 500);
+    console.error('❌ Get default organization error:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to fetch default organization',
+        details: error.message,
+      },
+      { status: 500 }
+    );
   }
 }
 
-/**
- * POST /api/user/default-organization
- * Set a user's default organization
- * Body: { organizationId: string }
- */
 export async function POST(request) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return ApiResponse.error('Authentication required', 401);
+    // Use our custom session manager instead of NextAuth
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(request);
+
+    if (!session || !session.user?.email) {
+      console.log('❌ No valid session found for setting default organization');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
-
-    // Validate input
-    Validator.required(['organizationId'], body);
-
     const { organizationId } = body;
 
-    // Verify user is a member of this organization
-    const { data: membership, error: membershipError } = await db.client
-      .from('organization_members')
-      .select('id, role')
-      .eq('user_id', session.user.id)
-      .eq('organization_id', organizationId)
-      .eq('is_active', true)
-      .single();
+    console.log(
+      '🎯 Setting default organization:',
+      organizationId,
+      'for user:',
+      session.user.email
+    );
 
-    if (membershipError || !membership) {
-      return ApiResponse.error(
-        'You are not a member of this organization',
-        403
-      );
+    // Get user by email from session
+    const user = await db.getUserByEmail(session.user.email);
+    if (!user) {
+      console.log('❌ User not found in database:', session.user.email);
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // First, remove default status from all user's organizations
-    const { error: removeError } = await db.client
-      .from('organization_members')
-      .update({
-        is_default: false,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('user_id', session.user.id);
+    // Validate that the user has access to this organization
+    if (organizationId) {
+      const organizations = await db.getOrganizations(user.id);
+      const targetOrg = organizations.find(org => org.id === organizationId);
 
-    if (removeError) {
-      console.error('Error removing default status:', removeError);
-      return ApiResponse.error('Failed to update default organization', 500);
+      if (!targetOrg) {
+        console.log(
+          '❌ User does not have access to organization:',
+          organizationId
+        );
+        return NextResponse.json(
+          { error: 'Organization not found or access denied' },
+          { status: 403 }
+        );
+      }
+
+      console.log('✅ User has access to organization:', targetOrg.name);
     }
 
-    // Then set the specified organization as default
-    const { error: setError } = await db.client
-      .from('organization_members')
-      .update({
-        is_default: true,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('user_id', session.user.id)
-      .eq('organization_id', organizationId);
+    // Update the user's default organization
+    await db.query(
+      `UPDATE alert24_schema.users SET default_organization_id = $1, updated_at = NOW() WHERE id = $2`,
+      [organizationId, user.id]
+    );
 
-    if (setError) {
-      console.error('Error setting default organization:', setError);
-      return ApiResponse.error('Failed to set default organization', 500);
-    }
+    console.log('✅ Default organization updated successfully');
 
-    // Fetch the updated organization details
-    const { data: orgData, error: orgError } = await db.client
-      .from('organizations')
-      .select('id, name, slug')
-      .eq('id', organizationId)
-      .single();
-
-    if (orgError) {
-      console.error('Error fetching organization details:', orgError);
-      return ApiResponse.error('Failed to fetch organization details', 500);
-    }
-
-    return ApiResponse.success({
-      message: 'Default organization updated successfully',
-      defaultOrganization: {
-        id: orgData.id,
-        name: orgData.name,
-        slug: orgData.slug,
-        role: membership.role,
-      },
+    return NextResponse.json({
+      success: true,
+      defaultOrganizationId: organizationId,
+      message: organizationId
+        ? 'Default organization set successfully'
+        : 'Default organization cleared successfully',
     });
   } catch (error) {
-    console.error('Error in POST /api/user/default-organization:', error);
-    return ApiResponse.error('Internal server error', 500);
+    console.error('❌ Set default organization error:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to set default organization',
+        details: error.message,
+      },
+      { status: 500 }
+    );
   }
 }
 
