@@ -50,6 +50,13 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { STATUS_PAGE_PROVIDERS } from '@/lib/status-page-providers';
 
 export default function MonitoringPage() {
+  // Debug: Check if STATUS_PAGE_PROVIDERS is imported correctly
+  console.log(
+    'STATUS_PAGE_PROVIDERS imported:',
+    !!STATUS_PAGE_PROVIDERS,
+    Object.keys(STATUS_PAGE_PROVIDERS || {})
+  );
+
   const [monitoringChecks, setMonitoringChecks] = useState([]);
   const [activeIncidents, setActiveIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -488,6 +495,14 @@ export default function MonitoringPage() {
     // For status page checks, show the provider's status page URL
     if (check.check_type === 'status_page' && check.status_page_config) {
       const { provider } = check.status_page_config;
+      console.log('Status page check debug:', {
+        checkName: check.name,
+        provider: provider,
+        hasConfig: !!check.status_page_config,
+        providerConfig: STATUS_PAGE_PROVIDERS[provider],
+        allProviders: Object.keys(STATUS_PAGE_PROVIDERS),
+      });
+
       const providerConfig = STATUS_PAGE_PROVIDERS[provider];
       if (providerConfig) {
         return providerConfig.url;
