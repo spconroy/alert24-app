@@ -1,6 +1,6 @@
 # Alert24 - Multi-Tenant SaaS Application
 
-A modern, real-time collaboration platform with custom branding and subscription management, built with Next.js, PostgreSQL, and Cloudflare Pages.
+A modern, real-time collaboration platform with custom branding and subscription management, built with Next.js, Supabase, and Cloudflare Pages.
 
 ## 🚀 Project Overview
 
@@ -16,17 +16,17 @@ Alert24 is a comprehensive SaaS application that enables organizations to:
 
 - **Frontend**: Next.js 13+ with App Router
 - **Backend**: Next.js API Routes with serverless functions
-- **Database**: PostgreSQL with `alert24_schema`
+- **Database**: Supabase (PostgreSQL backend)
 - **Authentication**: Google OAuth via NextAuth.js
 - **UI Framework**: Material UI (MUI) + Tailwind CSS
 - **Hosting**: Cloudflare Pages with edge runtime
 - **Payments**: Stripe for subscription management
 - **Email**: SendGrid for transactional emails
-- **Real-time**: WebSocket integration
+- **Real-time**: Supabase real-time subscriptions
 
 ## 📊 Database Schema
 
-The application uses a comprehensive PostgreSQL schema with:
+The application uses Supabase with a comprehensive PostgreSQL schema:
 
 - **11 Core Tables**: Organizations, users, members, notifications, etc.
 - **25+ Indexes**: Optimized for performance
@@ -37,12 +37,10 @@ The application uses a comprehensive PostgreSQL schema with:
 
 ### Database Connection
 
-```
-Host: 34.223.13.196
-Database: alert24
-Schema: alert24_schema
-Username: alert24
-```
+All database operations use Supabase client. Configure via environment variables:
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
 
 ## 🛠️ Development Setup
 

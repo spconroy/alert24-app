@@ -12,40 +12,39 @@ This directory contains SQL schema files to transform the existing Alert24 SaaS 
 4. **`04_status_page_enhancements.sql`** - Status page incident integration
 5. **`05_database_functions.sql`** - Automated functions and triggers
 6. **`06_indexes_and_constraints.sql`** - Performance and data integrity
+7. **`status-page-checks.sql`** - Status page monitoring checks (NEW)
 
 ## 📋 Execution Instructions
 
 ### Prerequisites
-- PostgreSQL 12+ with public schema access
-- alert24 database user with appropriate permissions
+- Supabase project with database access
+- Admin access to Supabase dashboard
 - Existing Alert24 SaaS schema (organizations, users, status pages, etc.)
 
 ### Step-by-Step Execution
 
-```bash
-# 1. Connect to your PostgreSQL instance
-psql -h 34.223.13.196 -p 5432 -U alert24 -d alert24
+**IMPORTANT: Do NOT use direct PostgreSQL connections. Use Supabase dashboard only.**
 
-# 2. Execute schema files in order
-\i docs/schema-updates/01_incident_management_schema.sql
-\i docs/schema-updates/02_monitoring_system_schema.sql
-\i docs/schema-updates/03_enhanced_user_management.sql
-\i docs/schema-updates/04_status_page_enhancements.sql
-\i docs/schema-updates/05_database_functions.sql
-\i docs/schema-updates/06_indexes_and_constraints.sql
+#### Method 1: Supabase SQL Editor (Recommended)
+1. Open your Supabase project dashboard
+2. Navigate to "SQL Editor" 
+3. Execute schema files in order by copying and pasting each file
+4. Run each file individually to catch any errors
+
+#### Method 2: Supabase CLI (Alternative)
+```bash
+# If you have Supabase CLI installed
+supabase db push
 ```
 
-### Alternative: Single Command Execution
-
-```bash
-# Execute all schema updates at once
-psql -h 34.223.13.196 -p 5432 -U alert24 -d alert24 -f docs/schema-updates/01_incident_management_schema.sql
-psql -h 34.223.13.196 -p 5432 -U alert24 -d alert24 -f docs/schema-updates/02_monitoring_system_schema.sql
-psql -h 34.223.13.196 -p 5432 -U alert24 -d alert24 -f docs/schema-updates/03_enhanced_user_management.sql
-psql -h 34.223.13.196 -p 5432 -U alert24 -d alert24 -f docs/schema-updates/04_status_page_enhancements.sql
-psql -h 34.223.13.196 -p 5432 -U alert24 -d alert24 -f docs/schema-updates/05_database_functions.sql
-psql -h 34.223.13.196 -p 5432 -U alert24 -d alert24 -f docs/schema-updates/06_indexes_and_constraints.sql
-```
+### Files to Execute in Order:
+1. Copy and paste `01_incident_management_schema.sql` into Supabase SQL Editor
+2. Copy and paste `02_monitoring_system_schema.sql` into Supabase SQL Editor  
+3. Copy and paste `03_enhanced_user_management.sql` into Supabase SQL Editor
+4. Copy and paste `04_status_page_enhancements.sql` into Supabase SQL Editor
+5. Copy and paste `05_database_functions.sql` into Supabase SQL Editor
+6. Copy and paste `06_indexes_and_constraints.sql` into Supabase SQL Editor
+7. Copy and paste `status-page-checks.sql` into Supabase SQL Editor
 
 ## 🔧 What Each File Does
 
@@ -112,9 +111,17 @@ psql -h 34.223.13.196 -p 5432 -U alert24 -d alert24 -f docs/schema-updates/06_in
   - Materialized views for analytics
   - Schema integrity validation
 
+### status-page-checks.sql (NEW)
+- **Purpose**: Cloud provider status page monitoring
+- **Creates**: status_page_config column and related functions
+- **Key Features**:
+  - Azure, AWS, Google Cloud status monitoring
+  - Multi-region status tracking
+  - Status normalization and reporting
+
 ## 🧪 Testing and Validation
 
-### After Execution, Run These Checks
+### After Execution, Run These Checks in Supabase SQL Editor
 
 ```sql
 -- 1. Verify all tables exist
@@ -142,11 +149,12 @@ SELECT COUNT(*) FROM user_activity_log WHERE activity_type = 'incident_status_ch
 
 ## 📊 Schema Overview
 
-### New Tables Added: 26
+### New Tables Added: 26+
 - Core Incident Management: 6 tables
 - Monitoring System: 6 tables  
 - Enhanced User Management: 6 tables
 - Status Page Enhancements: 6 tables
+- Status Page Monitoring: 1 table (enhanced)
 - Utility/Logging: 2 tables
 
 ### Enhanced Existing Tables: 4
@@ -171,9 +179,9 @@ SELECT COUNT(*) FROM user_activity_log WHERE activity_type = 'incident_status_ch
 
 ## 🚀 Post-Migration Tasks
 
-### 1. Set Up Cron Jobs
+### 1. Set Up Supabase Edge Functions
 ```sql
--- Schedule these functions to run periodically
+-- Schedule these functions to run periodically via Supabase Edge Functions
 SELECT process_pending_escalations();        -- Every 1 minute
 SELECT calculate_all_component_uptime();     -- Daily at midnight
 SELECT cleanup_old_data();                   -- Weekly
@@ -188,10 +196,10 @@ SELECT * FROM monitoring_locations;
 ```
 
 ### 3. Update Application Configuration
-- Add Twilio credentials for SMS/voice notifications
-- Configure Pusher for real-time updates  
-- Set up monitoring check scheduling
+- Configure Supabase RLS policies
+- Set up Supabase real-time subscriptions
 - Configure email templates for notifications
+- Set up monitoring check scheduling
 
 ### 4. Data Migration (if needed)
 ```sql
@@ -205,11 +213,12 @@ SELECT * FROM monitoring_locations;
 - All organization-scoped tables have RLS policies
 - Users can only access data from their organizations
 - User-specific data is isolated per user
+- Configured via Supabase dashboard
 
 ### Permissions
-- All tables granted appropriate permissions to alert24 user
-- Functions executable by alert24 user
-- Materialized views readable by alert24 user
+- All tables granted appropriate permissions via Supabase
+- Functions executable by authenticated users
+- Materialized views readable by authenticated users
 
 ### Data Protection
 - Sensitive data (phone numbers, etc.) properly constrained
@@ -244,12 +253,12 @@ SELECT * FROM monitoring_locations;
    - Check that referenced tables exist
 
 2. **Permission Errors**
-   - Verify alert24 user has necessary permissions
-   - Check schema search_path is correct
+   - Verify Supabase RLS policies are correct
+   - Check authentication is working
 
 3. **Index Creation Failures**
    - Large tables may take time to index
-   - Monitor disk space during creation
+   - Monitor via Supabase dashboard
 
 4. **Function Execution Errors**
    - Check PostgreSQL version compatibility
@@ -258,16 +267,16 @@ SELECT * FROM monitoring_locations;
 ### Rollback Strategy
 - Each file includes `IF NOT EXISTS` clauses for safety
 - Most operations are additive and safe to retry
-- Keep backups before major schema changes
+- Supabase provides database backups automatically
 
 ## 📞 Support
 
 For issues with schema updates:
-1. Check PostgreSQL logs for specific error messages
+1. Check Supabase logs for specific error messages
 2. Verify all prerequisites are met
 3. Ensure proper execution order
 4. Test with sample data after successful execution
 
 ---
 
-**Next Steps**: After successful schema deployment, proceed with application code updates to integrate with the new incident management functionality. 
+**Next Steps**: After successful schema deployment, proceed with application code updates to integrate with the new incident management functionality. All database operations should use the Supabase client (`lib/db-supabase.js`).

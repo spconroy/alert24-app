@@ -1,24 +1,41 @@
 -- Add status page check type support to monitoring_checks table
 -- This adds the ability to monitor cloud provider status pages
+-- 
+-- IMPORTANT: This script should be run via Supabase dashboard or migrations
+-- Do not run directly with psql - use Supabase SQL editor or migrations
 
 -- Step 1: Add status_page_config column to monitoring_checks table
 ALTER TABLE public.monitoring_checks 
 ADD COLUMN IF NOT EXISTS status_page_config JSONB;
 
 -- Step 2: Update the check_type constraint to include status_page
-ALTER TABLE public.monitoring_checks 
-DROP CONSTRAINT IF EXISTS monitoring_checks_check_type_check;
+DO $$ 
+BEGIN
+    -- Drop existing constraint if it exists
+    IF EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'monitoring_checks_check_type_check' 
+        AND table_name = 'monitoring_checks'
+    ) THEN
+        ALTER TABLE public.monitoring_checks 
+        DROP CONSTRAINT monitoring_checks_check_type_check;
+        RAISE NOTICE 'Dropped existing check_type constraint';
+    END IF;
 
-ALTER TABLE public.monitoring_checks 
-ADD CONSTRAINT monitoring_checks_check_type_check 
-CHECK (check_type IN ('http', 'ping', 'tcp', 'dns', 'ssl', 'keyword', 'status_page'));
+    -- Add updated constraint
+    ALTER TABLE public.monitoring_checks 
+    ADD CONSTRAINT monitoring_checks_check_type_check 
+    CHECK (check_type IN ('http', 'ping', 'tcp', 'dns', 'ssl', 'keyword', 'status_page'));
+    
+    RAISE NOTICE 'Added updated check_type constraint with status_page support';
+END $$;
 
 -- Step 3: Create index for status page configurations
 CREATE INDEX IF NOT EXISTS idx_monitoring_checks_status_page_config 
 ON public.monitoring_checks USING gin (status_page_config);
 
 -- Step 4: Add comments for documentation
-COMMENT ON COLUMN public.monitoring_checks.status_page_config IS 'Configuration for status page monitoring: {provider, service, regions, api_url}';
+COMMENT ON COLUMN public.monitoring_checks.status_page_config IS 'Configuration for status page monitoring: {provider, service, regions, failure_behavior, failure_message}';
 
 -- Step 5: Create view for status page checks
 CREATE OR REPLACE VIEW public.status_page_checks AS
@@ -74,17 +91,36 @@ BEGIN
         RETURN FALSE;
     END IF;
     
+    -- Check if failure_behavior is valid (optional)
+    IF config->>'failure_behavior' IS NOT NULL AND 
+       config->>'failure_behavior' NOT IN ('match_status', 'always_degraded', 'always_down') THEN
+        RETURN FALSE;
+    END IF;
+    
     RETURN TRUE;
 END;
 $$ LANGUAGE plpgsql;
 
 -- Step 7: Add constraint to validate status page config
-ALTER TABLE public.monitoring_checks 
-ADD CONSTRAINT monitoring_checks_valid_status_page_config 
-CHECK (
-    check_type != 'status_page' OR 
-    validate_status_page_config(status_page_config)
-);
+DO $$ 
+BEGIN
+    -- Check if constraint doesn't exist, then add it
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'monitoring_checks_valid_status_page_config' 
+        AND table_name = 'monitoring_checks'
+    ) THEN
+        ALTER TABLE public.monitoring_checks 
+        ADD CONSTRAINT monitoring_checks_valid_status_page_config 
+        CHECK (
+            check_type != 'status_page' OR 
+            validate_status_page_config(status_page_config)
+        );
+        RAISE NOTICE 'Added constraint: monitoring_checks_valid_status_page_config';
+    ELSE
+        RAISE NOTICE 'Constraint monitoring_checks_valid_status_page_config already exists, skipping';
+    END IF;
+END $$;
 
 -- Step 8: Create function to get status page check summary
 CREATE OR REPLACE FUNCTION get_status_page_check_summary(org_id UUID)

@@ -82,7 +82,10 @@ export async function POST(request) {
         ) {
           newServiceStatus = 'down';
           shouldUpdate = true;
-        } else if (check.current_status === 'up' && service.status === 'down') {
+        } else if (
+          (check.current_status === 'up' || check.current_status === 'inactive') &&
+          service.status === 'down'
+        ) {
           newServiceStatus = 'operational';
           shouldUpdate = true;
         }

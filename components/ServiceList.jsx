@@ -525,7 +525,9 @@ const ServiceList = forwardRef(function ServiceList({ statusPageId }, ref) {
                                         ? 'warning'
                                         : check.current_status === 'pending'
                                           ? 'info'
-                                          : 'default'
+                                          : check.current_status === 'inactive'
+                                            ? 'default'
+                                            : 'default'
                                 }
                                 variant="outlined"
                               />
@@ -594,7 +596,11 @@ const ServiceList = forwardRef(function ServiceList({ statusPageId }, ref) {
                                         ? 'success'
                                         : check.current_status === 'down'
                                           ? 'error'
-                                          : 'default'
+                                          : check.current_status === 'warning'
+                                            ? 'warning'
+                                            : check.current_status === 'pending'
+                                              ? 'info'
+                                              : 'default'
                                     }
                                     variant="outlined"
                                   />

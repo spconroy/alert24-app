@@ -25,13 +25,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Database Architecture
 
-The app uses a multi-tenant PostgreSQL database with the `alert24_schema` schema:
+The app uses Supabase as the primary database with PostgreSQL backend:
 
-- **Connection methods**: The app supports multiple database connection strategies:
-  - `lib/db-edge.js` - Neon serverless for edge runtime (primary)
-  - `lib/db-supabase.js` - Supabase client
-  - `lib/db-http.js` - Direct HTTP connections
-  - `lib/db-postgres.js` - Traditional pg client
+- **Connection method**: Supabase client only
+  - `lib/db-supabase.js` - Primary Supabase client (recommended)
+  - Other db connection files are legacy and should not be used
 
 - **Key tables**: organizations, users, organization_members, services, monitoring_checks, incidents, status_pages, etc.
 - **Multi-tenant isolation**: All data is scoped by organization_id
@@ -81,9 +79,9 @@ The app uses a multi-tenant PostgreSQL database with the `alert24_schema` schema
 
 ### Database Operations
 - Always scope queries by organization_id for multi-tenancy
-- Use parameterized queries to prevent SQL injection
+- Use Supabase client methods for all database operations
 - Test database connections before operations
-- Handle edge runtime constraints (prefer HTTP-based connections)
+- All operations go through Supabase RLS (Row Level Security)
 
 ### Security Considerations
 - All protected routes require authentication check
@@ -95,7 +93,7 @@ The app uses a multi-tenant PostgreSQL database with the `alert24_schema` schema
 - Configured for edge runtime compatibility
 - Uses `@cloudflare/next-on-pages` for builds
 - Images set to unoptimized for static export
-- External packages like 'pg' configured for serverless
+- Uses Supabase client for all database operations
 
 ### File Organization
 ```
@@ -113,12 +111,11 @@ docs/                  # Database schema and documentation
 
 ### Testing Database Connections
 Use test endpoints:
-- `/api/test-edge` - Test Neon edge connection
 - `/api/test-supabase` - Test Supabase connection
-- `/api/debug-http` - Debug HTTP database operations
+- Other legacy test endpoints should be avoided
 
 ### Important Notes
-- Postgres MCP is read-only - use psql CLI for database writes
+- Database operations use Supabase client only - no direct PostgreSQL connections
 - After major features, commit and push changes
 - Update help page when UI changes significantly
-- Properly escape passwords in CLI commands
+- All database schema changes should be applied via Supabase dashboard or migrations

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useContext } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   TextField,
@@ -18,18 +18,20 @@ import {
   FormHelperText
 } from '@mui/material';
 import { CheckCircle, Error, Warning } from '@mui/icons-material';
-import { OrganizationContext } from '@/contexts/OrganizationContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import StatusPageProviderSelector from './StatusPageProviderSelector';
 
 const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
-  const { currentOrganization } = useContext(OrganizationContext);
+  const { selectedOrganization } = useOrganization();
   const [formData, setFormData] = useState({
     name: '',
     provider: '',
     service: '',
     regions: [],
     check_interval_seconds: 300,
-    linked_service_id: ''
+    linked_service_id: '',
+    failure_behavior: 'match_status', // 'match_status', 'always_degraded', 'always_down'
+    failure_message: ''
   });
   const [availableServices, setAvailableServices] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -38,22 +40,50 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
 
   // Load available services for linking
   const loadAvailableServices = async () => {
+    if (!selectedOrganization?.id) {
+      console.log('No organization selected, skipping services load');
+      setAvailableServices([]);
+      return;
+    }
+
     try {
-      const response = await fetch(`/api/services?organization_id=${currentOrganization.id}`);
+      console.log('Loading services for organization:', selectedOrganization.id);
+      const response = await fetch(`/api/services?organization_id=${selectedOrganization.id}`);
+      
+      if (!response.ok) {
+        console.error('Services API request failed:', response.status, response.statusText);
+        const errorData = await response.json();
+        console.error('Error details:', errorData);
+        setAvailableServices([]);
+        return;
+      }
+
       const data = await response.json();
+      console.log('Services API response:', data);
+      
       if (data.success) {
+        console.log('Setting available services:', data.services || []);
         setAvailableServices(data.services || []);
+      } else {
+        console.warn('Services API returned no success flag:', data);
+        setAvailableServices([]);
       }
     } catch (err) {
       console.error('Error loading services:', err);
+      setAvailableServices([]);
     }
   };
 
-  useState(() => {
-    if (currentOrganization?.id) {
+  useEffect(() => {
+    if (selectedOrganization?.id) {
       loadAvailableServices();
     }
-  }, [currentOrganization]);
+  }, [selectedOrganization]);
+
+  // Debug logging can be removed in production
+  useEffect(() => {
+    console.log('Available services state updated:', availableServices);
+  }, [availableServices]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -122,7 +152,7 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
       return;
     }
 
-    if (!currentOrganization?.id) {
+    if (!selectedOrganization?.id) {
       setError('No organization selected');
       return;
     }
@@ -136,14 +166,16 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
         name: formData.name,
         check_type: 'status_page',
         target_url: '', // Will be set by the backend based on provider
-        organization_id: currentOrganization.id,
+        organization_id: selectedOrganization.id,
         check_interval_seconds: formData.check_interval_seconds,
         timeout_seconds: 30,
         linked_service_id: formData.linked_service_id || null,
         status_page_config: {
           provider: formData.provider,
           service: formData.service,
-          regions: formData.regions
+          regions: formData.regions,
+          failure_behavior: formData.failure_behavior,
+          failure_message: formData.failure_message
         }
       };
 
@@ -252,17 +284,79 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
                   label="Link to Service (Optional)"
                 >
                   <MenuItem value="">None</MenuItem>
-                  {availableServices.map((service) => (
-                    <MenuItem key={service.id} value={service.id}>
-                      {service.name}
-                    </MenuItem>
-                  ))}
+                  {availableServices.length === 0 ? (
+                    <MenuItem disabled>No services available</MenuItem>
+                  ) : (
+                    availableServices.map((service) => (
+                      <MenuItem key={service.id} value={service.id}>
+                        {service.name}
+                      </MenuItem>
+                    ))
+                  )}
                 </Select>
                 <FormHelperText>
-                  Optionally link this check to a service on your status page
+                  {availableServices.length === 0 
+                    ? 'No services available. Create a status page and add services first.' 
+                    : 'Optionally link this check to a service on your status page'}
                 </FormHelperText>
               </FormControl>
             </Grid>
+
+            {/* Failure Behavior Configuration */}
+            {formData.linked_service_id && (
+              <>
+                <Grid item xs={12}>
+                  <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>
+                    Failure Behavior
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    Configure how failures in the status page check should affect your linked service
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <FormControl fullWidth>
+                    <InputLabel>When Status Page Shows Issues</InputLabel>
+                    <Select
+                      value={formData.failure_behavior}
+                      onChange={(e) => handleInputChange('failure_behavior', e.target.value)}
+                      label="When Status Page Shows Issues"
+                    >
+                      <MenuItem value="match_status">
+                        Match Provider Status
+                      </MenuItem>
+                      <MenuItem value="always_degraded">
+                        Always Mark as Degraded
+                      </MenuItem>
+                      <MenuItem value="always_down">
+                        Always Mark as Down
+                      </MenuItem>
+                    </Select>
+                    <FormHelperText>
+                      {formData.failure_behavior === 'match_status' && 
+                        'Service will be marked as degraded if provider shows degraded, down if provider shows down'}
+                      {formData.failure_behavior === 'always_degraded' && 
+                        'Service will always be marked as degraded when provider has any issues'}
+                      {formData.failure_behavior === 'always_down' && 
+                        'Service will always be marked as down when provider has any issues'}
+                    </FormHelperText>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="Custom Failure Message (Optional)"
+                    value={formData.failure_message}
+                    onChange={(e) => handleInputChange('failure_message', e.target.value)}
+                    placeholder="e.g., Dependent service experiencing issues"
+                    helperText="Leave blank to use default message based on provider status"
+                    multiline
+                    rows={2}
+                  />
+                </Grid>
+              </>
+            )}
           </Grid>
         </Grid>
 

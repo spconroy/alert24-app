@@ -33,6 +33,8 @@ async function executeMonitoringCheck(check) {
       return await executeTcpCheck(check, result, startTime);
     } else if (check.check_type === 'ssl') {
       return await executeSslCheck(check, result, startTime);
+    } else if (check.check_type === 'status_page') {
+      return await executeStatusPageCheck(check, result, startTime);
     } else {
       result.error_message = `Unsupported check type: ${check.check_type}`;
       result.response_time_ms = Date.now() - startTime;
@@ -260,6 +262,67 @@ async function executeSslCheck(check, result, startTime) {
   return result;
 }
 
+// Status Page Check execution
+async function executeStatusPageCheck(check, result, startTime) {
+  try {
+    // Import the status page scraper
+    const { scrapeStatusPage } = await import('../../../../lib/status-page-scraper.js');
+    
+    // Extract configuration from status_page_config
+    const config = check.status_page_config;
+    if (!config || !config.provider || !config.service) {
+      result.response_time_ms = Date.now() - startTime;
+      result.is_successful = false;
+      result.error_message = 'Invalid status page configuration';
+      return result;
+    }
+
+    console.log(`Executing status page check: ${config.provider}/${config.service}`);
+    
+    // Scrape the status page
+    const statusResult = await scrapeStatusPage(
+      config.provider,
+      config.service,
+      config.regions || []
+    );
+    
+    result.response_time_ms = Date.now() - startTime;
+    
+    // Check if the status is successful
+    const successfulStatuses = ['up', 'operational'];
+    result.is_successful = successfulStatuses.includes(statusResult.status);
+    
+    // Set status code based on result
+    result.status_code = result.is_successful ? 200 : 503;
+    
+    // Set error message if not successful
+    if (!result.is_successful) {
+      result.error_message = `Status page shows ${statusResult.status} for ${statusResult.provider} ${statusResult.service}`;
+    }
+    
+    // Store additional status page data
+    result.status_page_data = {
+      provider: statusResult.provider,
+      service: statusResult.service,
+      regions: statusResult.regions,
+      status: statusResult.status,
+      raw_status: statusResult.raw_status,
+      url: statusResult.url,
+      last_updated: statusResult.last_updated
+    };
+    
+    console.log(`Status page check result: ${statusResult.status} for ${statusResult.provider}/${statusResult.service}`);
+    
+    return result;
+    
+  } catch (error) {
+    result.response_time_ms = Date.now() - startTime;
+    result.is_successful = false;
+    result.error_message = `Status page check failed: ${error.message}`;
+    return result;
+  }
+}
+
 // Create a status update entry for service status changes
 async function createServiceStatusUpdate(
   service,
@@ -392,7 +455,36 @@ async function updateMonitoringCheckStatus(checkId, result) {
 // Update linked service status based on monitoring check result
 async function updateLinkedServiceStatus(monitoringCheck, result) {
   try {
-    // Query the service_monitoring_checks junction table to find associated services
+    const updateResults = [];
+    
+    // Handle direct linked service (for status page checks)
+    if (monitoringCheck.linked_service_id) {
+      console.log(`Processing direct linked service: ${monitoringCheck.linked_service_id}`);
+      
+      // Get the linked service
+      const { data: linkedService, error: fetchError } = await db.client
+        .from('services')
+        .select('*')
+        .eq('id', monitoringCheck.linked_service_id)
+        .single();
+
+      if (fetchError || !linkedService) {
+        console.warn(`Direct linked service ${monitoringCheck.linked_service_id} not found`);
+      } else {
+        // Process the direct linked service
+        const updateResult = await processServiceUpdate(
+          linkedService,
+          monitoringCheck,
+          result,
+          monitoringCheck.status_page_config || {}
+        );
+        if (updateResult) {
+          updateResults.push(updateResult);
+        }
+      }
+    }
+
+    // Also handle junction table associations (for backward compatibility)
     const { data: associations, error: associationError } = await db.client
       .from('service_monitoring_checks')
       .select(
@@ -401,82 +493,39 @@ async function updateLinkedServiceStatus(monitoringCheck, result) {
       .eq('monitoring_check_id', monitoringCheck.id);
 
     if (associationError) {
-      console.error('Error fetching service associations:', associationError);
-      return;
-    }
+      console.warn('Error fetching service associations:', associationError);
+    } else if (associations && associations.length > 0) {
+      console.log(`Processing ${associations.length} junction table associations`);
+      
+      for (const association of associations) {
+        const serviceId = association.service_id;
+        const configuredFailureStatus = association.failure_status || 'degraded';
+        const configuredFailureMessage = association.failure_message || null;
 
-    if (!associations || associations.length === 0) {
-      console.log(
-        `No service associations found for monitoring check ${monitoringCheck.id}`
-      );
-      return;
-    }
-
-    // Update all associated services
-    const updateResults = [];
-    for (const association of associations) {
-      const serviceId = association.service_id;
-      const configuredFailureStatus = association.failure_status || 'degraded';
-      const configuredFailureMessage = association.failure_message || null;
-
-      // Get the linked service
-      const { data: linkedService, error: fetchError } = await db.client
-        .from('services')
-        .select('*')
-        .eq('id', serviceId)
-        .single();
-
-      if (fetchError || !linkedService) {
-        console.warn(
-          `Associated service ${serviceId} not found or not accessible`
-        );
-        continue;
-      }
-
-      // Determine new service status based on monitoring result and configuration
-      let newStatus = 'operational';
-      if (!result.is_successful) {
-        // Use the configured failure status instead of auto-determining
-        newStatus = configuredFailureStatus;
-        console.log(
-          `Setting service ${linkedService.name} to ${newStatus} based on configured failure impact`
-        );
-      }
-
-      // Only update if status actually changed
-      if (linkedService.status !== newStatus) {
-        const { error: updateError } = await db.client
+        // Get the linked service
+        const { data: linkedService, error: fetchError } = await db.client
           .from('services')
-          .update({
-            status: newStatus,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', serviceId);
+          .select('*')
+          .eq('id', serviceId)
+          .single();
 
-        if (updateError) {
-          console.error(
-            'Error updating associated service status:',
-            updateError
-          );
-        } else {
-          console.log(
-            `🔗 Updated associated service ${linkedService.name}: ${linkedService.status} → ${newStatus}`
-          );
+        if (fetchError || !linkedService) {
+          console.warn(`Associated service ${serviceId} not found or not accessible`);
+          continue;
+        }
 
-          updateResults.push({
-            serviceName: linkedService.name,
-            oldStatus: linkedService.status,
-            newStatus: newStatus,
-          });
-
-          // Create status update for the service change
-          await createServiceStatusUpdate(
-            linkedService,
-            newStatus,
-            monitoringCheck,
-            result,
-            configuredFailureMessage
-          );
+        // Process the associated service with junction table config
+        const updateResult = await processServiceUpdate(
+          linkedService,
+          monitoringCheck,
+          result,
+          {
+            failure_behavior: 'always_degraded', // Default behavior for junction table
+            failure_message: configuredFailureMessage
+          }
+        );
+        if (updateResult) {
+          updateResults.push(updateResult);
         }
       }
     }
@@ -486,6 +535,100 @@ async function updateLinkedServiceStatus(monitoringCheck, result) {
     console.error('Error updating linked service status:', error);
   }
 }
+
+// Helper function to process service updates with failure behavior configuration
+async function processServiceUpdate(linkedService, monitoringCheck, result, config) {
+  try {
+    // Determine new service status based on monitoring result and configuration
+    let newStatus = 'operational';
+    let failureMessage = null;
+
+    if (!result.is_successful) {
+      // Get the failure behavior from config
+      const failureBehavior = config.failure_behavior || 'match_status';
+      const customFailureMessage = config.failure_message;
+
+      // Determine the new status based on failure behavior
+      if (failureBehavior === 'always_down') {
+        newStatus = 'down';
+      } else if (failureBehavior === 'always_degraded') {
+        newStatus = 'degraded';
+      } else if (failureBehavior === 'match_status') {
+        // Match the provider status for status page checks
+        if (result.status_page_data) {
+          const providerStatus = result.status_page_data.status;
+          if (providerStatus === 'down') {
+            newStatus = 'down';
+          } else {
+            newStatus = 'degraded'; // Any non-up status becomes degraded
+          }
+        } else {
+          newStatus = 'degraded'; // Default for non-status-page checks
+        }
+      }
+
+      // Set failure message
+      if (customFailureMessage && customFailureMessage.trim()) {
+        failureMessage = customFailureMessage;
+      } else {
+        // Generate default message based on check type
+        if (monitoringCheck.check_type === 'status_page' && result.status_page_data) {
+          const provider = result.status_page_data.provider;
+          const service = result.status_page_data.service;
+          const status = result.status_page_data.status;
+          failureMessage = `${provider} ${service} is reporting ${status} status`;
+        } else {
+          failureMessage = result.error_message || 'Monitoring check failed';
+        }
+      }
+
+      console.log(
+        `Setting service ${linkedService.name} to ${newStatus} due to ${failureBehavior} behavior`
+      );
+    }
+
+    // Only update if status actually changed
+    if (linkedService.status !== newStatus) {
+      const { error: updateError } = await db.client
+        .from('services')
+        .update({
+          status: newStatus,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', linkedService.id);
+
+      if (updateError) {
+        console.error('Error updating linked service status:', updateError);
+        return null;
+      } else {
+        console.log(
+          `🔗 Updated linked service ${linkedService.name}: ${linkedService.status} → ${newStatus}`
+        );
+
+        // Create status update for the service change
+        await createServiceStatusUpdate(
+          linkedService,
+          newStatus,
+          monitoringCheck,
+          result,
+          failureMessage
+        );
+
+        return {
+          serviceName: linkedService.name,
+          oldStatus: linkedService.status,
+          newStatus: newStatus,
+        };
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error processing service update:', error);
+    return null;
+  }
+}
+
 
 export async function POST(req) {
   try {

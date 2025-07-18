@@ -30,6 +30,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import StatusPageCheckForm from '@/components/StatusPageCheckForm';
 // import MonitoringLocationSelector from '@/components/MonitoringLocationSelector'; // Temporarily disabled
 
 export default function CreateMonitoringCheckPage() {
@@ -72,7 +73,7 @@ export default function CreateMonitoringCheckPage() {
     if (!selectedOrganization)
       errors.organization = 'Please select an organization from the navbar';
     if (!formData.name.trim()) errors.name = 'Monitor name is required';
-    if (!formData.target_url.trim()) {
+    if (!formData.target_url.trim() && formData.check_type !== 'status_page') {
       if (formData.check_type === 'ping') {
         errors.target_url = 'Hostname or IP address is required';
       } else if (formData.check_type === 'tcp') {
@@ -289,6 +290,8 @@ export default function CreateMonitoringCheckPage() {
         return 'Test TCP port connectivity';
       case 'ssl':
         return 'Monitor SSL certificate validity and expiration';
+      case 'status_page':
+        return 'Monitor cloud provider status pages (Azure, AWS, Google Cloud)';
       default:
         return '';
     }
@@ -330,7 +333,16 @@ export default function CreateMonitoringCheckPage() {
           {/* Form */}
           <Card>
             <CardContent>
-              <form onSubmit={handleSubmit}>
+              {formData.check_type === 'status_page' ? (
+                <StatusPageCheckForm
+                  onSuccess={() => {
+                    setSuccess(true);
+                    setTimeout(() => router.push('/monitoring'), 2000);
+                  }}
+                  onCancel={() => router.push('/monitoring')}
+                />
+              ) : (
+                <form onSubmit={handleSubmit}>
                 <Grid container spacing={3}>
                   {/* Organization Info */}
                   <Grid item xs={12}>
@@ -384,6 +396,7 @@ export default function CreateMonitoringCheckPage() {
                         <MenuItem value="ping">Ping</MenuItem>
                         <MenuItem value="tcp">TCP Port</MenuItem>
                         <MenuItem value="ssl">SSL Certificate</MenuItem>
+                        <MenuItem value="status_page">Status Page</MenuItem>
                       </Select>
                       <FormHelperText>
                         {getCheckTypeDescription(formData.check_type)}
@@ -406,45 +419,56 @@ export default function CreateMonitoringCheckPage() {
                   </Grid>
                   */}
 
-                  {/* Target URL/Hostname */}
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      label={
-                        formData.check_type === 'ping'
-                          ? 'Hostname or IP Address *'
-                          : formData.check_type === 'tcp'
-                            ? 'Target Host:Port *'
-                            : formData.check_type === 'ssl'
-                              ? 'Hostname or URL *'
-                              : 'Target URL *'
-                      }
-                      value={formData.target_url}
-                      onChange={e =>
-                        handleInputChange('target_url', e.target.value)
-                      }
-                      error={!!formErrors.target_url}
-                      helperText={
-                        formErrors.target_url ||
-                        (formData.check_type === 'ping'
-                          ? 'The hostname or IP address to ping'
-                          : formData.check_type === 'tcp'
-                            ? 'The hostname:port or IP:port to check'
-                            : formData.check_type === 'ssl'
-                              ? 'The hostname or URL to check SSL certificate'
-                              : 'The URL or endpoint to monitor')
-                      }
-                      placeholder={
-                        formData.check_type === 'ping'
-                          ? 'example.com or 192.168.1.1'
-                          : formData.check_type === 'tcp'
-                            ? 'example.com:80 or 192.168.1.1:443'
-                            : formData.check_type === 'ssl'
-                              ? 'example.com or https://example.com'
-                              : 'https://example.com'
-                      }
-                    />
-                  </Grid>
+                  {/* Target URL/Hostname - Hide for status page checks */}
+                  {formData.check_type !== 'status_page' && (
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        label={
+                          formData.check_type === 'ping'
+                            ? 'Hostname or IP Address *'
+                            : formData.check_type === 'tcp'
+                              ? 'Target Host:Port *'
+                              : formData.check_type === 'ssl'
+                                ? 'Hostname or URL *'
+                                : 'Target URL *'
+                        }
+                        value={formData.target_url}
+                        onChange={e =>
+                          handleInputChange('target_url', e.target.value)
+                        }
+                        error={!!formErrors.target_url}
+                        helperText={
+                          formErrors.target_url ||
+                          (formData.check_type === 'ping'
+                            ? 'The hostname or IP address to ping'
+                            : formData.check_type === 'tcp'
+                              ? 'The hostname:port or IP:port to check'
+                              : formData.check_type === 'ssl'
+                                ? 'The hostname or URL to check SSL certificate'
+                                : 'The URL or endpoint to monitor')
+                        }
+                        placeholder={
+                          formData.check_type === 'ping'
+                            ? 'example.com or 192.168.1.1'
+                            : formData.check_type === 'tcp'
+                              ? 'example.com:80 or 192.168.1.1:443'
+                              : formData.check_type === 'ssl'
+                                ? 'example.com or https://example.com'
+                                : 'https://example.com'
+                        }
+                      />
+                    </Grid>
+                  )}
+                  
+                  {/* Status Page Configuration */}
+                  {formData.check_type === 'status_page' && (
+                    <Grid item xs={12}>
+                      <Alert severity="info" sx={{ mb: 2 }}>
+                        Status page monitoring checks will be configured using the dedicated form above.
+                      </Alert>
+                    </Grid>
+                  )}
 
                   {/* Timing Settings */}
                   <Grid item xs={12} md={6}>
@@ -754,6 +778,7 @@ export default function CreateMonitoringCheckPage() {
                   </Grid>
                 </Grid>
               </form>
+              )}
             </CardContent>
           </Card>
         </Box>

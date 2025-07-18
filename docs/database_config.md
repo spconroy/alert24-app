@@ -1,120 +1,169 @@
 # Database Configuration
 
-## Connection Details
+## Supabase Configuration
 
-**Host:** 34.223.13.196  
-**Database:** alert24  
-**Username:** alert24  
-**Password:** Sg47^kLm9@wPz!rT  
-**Port:** 5432 (default PostgreSQL port)  
-**Schema:** alert24_schema
-
-## Connection String
-
-```
-postgresql://alert24:Sg47^kLm9@wPz!rT@34.223.13.196:5432/alert24?options=-csearch_path%3Dalert24_schema
-```
+**IMPORTANT: This application uses Supabase as the database provider. Direct PostgreSQL connections are not supported.**
 
 ## Environment Variables
 
 For Next.js application, add these to your `.env.local` file:
 
 ```env
-DATABASE_URL="postgresql://alert24:Sg47^kLm9@wPz!rT@34.223.13.196:5432/alert24?options=-csearch_path%3Dalert24_schema"
-POSTGRES_HOST=34.223.13.196
-POSTGRES_DB=alert24
-POSTGRES_USER=alert24
-POSTGRES_PASSWORD=Sg47^kLm9@wPz!rT
-POSTGRES_PORT=5432
-POSTGRES_SCHEMA=alert24_schema
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=your-project-url.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# Legacy variables (not used)
+# DATABASE_URL - Not used, remove if present
+# POSTGRES_HOST - Not used, remove if present
+# POSTGRES_DB - Not used, remove if present
+# POSTGRES_USER - Not used, remove if present
+# POSTGRES_PASSWORD - Not used, remove if present
+# POSTGRES_PORT - Not used, remove if present
+# POSTGRES_SCHEMA - Not used, remove if present
 ```
 
-## Prisma Configuration
+## Supabase Client Configuration
 
-If using Prisma ORM, update your `prisma/schema.prisma`:
+The application uses the Supabase client located at `lib/db-supabase.js`:
 
-```prisma
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+```javascript
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+```
+
+## Schema Management
+
+### Schema Updates
+All schema changes should be made through:
+1. **Supabase Dashboard** - SQL Editor (recommended)
+2. **Supabase CLI** - Database migrations
+3. **Never** use direct PostgreSQL connections
+
+### Schema Files Location
+- `docs/schema-updates/` - Contains all schema update files
+- `docs/database_schema.sql` - Legacy schema file (reference only)
+
+## Database Operations
+
+### Supported Operations
+- **CRUD Operations**: Via Supabase client methods
+- **Real-time**: Via Supabase subscriptions
+- **Row Level Security**: Configured via Supabase dashboard
+- **Functions**: Via Supabase SQL editor
+
+### Not Supported
+- Direct PostgreSQL connections
+- psql commands
+- pg client usage
+- Raw SQL execution outside Supabase
+
+## Authentication Integration
+
+The application uses NextAuth.js v5 with Supabase integration:
+
+```javascript
+// Example authentication check
+const session = await auth();
+if (!session?.user?.email) {
+  return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 }
 
-generator client {
-  provider = "prisma-client-js"
-  previewFeatures = ["postgresqlExtensions"]
-}
-
-// Set the schema for all models
-model Organizations {
-  @@schema("alert24_schema")
-  // ... rest of model definition
-}
+// Get user via Supabase client
+const user = await db.getUserByEmail(session.user.email);
 ```
 
-## Drizzle Configuration
+## Multi-Tenant Architecture
 
-If using Drizzle ORM, update your database configuration:
+### Organization Scoping
+All database queries are scoped by organization_id:
 
-```typescript
-import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
-
-const connectionString =
-  'postgresql://alert24:Sg47^kLm9@wPz!rT@34.223.13.196:5432/alert24?options=-csearch_path%3Dalert24_schema';
-const client = postgres(connectionString);
-export const db = drizzle(client);
-
-// Set default schema for all queries
-export const schema = 'alert24_schema';
+```javascript
+// Example organization-scoped query
+const checks = await db.client
+  .from('monitoring_checks')
+  .select('*')
+  .eq('organization_id', organizationId);
 ```
 
-## Schema Setup Commands
-
-### Create Schema
-
-```sql
-CREATE SCHEMA IF NOT EXISTS alert24_schema AUTHORIZATION alert24;
-```
-
-### Set Search Path
-
-```sql
-SET search_path TO alert24_schema, public;
-```
-
-### Run Schema Creation
-
-```bash
-psql "postgresql://alert24:Sg47^kLm9@wPz!rT@34.223.13.196:5432/alert24" -f docs/database_schema.sql
-```
-
-### Verify Schema
-
-```bash
-psql "postgresql://alert24:Sg47^kLm9@wPz!rT@34.223.13.196:5432/alert24" -f docs/verify_schema.sql
-```
+### Row Level Security
+- All organization-scoped tables have RLS policies
+- Users can only access data from their organizations
+- Configured via Supabase dashboard
 
 ## Schema Structure
 
-The `alert24_schema` contains:
+The database contains:
 
-- **11 Tables** - Core entities for multi-tenant SaaS
+- **11+ Core Tables** - Organizations, users, members, services, etc.
 - **25+ Indexes** - Performance optimizations
-- **4 Functions** - Helper functions for common operations
-- **6 Triggers** - Automatic timestamp updates
-- **2 Views** - Dashboard data aggregations
-- **3 Subscription Plans** - Pre-populated pricing tiers
+- **4+ Functions** - Helper functions for common operations
+- **6+ Triggers** - Automatic timestamp updates
+- **2+ Views** - Dashboard data aggregations
+- **RLS Policies** - Row-level security for multi-tenancy
+
+## Development Setup
+
+### Prerequisites
+- Supabase account
+- Project created in Supabase dashboard
+- Environment variables configured
+
+### Setup Steps
+1. Create Supabase project
+2. Copy environment variables from Supabase dashboard
+3. Add to `.env.local` file
+4. Run schema updates via Supabase SQL editor
+5. Test connection with `/api/test-supabase` endpoint
+
+### Testing Connection
+```bash
+# Visit in browser to test connection
+http://localhost:3000/api/test-supabase
+```
 
 ## Security Notes
 
-- Keep database credentials secure and never commit them to version control
+- Keep Supabase keys secure and never commit them to version control
 - Use environment variables in production
-- Consider using connection pooling for production applications
-- Ensure the database server has proper firewall rules configured
-- The `alert24_schema` is owned by the `alert24` user for proper permissions
+- Service role key should only be used server-side
+- Anonymous key is safe for client-side use
+- RLS policies provide data isolation
+- Supabase handles connection pooling automatically
 
-## Schema Files
+## Migration Notes
 
-- `database_schema.sql` - Complete PostgreSQL schema with alert24_schema
-- `verify_schema.sql` - Verification script for schema components
-- This file contains all the database structure for the Alert24 multi-tenant SaaS application
+### From PostgreSQL to Supabase
+If migrating from direct PostgreSQL:
+1. Remove all PostgreSQL connection strings
+2. Remove pg client dependencies
+3. Update all database calls to use Supabase client
+4. Configure RLS policies in Supabase dashboard
+5. Test all database operations
+
+### Legacy Files
+The following files are legacy and should not be used:
+- `lib/db-postgres.js` - Direct PostgreSQL client
+- `lib/db-http.js` - HTTP database client
+- `lib/db-edge.js` - Edge database client
+- Any psql connection strings or commands
+
+## Support
+
+For database configuration issues:
+1. Check Supabase dashboard for errors
+2. Verify environment variables are correct
+3. Test connection with test endpoints
+4. Check RLS policies are properly configured
+5. Review Supabase documentation for specific features
+
+---
+
+**Important**: This application exclusively uses Supabase for database operations. All references to direct PostgreSQL connections are legacy and should be removed.

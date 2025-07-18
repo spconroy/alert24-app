@@ -30,7 +30,7 @@ export async function GET(request) {
 
         // Manually fetch monitoring checks for each service
         const servicesWithMonitoring = await Promise.all(
-          services.map(async (service) => {
+          services.map(async service => {
             try {
               // First, check if the service_monitoring_checks table exists
               let associations = [];
@@ -41,27 +41,37 @@ export async function GET(request) {
                   .eq('service_id', service.id);
 
                 if (assocError) {
-                  console.warn(`Table service_monitoring_checks may not exist:`, assocError.message);
+                  console.warn(
+                    `Table service_monitoring_checks may not exist:`,
+                    assocError.message
+                  );
                   // Try alternative approach using the monitoring_checks table directly
-                  const { data: directChecks, error: directError } = await db.client
-                    .from('monitoring_checks')
-                    .select('*')
-                    .eq('linked_service_id', service.id);
-                  
+                  const { data: directChecks, error: directError } =
+                    await db.client
+                      .from('monitoring_checks')
+                      .select('*')
+                      .eq('linked_service_id', service.id);
+
                   if (directError) {
-                    console.warn(`Error fetching direct monitoring checks:`, directError.message);
+                    console.warn(
+                      `Error fetching direct monitoring checks:`,
+                      directError.message
+                    );
                     return { ...service, monitoring_checks: [] };
                   }
-                  
+
                   return {
                     ...service,
-                    monitoring_checks: directChecks || []
+                    monitoring_checks: directChecks || [],
                   };
                 } else {
                   associations = assocData || [];
                 }
               } catch (tableError) {
-                console.warn(`Junction table error for service ${service.id}:`, tableError);
+                console.warn(
+                  `Junction table error for service ${service.id}:`,
+                  tableError
+                );
                 return { ...service, monitoring_checks: [] };
               }
 
@@ -76,35 +86,54 @@ export async function GET(request) {
                     .single();
 
                   if (checkError) {
-                    console.warn(`Error fetching monitoring check ${assoc.monitoring_check_id}:`, checkError);
+                    console.warn(
+                      `Error fetching monitoring check ${assoc.monitoring_check_id}:`,
+                      checkError
+                    );
                     continue;
                   }
 
                   monitoringChecks.push({
                     ...check,
                     failure_threshold: assoc.failure_threshold_minutes,
-                    failure_message: assoc.failure_message
+                    failure_message: assoc.failure_message,
+                    // Apply proper current_status transformation for disabled checks
+                    current_status:
+                      check.status !== 'active'
+                        ? 'inactive'
+                        : !check.last_check_at && check.status === 'active'
+                          ? 'pending'
+                          : check.current_status || 'unknown',
                   });
                 } catch (checkErr) {
-                  console.warn(`Error processing check ${assoc.monitoring_check_id}:`, checkErr);
+                  console.warn(
+                    `Error processing check ${assoc.monitoring_check_id}:`,
+                    checkErr
+                  );
                 }
               }
 
               return {
                 ...service,
-                monitoring_checks: monitoringChecks
+                monitoring_checks: monitoringChecks,
               };
             } catch (err) {
-              console.warn(`Error processing monitoring for service ${service.id}:`, err);
+              console.warn(
+                `Error processing monitoring for service ${service.id}:`,
+                err
+              );
               return { ...service, monitoring_checks: [] };
             }
           })
         );
 
-        return NextResponse.json({ services: servicesWithMonitoring });
+        return NextResponse.json({
+          success: true,
+          services: servicesWithMonitoring,
+        });
       } catch (error) {
         console.error('Error in services API:', error);
-        
+
         // Fallback: return services without monitoring checks
         const { data: services, error: fallbackError } = await db.client
           .from('services')
@@ -120,15 +149,19 @@ export async function GET(request) {
         // Add empty monitoring_checks array to each service
         const servicesWithEmptyMonitoring = services.map(service => ({
           ...service,
-          monitoring_checks: []
+          monitoring_checks: [],
         }));
 
-        return NextResponse.json({ services: servicesWithEmptyMonitoring });
+        return NextResponse.json({
+          success: true,
+          services: servicesWithEmptyMonitoring,
+        });
       }
     }
 
     if (organizationId) {
       // Get services for an organization (through status pages, excluding monitoring check workarounds)
+      console.log('Fetching services for organization:', organizationId);
       const { data: services, error } = await db.client
         .from('services')
         .select(
@@ -145,8 +178,12 @@ export async function GET(request) {
         .order('sort_order', { ascending: true })
         .order('name', { ascending: true });
 
-      if (error) throw error;
-      return NextResponse.json({ services });
+      if (error) {
+        console.error('Error fetching services for organization:', error);
+        throw error;
+      }
+      console.log('Found services for organization:', services?.length || 0);
+      return NextResponse.json({ success: true, services });
     }
 
     // Get all services - require authentication for this
@@ -163,7 +200,7 @@ export async function GET(request) {
       .order('name', { ascending: true });
 
     if (error) throw error;
-    return NextResponse.json({ services });
+    return NextResponse.json({ success: true, services });
   } catch (error) {
     console.error('Error fetching services:', error);
     return NextResponse.json(
