@@ -20,10 +20,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     async signIn({ user, account, profile }) {
       try {
+        console.log('🔐 SignIn attempt for:', user.email);
         // Check if user exists in our database
         let existingUser = await db.getUserByEmail(user.email);
 
         if (!existingUser) {
+          console.log('👤 Creating new user:', user.email);
           // Create new user if doesn't exist
           const userData = {
             name: user.name,
@@ -41,16 +43,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             .single();
 
           if (error) {
-            console.error('Error creating user:', error);
+            console.error('❌ Error creating user:', error);
             return false;
           }
 
           existingUser = newUser;
+          console.log('✅ User created successfully:', existingUser.id);
+        } else {
+          console.log('✅ Existing user found:', existingUser.id);
         }
 
         return true;
       } catch (error) {
-        console.error('SignIn callback error:', error);
+        console.error('❌ SignIn callback error:', error);
         return false;
       }
     },
