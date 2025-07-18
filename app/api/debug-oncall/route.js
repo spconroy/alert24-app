@@ -1,87 +1,156 @@
 import { NextResponse } from 'next/server';
-import { SupabaseClient } from '../../../lib/db-supabase.js';
+import { auth } from '@/auth';
+import { SupabaseClient } from '@/lib/db-supabase';
 
 const db = new SupabaseClient();
 
-export const runtime = 'edge';
-
-export async function GET(req) {
+export async function GET(request) {
   try {
-    // Test database connection
-    const testConnection = await db.testConnection();
-    
-    // Try to select from on_call_schedules table
-    let tableTest = null;
-    let tableError = null;
-    
+    const session = await auth();
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    console.log('🔍 Debug: Starting on-call schedule diagnostic...');
+    console.log('🔍 Debug: User email:', session.user.email);
+
+    const results = {
+      user_email: session.user.email,
+      user_lookup: null,
+      user_organizations: [],
+      raw_oncall_schedules: [],
+      filtered_schedules: [],
+      processing_errors: [],
+    };
+
+    // 1. Get user by email
     try {
-      const { data, error } = await db.client
+      const user = await db.getUserByEmail(session.user.email);
+      results.user_lookup = user;
+      console.log('🔍 Debug: User lookup result:', user);
+
+      if (!user) {
+        return NextResponse.json({
+          ...results,
+          error: 'User not found',
+        });
+      }
+
+      // 2. Get user's organizations
+      const { data: userOrgs, error: memberError } = await db.client
+        .from('organization_members')
+        .select('organization_id, role, is_active')
+        .eq('user_id', user.id)
+        .eq('is_active', true);
+
+      if (memberError) {
+        results.processing_errors.push(
+          `Organization lookup error: ${memberError.message}`
+        );
+      } else {
+        results.user_organizations = userOrgs || [];
+        console.log('🔍 Debug: User organizations:', userOrgs);
+      }
+
+      if (!userOrgs || userOrgs.length === 0) {
+        return NextResponse.json({
+          ...results,
+          message: 'User has no active organization memberships',
+        });
+      }
+
+      const orgIds = userOrgs.map(o => o.organization_id);
+
+      // 3. Get ALL on-call schedules (raw data)
+      const { data: allSchedules, error: allSchedulesError } = await db.client
         .from('on_call_schedules')
         .select('*')
-        .limit(1);
-      
-      if (error) {
-        tableError = error;
-      } else {
-        tableTest = { 
-          success: true, 
-          sampleData: data,
-          message: 'Table accessible' 
-        };
-      }
-    } catch (err) {
-      tableError = err;
-    }
+        .order('created_at', { ascending: false });
 
-    // Try to insert test data
-    let insertTest = null;
-    let insertError = null;
-    
-    try {
-      const testData = {
-        organization_id: '80fe7a23-0a4d-461b-bb4a-f0a5fd251781',
-        name: 'Debug Test Schedule',
-        description: 'Test',
-        is_active: true,
-        timezone: 'UTC',
-        rotation_config: { type: 'weekly' },
-        members: [{ user_id: '3b3e5e75-a6ca-4680-83b0-35455901f1d1', order: 1 }]
-      };
-      
-      const { data, error } = await db.client
+      if (allSchedulesError) {
+        results.processing_errors.push(
+          `All schedules error: ${allSchedulesError.message}`
+        );
+      } else {
+        results.raw_oncall_schedules = allSchedules || [];
+        console.log(
+          '🔍 Debug: All schedules in database:',
+          allSchedules?.length || 0
+        );
+      }
+
+      // 4. Get schedules for user's organizations
+      const { data: userSchedules, error: userSchedulesError } = await db.client
         .from('on_call_schedules')
-        .insert(testData)
-        .select()
-        .single();
-      
-      if (error) {
-        insertError = error;
+        .select(
+          `
+          *,
+          organizations(name)
+        `
+        )
+        .in('organization_id', orgIds)
+        .order('created_at', { ascending: false });
+
+      if (userSchedulesError) {
+        results.processing_errors.push(
+          `User schedules error: ${userSchedulesError.message}`
+        );
       } else {
-        insertTest = { success: true, data };
-        // Clean up test data
-        await db.client
-          .from('on_call_schedules')
-          .delete()
-          .eq('id', data.id);
+        results.filtered_schedules = userSchedules || [];
+        console.log('🔍 Debug: User schedules:', userSchedules?.length || 0);
       }
-    } catch (err) {
-      insertError = err;
+
+      // 5. Test the actual API method
+      try {
+        const apiResult = await db.getOnCallSchedules(user.id, {});
+        results.api_method_result = {
+          count: apiResult.length,
+          schedules: apiResult,
+        };
+        console.log(
+          '🔍 Debug: API method result:',
+          apiResult.length,
+          'schedules'
+        );
+      } catch (error) {
+        results.processing_errors.push(`API method error: ${error.message}`);
+      }
+
+      // 6. Test with organization filter
+      if (userOrgs.length > 0) {
+        try {
+          const orgFilterResult = await db.getOnCallSchedules(user.id, {
+            organization_id: userOrgs[0].organization_id,
+          });
+          results.org_filtered_result = {
+            organization_id: userOrgs[0].organization_id,
+            count: orgFilterResult.length,
+            schedules: orgFilterResult,
+          };
+          console.log(
+            '🔍 Debug: Org filtered result:',
+            orgFilterResult.length,
+            'schedules'
+          );
+        } catch (error) {
+          results.processing_errors.push(
+            `Org filtered error: ${error.message}`
+          );
+        }
+      }
+    } catch (error) {
+      results.processing_errors.push(`Main processing error: ${error.message}`);
     }
 
-    return NextResponse.json({
-      success: true,
-      timestamp: new Date().toISOString(),
-      tests: {
-        connection: testConnection,
-        tableAccess: tableTest || { success: false, error: tableError },
-        insertTest: insertTest || { success: false, error: insertError }
-      }
-    });
+    return NextResponse.json(results);
   } catch (error) {
-    return NextResponse.json({
-      success: false,
-      error: error.message,
-      timestamp: new Date().toISOString()
-    }, { status: 500 });
+    console.error('🔍 Debug: Fatal error:', error);
+    return NextResponse.json(
+      {
+        error: 'Debug endpoint failed',
+        details: error.message,
+      },
+      { status: 500 }
+    );
   }
 }
