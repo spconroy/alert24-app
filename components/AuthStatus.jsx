@@ -33,7 +33,7 @@ export default function AuthStatus() {
     return (
       <Button
         variant="outlined"
-        onClick={() => window.location.href = '/api/auth/signin?callbackUrl=' + encodeURIComponent(window.location.origin)}
+        onClick={() => window.location.href = '/api/auth/signin/google?callbackUrl=' + encodeURIComponent(window.location.origin)}
         sx={{ textTransform: 'none' }}
       >
         Sign In with Google
