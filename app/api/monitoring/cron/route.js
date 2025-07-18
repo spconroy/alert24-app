@@ -156,6 +156,8 @@ async function executeMonitoringCheckDirect(check) {
       return await executeTcpCheck(check, result, startTime);
     } else if (check.check_type === 'ssl') {
       return await executeSslCheck(check, result, startTime);
+    } else if (check.check_type === 'status_page') {
+      return await executeStatusPageCheck(check, result, startTime);
     } else {
       result.error_message = `Unsupported check type: ${check.check_type}`;
       result.response_time_ms = Date.now() - startTime;
@@ -335,6 +337,72 @@ async function executeSslCheck(check, result, startTime) {
   }
 
   return result;
+}
+
+// Status Page Check execution
+async function executeStatusPageCheck(check, result, startTime) {
+  try {
+    // Import the status page scraper
+    const { scrapeStatusPage } = await import(
+      '../../../../lib/status-page-scraper.js'
+    );
+
+    // Extract configuration from status_page_config
+    const config = check.status_page_config;
+    if (!config || !config.provider || !config.service) {
+      result.response_time_ms = Date.now() - startTime;
+      result.is_successful = false;
+      result.error_message = 'Invalid status page configuration';
+      return result;
+    }
+
+    console.log(
+      `Executing status page check: ${config.provider}/${config.service}`
+    );
+
+    // Scrape the status page
+    const statusResult = await scrapeStatusPage(
+      config.provider,
+      config.service,
+      config.regions || []
+    );
+
+    result.response_time_ms = Date.now() - startTime;
+
+    // Check if the status is successful
+    const successfulStatuses = ['up', 'operational'];
+    result.is_successful = successfulStatuses.includes(statusResult.status);
+
+    // Set status code based on result
+    result.status_code = result.is_successful ? 200 : 503;
+
+    // Set error message if not successful
+    if (!result.is_successful) {
+      result.error_message = `Status page shows ${statusResult.status} for ${statusResult.provider} ${statusResult.service}`;
+    }
+
+    // Store additional status page data
+    result.status_page_data = {
+      provider: statusResult.provider,
+      service: statusResult.service,
+      regions: statusResult.regions,
+      status: statusResult.status,
+      raw_status: statusResult.raw_status,
+      url: statusResult.url,
+      last_updated: statusResult.last_updated,
+    };
+
+    console.log(
+      `Status page check result: ${statusResult.status} for ${statusResult.provider}/${statusResult.service}`
+    );
+
+    return result;
+  } catch (error) {
+    result.response_time_ms = Date.now() - startTime;
+    result.is_successful = false;
+    result.error_message = `Status page check failed: ${error.message}`;
+    return result;
+  }
 }
 
 // Update monitoring check status and associated service statuses
