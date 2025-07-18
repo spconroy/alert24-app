@@ -1,4 +1,5 @@
 'use client';
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Container,
@@ -7,11 +8,12 @@ import {
   Button,
   Box,
   Alert,
+  CircularProgress,
 } from '@mui/material';
 import { Error as ErrorIcon, Home as HomeIcon } from '@mui/icons-material';
 import Link from 'next/link';
 
-export default function AuthErrorPage() {
+function AuthErrorContent() {
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
 
@@ -141,5 +143,19 @@ export default function AuthErrorPage() {
         </Box>
       </Paper>
     </Container>
+  );
+}
+
+export default function AuthErrorPage() {
+  return (
+    <Suspense
+      fallback={
+        <Container maxWidth="sm" sx={{ py: 8, textAlign: 'center' }}>
+          <CircularProgress />
+        </Container>
+      }
+    >
+      <AuthErrorContent />
+    </Suspense>
   );
 }

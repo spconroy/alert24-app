@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Container,
@@ -12,7 +12,7 @@ import {
 } from '@mui/material';
 import { Google as GoogleIcon } from '@mui/icons-material';
 
-export default function SignInPage() {
+function SignInContent() {
   const [loading, setLoading] = useState(false);
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
@@ -81,5 +81,19 @@ export default function SignInPage() {
         </Typography>
       </Paper>
     </Container>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense
+      fallback={
+        <Container maxWidth="sm" sx={{ py: 8, textAlign: 'center' }}>
+          <CircularProgress />
+        </Container>
+      }
+    >
+      <SignInContent />
+    </Suspense>
   );
 }
