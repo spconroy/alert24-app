@@ -1,15 +1,8 @@
 'use client';
 import React from 'react';
-import {
-  Container,
-  Typography,
-  Box,
-  Card,
-  CardContent,
-  Button,
-} from '@mui/material';
 import { useSession } from '@/contexts/OrganizationContext';
-import Link from 'next/link';
+import IncidentDashboard from '@/components/IncidentDashboard';
+import { Container, Typography, Box, Button } from '@mui/material';
 
 export default function HomePage() {
   const { data: session, status } = useSession();
@@ -45,63 +38,10 @@ export default function HomePage() {
     );
   }
 
+  // If signed in, show the comprehensive incident management dashboard
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        Dashboard
-      </Typography>
-
-      <Typography variant="body1" sx={{ mb: 4 }}>
-        Welcome back, {session?.user?.name}!
-      </Typography>
-
-      <Box
-        display="grid"
-        gridTemplateColumns="repeat(auto-fit, minmax(300px, 1fr))"
-        gap={3}
-      >
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Incidents
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Manage and track incidents
-            </Typography>
-            <Button component={Link} href="/incidents" sx={{ mt: 2 }}>
-              View Incidents
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Monitoring
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Set up and manage monitoring checks
-            </Typography>
-            <Button component={Link} href="/monitoring" sx={{ mt: 2 }}>
-              View Monitoring
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Status Pages
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Create and manage public status pages
-            </Typography>
-            <Button component={Link} href="/status-pages" sx={{ mt: 2 }}>
-              View Status Pages
-            </Button>
-          </CardContent>
-        </Card>
-      </Box>
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      <IncidentDashboard />
     </Container>
   );
 }
