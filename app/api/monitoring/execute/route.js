@@ -275,51 +275,47 @@ async function updateMonitoringCheckStatus(checkId, result) {
       ssl_info: result.ssl_info,
     });
 
-    // Get current service entry
-    const { data: service, error: fetchError } = await db.client
-      .from('services')
+    // Get current monitoring check from the monitoring_checks table
+    const { data: monitoringCheck, error: fetchError } = await db.client
+      .from('monitoring_checks')
       .select('*')
       .eq('id', checkId)
-      .ilike('name', '[[]MONITORING]%')
       .single();
 
-    if (fetchError || !service) {
+    if (fetchError || !monitoringCheck) {
       console.error('Error fetching monitoring check:', fetchError);
       return;
     }
 
-    // Parse and update the stored monitoring data
-    const checkData = JSON.parse(service.description);
-
-    // Update status based on result
-    checkData.status = result.is_successful ? 'active' : 'down';
-    checkData.last_check_time = result.timestamp;
-    checkData.last_response_time = result.response_time_ms;
-    checkData.last_status_code = result.status_code;
-    checkData.last_error = result.error_message;
-
-    // Update SSL info if available
-    if (result.ssl_info) {
-      checkData.ssl_status = result.ssl_info.valid ? 'valid' : 'invalid';
-      checkData.ssl_expires_at = result.ssl_info.expires_at;
-      checkData.ssl_days_until_expiry = result.ssl_info.days_until_expiry;
-    }
-
-    // Calculate next check time
-    const nextCheckTime = new Date(
-      Date.now() + (checkData.check_interval || 5) * 60 * 1000
-    );
-    checkData.next_check_time = nextCheckTime.toISOString();
-
-    const dbData = {
-      description: JSON.stringify(checkData),
-      status: result.is_successful ? 'operational' : 'down',
+    // Update monitoring check status and timing information
+    const updateData = {
+      current_status: result.is_successful ? 'up' : 'down',
+      last_check_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
 
+    if (result.is_successful) {
+      updateData.last_success_at = new Date().toISOString();
+      updateData.consecutive_successes =
+        (monitoringCheck.consecutive_successes || 0) + 1;
+      updateData.consecutive_failures = 0;
+      updateData.failure_message = null;
+    } else {
+      updateData.last_failure_at = new Date().toISOString();
+      updateData.consecutive_failures =
+        (monitoringCheck.consecutive_failures || 0) + 1;
+      updateData.consecutive_successes = 0;
+      updateData.failure_message = result.error_message;
+    }
+
+    // Calculate next check time
+    const intervalSeconds = monitoringCheck.check_interval_seconds || 300;
+    const nextCheckTime = new Date(Date.now() + intervalSeconds * 1000);
+    updateData.next_check_at = nextCheckTime.toISOString();
+
     const { error: updateError } = await db.client
-      .from('services')
-      .update(dbData)
+      .from('monitoring_checks')
+      .update(updateData)
       .eq('id', checkId);
 
     if (updateError) {
@@ -331,16 +327,18 @@ async function updateMonitoringCheckStatus(checkId, result) {
     }
 
     // Update linked service status if association exists
-    await updateLinkedServiceStatus(checkData, result);
+    if (monitoringCheck.linked_service_id) {
+      await updateLinkedServiceStatus(monitoringCheck, result);
+    }
   } catch (error) {
     console.error('Error updating monitoring check status:', error);
   }
 }
 
-// Update the status of a service linked to this monitoring check
-async function updateLinkedServiceStatus(checkData, result) {
+// Update linked service status based on monitoring check result
+async function updateLinkedServiceStatus(monitoringCheck, result) {
   try {
-    const linkedServiceId = checkData.linked_service_id;
+    const linkedServiceId = monitoringCheck.linked_service_id;
     if (!linkedServiceId) {
       return; // No linked service
     }
@@ -389,6 +387,12 @@ async function updateLinkedServiceStatus(checkData, result) {
         console.log(
           `🔗 Updated linked service ${linkedService.name}: ${linkedService.status} → ${newStatus}`
         );
+
+        return {
+          serviceName: linkedService.name,
+          oldStatus: linkedService.status,
+          newStatus: newStatus,
+        };
       }
     }
   } catch (error) {
