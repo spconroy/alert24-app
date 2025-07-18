@@ -292,6 +292,7 @@ async function createServiceStatusUpdate(
       title: title,
       message: statusMessage,
       status: newStatus,
+      update_type: 'monitoring',
       created_by: monitoringCheck.created_by,
     });
 

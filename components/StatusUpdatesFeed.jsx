@@ -171,6 +171,8 @@ export default function StatusUpdatesFeed({
         return 'error';
       case 'maintenance':
         return 'info';
+      case 'monitoring':
+        return 'warning';
       case 'general':
         return 'default';
       default:
@@ -304,15 +306,17 @@ export default function StatusUpdatesFeed({
                         color={getStatusColor(update.status)}
                         size="small"
                       />
-                      <Chip
-                        label={
-                          update.update_type.charAt(0).toUpperCase() +
-                          update.update_type.slice(1)
-                        }
-                        color={getUpdateTypeColor(update.update_type)}
-                        variant="outlined"
-                        size="small"
-                      />
+                      {update.update_type && (
+                        <Chip
+                          label={
+                            update.update_type.charAt(0).toUpperCase() +
+                            update.update_type.slice(1)
+                          }
+                          color={getUpdateTypeColor(update.update_type)}
+                          variant="outlined"
+                          size="small"
+                        />
+                      )}
                       {update.service_name && (
                         <Chip
                           label={update.service_name}
