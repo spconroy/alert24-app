@@ -10,12 +10,27 @@ import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
+import Menu from '@mui/material/Menu';
 import CircularProgress from '@mui/material/CircularProgress';
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Tooltip from '@mui/material/Tooltip';
+import IconButton from '@mui/material/IconButton';
+import Divider from '@mui/material/Divider';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
+import MenuIcon from '@mui/icons-material/Menu';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import WarningIcon from '@mui/icons-material/Warning';
+import MonitorIcon from '@mui/icons-material/Monitor';
+import PeopleIcon from '@mui/icons-material/People';
+import PublicIcon from '@mui/icons-material/Public';
+import EscalatorWarningIcon from '@mui/icons-material/EscalatorWarning';
+import SettingsIcon from '@mui/icons-material/Settings';
+import HelpIcon from '@mui/icons-material/Help';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useOrganization } from '@/contexts/OrganizationContext';
@@ -32,6 +47,9 @@ export default function NavBar() {
 
   const [defaultOrganizationId, setDefaultOrganizationId] = useState(null);
   const [settingDefault, setSettingDefault] = useState(false);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [incidentMenuAnchor, setIncidentMenuAnchor] = useState(null);
+  const [monitoringMenuAnchor, setMonitoringMenuAnchor] = useState(null);
 
   // Fetch default organization when session is available
   useEffect(() => {
@@ -100,14 +118,81 @@ export default function NavBar() {
     }
   };
 
+  const handleMobileMenuOpen = event => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMobileMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleIncidentMenuOpen = event => {
+    setIncidentMenuAnchor(event.currentTarget);
+  };
+
+  const handleIncidentMenuClose = () => {
+    setIncidentMenuAnchor(null);
+  };
+
+  const handleMonitoringMenuOpen = event => {
+    setMonitoringMenuAnchor(event.currentTarget);
+  };
+
+  const handleMonitoringMenuClose = () => {
+    setMonitoringMenuAnchor(null);
+  };
+
   const navigationItems = [
-    { label: 'Dashboard', href: '/', icon: '📊' },
-    { label: 'Incidents', href: '/incidents', icon: '🚨' },
-    { label: 'Monitoring', href: '/monitoring', icon: '📡' },
-    { label: 'On-Call', href: '/on-call', icon: '👥' },
-    { label: 'Status Pages', href: '/status-pages', icon: '📄' },
-    { label: 'Settings', href: '/settings', icon: '⚙️' },
-    { label: 'Help', href: '/help', icon: '📚' },
+    {
+      label: 'Dashboard',
+      href: '/',
+      icon: <DashboardIcon />,
+      standalone: true,
+    },
+  ];
+
+  const incidentManagementItems = [
+    {
+      label: 'Incidents',
+      href: '/incidents',
+      icon: <WarningIcon />,
+    },
+    {
+      label: 'Escalation Policies',
+      href: '/escalation-policies',
+      icon: <EscalatorWarningIcon />,
+    },
+    {
+      label: 'On-Call Schedules',
+      href: '/on-call',
+      icon: <PeopleIcon />,
+    },
+  ];
+
+  const monitoringItems = [
+    {
+      label: 'Monitoring',
+      href: '/monitoring',
+      icon: <MonitorIcon />,
+    },
+    {
+      label: 'Status Pages',
+      href: '/status-pages',
+      icon: <PublicIcon />,
+    },
+  ];
+
+  const settingsItems = [
+    {
+      label: 'Settings',
+      href: '/settings',
+      icon: <SettingsIcon />,
+    },
+    {
+      label: 'Help',
+      href: '/help',
+      icon: <HelpIcon />,
+    },
   ];
 
   const isActivePath = href => {
@@ -116,6 +201,124 @@ export default function NavBar() {
     }
     return pathname.startsWith(href);
   };
+
+  const isActiveGroup = items => {
+    return items.some(item => isActivePath(item.href));
+  };
+
+  const renderMobileMenu = () => (
+    <Menu
+      anchorEl={anchorEl}
+      open={Boolean(anchorEl)}
+      onClose={handleMobileMenuClose}
+      keepMounted
+    >
+      {/* Dashboard */}
+      <MenuItem
+        component={Link}
+        href="/"
+        onClick={handleMobileMenuClose}
+        selected={isActivePath('/')}
+      >
+        <ListItemIcon>
+          <DashboardIcon />
+        </ListItemIcon>
+        <ListItemText>Dashboard</ListItemText>
+      </MenuItem>
+
+      <Divider />
+
+      {/* Incident Management */}
+      {incidentManagementItems.map(item => (
+        <MenuItem
+          key={item.href}
+          component={Link}
+          href={item.href}
+          onClick={handleMobileMenuClose}
+          selected={isActivePath(item.href)}
+        >
+          <ListItemIcon>{item.icon}</ListItemIcon>
+          <ListItemText>{item.label}</ListItemText>
+        </MenuItem>
+      ))}
+
+      <Divider />
+
+      {/* Monitoring */}
+      {monitoringItems.map(item => (
+        <MenuItem
+          key={item.href}
+          component={Link}
+          href={item.href}
+          onClick={handleMobileMenuClose}
+          selected={isActivePath(item.href)}
+        >
+          <ListItemIcon>{item.icon}</ListItemIcon>
+          <ListItemText>{item.label}</ListItemText>
+        </MenuItem>
+      ))}
+
+      <Divider />
+
+      {/* Settings */}
+      {settingsItems.map(item => (
+        <MenuItem
+          key={item.href}
+          component={Link}
+          href={item.href}
+          onClick={handleMobileMenuClose}
+          selected={isActivePath(item.href)}
+        >
+          <ListItemIcon>{item.icon}</ListItemIcon>
+          <ListItemText>{item.label}</ListItemText>
+        </MenuItem>
+      ))}
+    </Menu>
+  );
+
+  const renderIncidentMenu = () => (
+    <Menu
+      anchorEl={incidentMenuAnchor}
+      open={Boolean(incidentMenuAnchor)}
+      onClose={handleIncidentMenuClose}
+      keepMounted
+    >
+      {incidentManagementItems.map(item => (
+        <MenuItem
+          key={item.href}
+          component={Link}
+          href={item.href}
+          onClick={handleIncidentMenuClose}
+          selected={isActivePath(item.href)}
+        >
+          <ListItemIcon>{item.icon}</ListItemIcon>
+          <ListItemText>{item.label}</ListItemText>
+        </MenuItem>
+      ))}
+    </Menu>
+  );
+
+  const renderMonitoringMenu = () => (
+    <Menu
+      anchorEl={monitoringMenuAnchor}
+      open={Boolean(monitoringMenuAnchor)}
+      onClose={handleMonitoringMenuClose}
+      keepMounted
+    >
+      {monitoringItems.map(item => (
+        <MenuItem
+          key={item.href}
+          component={Link}
+          href={item.href}
+          onClick={handleMonitoringMenuClose}
+          selected={isActivePath(item.href)}
+        >
+          <ListItemIcon>{item.icon}</ListItemIcon>
+          <ListItemText>{item.label}</ListItemText>
+        </MenuItem>
+      ))}
+    </Menu>
+  );
 
   return (
     <AppBar position="static" color="default" elevation={1}>
@@ -140,7 +343,7 @@ export default function NavBar() {
           Alert24
         </Typography>
 
-        {/* Navigation Items - Only show when authenticated */}
+        {/* Desktop Navigation - Only show when authenticated */}
         {session && (
           <Box
             display="flex"
@@ -149,37 +352,119 @@ export default function NavBar() {
             sx={{
               flexGrow: 1,
               justifyContent: 'center',
-              '@media (max-width: 768px)': {
-                display: 'none', // Hide nav items on mobile for now
-              },
+              display: { xs: 'none', md: 'flex' }, // Hide on mobile
             }}
           >
-            {navigationItems.map(item => (
-              <Button
-                key={item.href}
-                component={Link}
-                href={item.href}
-                variant={isActivePath(item.href) ? 'contained' : 'text'}
-                color={isActivePath(item.href) ? 'primary' : 'inherit'}
-                size="small"
-                sx={{
-                  minWidth: 'auto',
-                  px: 2,
-                  py: 1,
-                  fontSize: '0.75rem',
-                  fontWeight: isActivePath(item.href) ? 600 : 400,
-                  '&:hover': {
-                    backgroundColor: isActivePath(item.href)
-                      ? 'primary.dark'
-                      : 'rgba(0, 0, 0, 0.04)',
-                  },
-                }}
-              >
-                <span style={{ marginRight: '6px' }}>{item.icon}</span>
-                {item.label}
-              </Button>
-            ))}
+            {/* Dashboard */}
+            <Button
+              component={Link}
+              href="/"
+              variant={isActivePath('/') ? 'contained' : 'text'}
+              color={isActivePath('/') ? 'primary' : 'inherit'}
+              size="small"
+              startIcon={<DashboardIcon />}
+              sx={{
+                minWidth: 'auto',
+                px: 2,
+                py: 1,
+                fontSize: '0.75rem',
+                fontWeight: isActivePath('/') ? 600 : 400,
+              }}
+            >
+              Dashboard
+            </Button>
+
+            {/* Incident Management Dropdown */}
+            <Button
+              onClick={handleIncidentMenuOpen}
+              variant={
+                isActiveGroup(incidentManagementItems) ? 'contained' : 'text'
+              }
+              color={
+                isActiveGroup(incidentManagementItems) ? 'primary' : 'inherit'
+              }
+              size="small"
+              endIcon={<KeyboardArrowDownIcon />}
+              sx={{
+                minWidth: 'auto',
+                px: 2,
+                py: 1,
+                fontSize: '0.75rem',
+                fontWeight: isActiveGroup(incidentManagementItems) ? 600 : 400,
+              }}
+            >
+              Incidents
+            </Button>
+
+            {/* Monitoring Dropdown */}
+            <Button
+              onClick={handleMonitoringMenuOpen}
+              variant={isActiveGroup(monitoringItems) ? 'contained' : 'text'}
+              color={isActiveGroup(monitoringItems) ? 'primary' : 'inherit'}
+              size="small"
+              endIcon={<KeyboardArrowDownIcon />}
+              sx={{
+                minWidth: 'auto',
+                px: 2,
+                py: 1,
+                fontSize: '0.75rem',
+                fontWeight: isActiveGroup(monitoringItems) ? 600 : 400,
+              }}
+            >
+              Monitoring
+            </Button>
+
+            {/* Settings */}
+            <Button
+              component={Link}
+              href="/settings"
+              variant={isActivePath('/settings') ? 'contained' : 'text'}
+              color={isActivePath('/settings') ? 'primary' : 'inherit'}
+              size="small"
+              startIcon={<SettingsIcon />}
+              sx={{
+                minWidth: 'auto',
+                px: 2,
+                py: 1,
+                fontSize: '0.75rem',
+                fontWeight: isActivePath('/settings') ? 600 : 400,
+              }}
+            >
+              Settings
+            </Button>
+
+            {/* Help */}
+            <Button
+              component={Link}
+              href="/help"
+              variant={isActivePath('/help') ? 'contained' : 'text'}
+              color={isActivePath('/help') ? 'primary' : 'inherit'}
+              size="small"
+              startIcon={<HelpIcon />}
+              sx={{
+                minWidth: 'auto',
+                px: 2,
+                py: 1,
+                fontSize: '0.75rem',
+                fontWeight: isActivePath('/help') ? 600 : 400,
+              }}
+            >
+              Help
+            </Button>
           </Box>
+        )}
+
+        {/* Mobile Menu Button */}
+        {session && (
+          <IconButton
+            edge="start"
+            color="inherit"
+            aria-label="menu"
+            onClick={handleMobileMenuOpen}
+            sx={{ display: { xs: 'flex', md: 'none' } }}
+          >
+            <MenuIcon />
+          </IconButton>
         )}
 
         {/* Organization Selector - Only show when authenticated and has orgs */}
@@ -305,6 +590,11 @@ export default function NavBar() {
           ) : null}
         </Box>
       </Toolbar>
+
+      {/* Dropdown Menus */}
+      {renderMobileMenu()}
+      {renderIncidentMenu()}
+      {renderMonitoringMenu()}
     </AppBar>
   );
 }
