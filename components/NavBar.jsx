@@ -75,27 +75,29 @@ export default function NavBar() {
 
     setSettingDefault(true);
     try {
-      if (isDefault) {
-        const response = await fetch('/api/user/default-organization', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ organizationId }),
-        });
+      console.log('🌟 Setting default organization:', {
+        organizationId,
+        isDefault,
+      });
 
-        if (response.ok) {
-          setDefaultOrganizationId(organizationId);
-        }
+      const response = await fetch('/api/user/default-organization', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          organizationId: isDefault ? organizationId : null,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Default organization response:', result);
+        setDefaultOrganizationId(isDefault ? organizationId : null);
       } else {
-        const response = await fetch('/api/user/default-organization', {
-          method: 'DELETE',
-        });
-
-        if (response.ok) {
-          setDefaultOrganizationId(null);
-        }
+        const error = await response.json();
+        console.error('❌ Failed to set default organization:', error);
       }
     } catch (error) {
-      console.error('Error setting default organization:', error);
+      console.error('❌ Error setting default organization:', error);
     } finally {
       setSettingDefault(false);
     }
