@@ -158,7 +158,7 @@ const ServiceList = forwardRef(function ServiceList({ statusPageId }, ref) {
 
     try {
       setDeleteLoading(true);
-      
+
       const response = await fetch(`/api/services/${serviceToDelete.id}`, {
         method: 'DELETE',
         headers: {
@@ -179,7 +179,7 @@ const ServiceList = forwardRef(function ServiceList({ statusPageId }, ref) {
       // Close the modal and clear state
       setDeleteModalOpen(false);
       setServiceToDelete(null);
-      
+
       console.log('Service deleted successfully:', serviceToDelete.name);
     } catch (err) {
       console.error('Error deleting service:', err);
@@ -206,7 +206,8 @@ const ServiceList = forwardRef(function ServiceList({ statusPageId }, ref) {
   const getFailingChecksCount = service => {
     if (!service.monitoring_checks) return 0;
     return service.monitoring_checks.filter(
-      check => check.current_status === 'down'
+      check =>
+        check.current_status !== 'inactive' && check.current_status === 'down'
     ).length;
   };
 
@@ -532,25 +533,43 @@ const ServiceList = forwardRef(function ServiceList({ statusPageId }, ref) {
                                 variant="outlined"
                               />
                             </Box>
-                            
-                            <Typography variant="caption" display="block" color="text.secondary" mb={1}>
-                              {check.check_type?.toUpperCase()} • {check.target_url}
+
+                            <Typography
+                              variant="caption"
+                              display="block"
+                              color="text.secondary"
+                              mb={1}
+                            >
+                              {check.check_type?.toUpperCase()} •{' '}
+                              {check.target_url}
                             </Typography>
-                            
+
                             {check.last_check_time && (
-                              <Typography variant="caption" display="block" color="text.secondary">
-                                Last check: {new Date(check.last_check_time).toLocaleString()}
+                              <Typography
+                                variant="caption"
+                                display="block"
+                                color="text.secondary"
+                              >
+                                Last check:{' '}
+                                {new Date(
+                                  check.last_check_time
+                                ).toLocaleString()}
                               </Typography>
                             )}
-                            
+
                             {check.last_response_time && (
-                              <Typography variant="caption" display="block" color="text.secondary">
-                                Response: {check.last_response_time < 1000 
-                                  ? `${check.last_response_time}ms` 
+                              <Typography
+                                variant="caption"
+                                display="block"
+                                color="text.secondary"
+                              >
+                                Response:{' '}
+                                {check.last_response_time < 1000
+                                  ? `${check.last_response_time}ms`
                                   : `${(check.last_response_time / 1000).toFixed(2)}s`}
                               </Typography>
                             )}
-                            
+
                             {check.failure_message && (
                               <Typography
                                 variant="caption"
@@ -609,8 +628,9 @@ const ServiceList = forwardRef(function ServiceList({ statusPageId }, ref) {
                               secondary={
                                 <Box>
                                   <Typography variant="caption" display="block">
-                                    Interval: {check.check_interval_seconds 
-                                      ? `${check.check_interval_seconds}s` 
+                                    Interval:{' '}
+                                    {check.check_interval_seconds
+                                      ? `${check.check_interval_seconds}s`
                                       : 'Unknown'}
                                   </Typography>
                                   <Typography variant="caption" display="block">
@@ -770,12 +790,12 @@ const ServiceList = forwardRef(function ServiceList({ statusPageId }, ref) {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle 
-          sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
+        <DialogTitle
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
             gap: 2,
-            pb: 1
+            pb: 1,
           }}
         >
           <Box
@@ -787,7 +807,7 @@ const ServiceList = forwardRef(function ServiceList({ statusPageId }, ref) {
               height: 48,
               borderRadius: '50%',
               backgroundColor: 'error.light',
-              color: 'error.contrastText'
+              color: 'error.contrastText',
             }}
           >
             <DeleteIcon />
@@ -806,7 +826,7 @@ const ServiceList = forwardRef(function ServiceList({ statusPageId }, ref) {
             <Typography variant="body1" gutterBottom>
               Are you sure you want to delete this service?
             </Typography>
-            
+
             {serviceToDelete && (
               <Box
                 sx={{
@@ -815,14 +835,22 @@ const ServiceList = forwardRef(function ServiceList({ statusPageId }, ref) {
                   backgroundColor: 'grey.50',
                   borderRadius: 1,
                   border: '1px solid',
-                  borderColor: 'grey.200'
+                  borderColor: 'grey.200',
                 }}
               >
-                <Typography variant="subtitle2" fontWeight="medium" gutterBottom>
+                <Typography
+                  variant="subtitle2"
+                  fontWeight="medium"
+                  gutterBottom
+                >
                   {serviceToDelete.name}
                 </Typography>
                 {serviceToDelete.description && (
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    gutterBottom
+                  >
                     {serviceToDelete.description}
                   </Typography>
                 )}
@@ -844,11 +872,12 @@ const ServiceList = forwardRef(function ServiceList({ statusPageId }, ref) {
               </Box>
             )}
           </Box>
-          
+
           <Alert severity="warning" sx={{ mt: 2 }}>
             <Typography variant="body2">
-              This will permanently remove the service and all associated monitoring configurations, 
-              uptime history, and status updates. Any linked monitoring checks will be disconnected.
+              This will permanently remove the service and all associated
+              monitoring configurations, uptime history, and status updates. Any
+              linked monitoring checks will be disconnected.
             </Typography>
           </Alert>
         </DialogContent>
