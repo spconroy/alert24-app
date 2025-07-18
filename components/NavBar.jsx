@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
@@ -33,7 +34,6 @@ import HelpIcon from '@mui/icons-material/Help';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import PaymentIcon from '@mui/icons-material/Payment';
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useOrganization, useSession } from '@/contexts/OrganizationContext';
 
@@ -141,9 +141,21 @@ export default function NavBar() {
     return (
       <AppBar position="static">
         <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Alert24
-          </Typography>
+          <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Typography
+              variant="h6"
+              component="div"
+              sx={{
+                flexGrow: 1,
+                cursor: 'pointer',
+                '&:hover': {
+                  opacity: 0.8,
+                },
+              }}
+            >
+              Alert24
+            </Typography>
+          </Link>
           <CircularProgress size={24} color="inherit" />
           <Typography variant="body2" sx={{ ml: 2 }}>
             Loading...
@@ -156,9 +168,21 @@ export default function NavBar() {
   return (
     <AppBar position="static">
       <Toolbar>
-        <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-          Alert24
-        </Typography>
+        <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <Typography
+            variant="h6"
+            component="div"
+            sx={{
+              flexGrow: 1,
+              cursor: 'pointer',
+              '&:hover': {
+                opacity: 0.8,
+              },
+            }}
+          >
+            Alert24
+          </Typography>
+        </Link>
 
         {status === 'authenticated' && session ? (
           <>
