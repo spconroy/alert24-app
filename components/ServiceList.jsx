@@ -570,16 +570,17 @@ const ServiceList = forwardRef(function ServiceList({ statusPageId }, ref) {
                               </Typography>
                             )}
 
-                            {check.failure_message && (
-                              <Typography
-                                variant="caption"
-                                display="block"
-                                color="error.main"
-                                sx={{ mt: 1, fontStyle: 'italic' }}
-                              >
-                                {check.failure_message}
-                              </Typography>
-                            )}
+                            {check.failure_message &&
+                              check.current_status !== 'inactive' && (
+                                <Typography
+                                  variant="caption"
+                                  display="block"
+                                  color="error.main"
+                                  sx={{ mt: 1, fontStyle: 'italic' }}
+                                >
+                                  {check.failure_message}
+                                </Typography>
+                              )}
                           </Box>
                         </Grid>
                       ))}
@@ -636,15 +637,16 @@ const ServiceList = forwardRef(function ServiceList({ statusPageId }, ref) {
                                   <Typography variant="caption" display="block">
                                     Timeout: {check.timeout_seconds || 30}s
                                   </Typography>
-                                  {check.failure_message && (
-                                    <Typography
-                                      variant="caption"
-                                      display="block"
-                                      color="error.main"
-                                    >
-                                      Error: {check.failure_message}
-                                    </Typography>
-                                  )}
+                                  {check.failure_message &&
+                                    check.current_status !== 'inactive' && (
+                                      <Typography
+                                        variant="caption"
+                                        display="block"
+                                        color="error.main"
+                                      >
+                                        Error: {check.failure_message}
+                                      </Typography>
+                                    )}
                                 </Box>
                               }
                             />
