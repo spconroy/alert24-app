@@ -492,6 +492,12 @@ export default function MonitoringPage() {
   };
 
   const getTargetDisplay = check => {
+    console.log('🎯 getTargetDisplay called for:', check.name, {
+      check_type: check.check_type,
+      has_status_page_config: !!check.status_page_config,
+      target_url: check.target_url,
+    });
+
     // For status page checks, show the provider's status page URL
     if (check.check_type === 'status_page' && check.status_page_config) {
       const { provider } = check.status_page_config;
@@ -505,19 +511,25 @@ export default function MonitoringPage() {
         supabase: 'https://status.supabase.com/',
       };
 
-      console.log('Status page check debug:', {
+      console.log('✅ Status page check detected:', {
         checkName: check.name,
         provider: provider,
-        hasConfig: !!check.status_page_config,
         providerUrl: PROVIDER_URLS[provider],
-        availableProviders: Object.keys(PROVIDER_URLS),
+        returning: PROVIDER_URLS[provider] || 'PROVIDER_NOT_FOUND',
       });
 
       if (PROVIDER_URLS[provider]) {
         return PROVIDER_URLS[provider];
+      } else {
+        console.warn('❌ Provider not found in PROVIDER_URLS:', provider);
+        return `PROVIDER_NOT_FOUND: ${provider}`;
       }
     }
 
+    console.log(
+      '📄 Regular check, returning target_url:',
+      check.target_url || 'N/A'
+    );
     // For regular checks, show the target URL
     return check.target_url || 'N/A';
   };
