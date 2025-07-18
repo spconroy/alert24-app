@@ -116,8 +116,26 @@ export async function PATCH(req, { params }) {
       );
     }
 
+    // Check if we're disabling the check (status change to disabled/paused)
+    const isBeingDisabled =
+      body.status &&
+      ['disabled', 'paused', 'inactive'].includes(body.status) &&
+      existingCheck.status === 'active';
+
     // Update monitoring check
     const updatedCheck = await db.updateMonitoringCheck(checkId, body);
+
+    // Handle service recovery if check is being disabled
+    if (isBeingDisabled) {
+      console.log(
+        `🔄 Check "${existingCheck.name}" disabled, checking for service recovery...`
+      );
+      await handleServiceRecoveryForDisabledCheck(
+        checkId,
+        existingCheck,
+        user.id
+      );
+    }
 
     return NextResponse.json({
       success: true,
@@ -134,6 +152,155 @@ export async function PATCH(req, { params }) {
       },
       { status: 500 }
     );
+  }
+}
+
+// Handle automatic service recovery when a monitoring check is disabled
+async function handleServiceRecoveryForDisabledCheck(
+  checkId,
+  monitoringCheck,
+  userId
+) {
+  try {
+    // Find all services associated with this monitoring check
+    const { data: associations, error: associationError } = await db.client
+      .from('service_monitoring_checks')
+      .select('service_id, failure_message')
+      .eq('monitoring_check_id', checkId);
+
+    if (associationError) {
+      console.error(
+        'Error fetching service associations for recovery:',
+        associationError
+      );
+      return;
+    }
+
+    if (!associations || associations.length === 0) {
+      console.log('No service associations found for disabled check');
+      return;
+    }
+
+    console.log(
+      `Found ${associations.length} service(s) associated with disabled check`
+    );
+
+    // Process each associated service
+    for (const association of associations) {
+      const serviceId = association.service_id;
+
+      // Get the service details
+      const { data: service, error: serviceError } = await db.client
+        .from('services')
+        .select('*, status_pages(id)')
+        .eq('id', serviceId)
+        .single();
+
+      if (serviceError || !service) {
+        console.warn(`Service ${serviceId} not found during recovery`);
+        continue;
+      }
+
+      // Only process if service is currently degraded or down
+      if (!['degraded', 'down', 'maintenance'].includes(service.status)) {
+        console.log(
+          `Service ${service.name} is already operational, skipping recovery`
+        );
+        continue;
+      }
+
+      // Check if there are any other ACTIVE monitoring checks that might be affecting this service
+      const { data: otherFailingChecks, error: checksError } = await db.client
+        .from('service_monitoring_checks')
+        .select(
+          `
+          monitoring_checks!inner(
+            id, 
+            name, 
+            status, 
+            current_status
+          )
+        `
+        )
+        .eq('service_id', serviceId)
+        .neq('monitoring_check_id', checkId) // Exclude the check we just disabled
+        .eq('monitoring_checks.status', 'active'); // Only active checks
+
+      if (checksError) {
+        console.error('Error checking other monitoring checks:', checksError);
+        continue;
+      }
+
+      // Count how many active checks are currently failing for this service
+      const activeFailingChecks = (otherFailingChecks || []).filter(
+        assoc => assoc.monitoring_checks?.current_status === 'down'
+      );
+
+      console.log(
+        `Service ${service.name}: ${activeFailingChecks.length} other active failing checks`
+      );
+
+      // If no other active checks are failing, recover the service
+      if (activeFailingChecks.length === 0) {
+        console.log(
+          `🔄 Recovering service ${service.name} to operational status`
+        );
+
+        // Update service status to operational
+        const { error: updateError } = await db.client
+          .from('services')
+          .update({
+            status: 'operational',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', serviceId);
+
+        if (updateError) {
+          console.error(
+            `Error updating service ${service.name} status:`,
+            updateError
+          );
+          continue;
+        }
+
+        // Create a recovery status update
+        if (service.status_pages?.id) {
+          const recoveryMessage = association.failure_message?.trim()
+            ? `${service.name} has been restored to normal operation.`
+            : `${service.name} monitoring has been disabled and the service is now marked as operational.`;
+
+          const { error: statusUpdateError } = await db.client
+            .from('status_updates')
+            .insert({
+              status_page_id: service.status_pages.id,
+              title: `${service.name} Restored`,
+              message: recoveryMessage,
+              status: 'operational',
+              update_type: 'monitoring',
+              created_by: userId,
+            });
+
+          if (statusUpdateError) {
+            console.error(
+              'Error creating recovery status update:',
+              statusUpdateError
+            );
+          } else {
+            console.log(
+              `✅ Created recovery status update for ${service.name}`
+            );
+          }
+        }
+
+        console.log(`✅ Successfully recovered service ${service.name}`);
+      } else {
+        console.log(
+          `Service ${service.name} still has ${activeFailingChecks.length} other failing checks, not recovering`
+        );
+      }
+    }
+  } catch (error) {
+    console.error('Error handling service recovery for disabled check:', error);
   }
 }
 
