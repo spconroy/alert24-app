@@ -11,23 +11,23 @@ import {
   Alert,
   CircularProgress,
   TextField,
-  Autocomplete
+  Autocomplete,
 } from '@mui/material';
 import { Cloud, Storage, Functions, Dns } from '@mui/icons-material';
 
 const providerIcons = {
   azure: <Cloud color="primary" />,
   aws: <Storage color="warning" />,
-  gcp: <Functions color="success" />
+  gcp: <Functions color="success" />,
 };
 
-const StatusPageProviderSelector = ({ 
-  selectedProvider, 
-  selectedService, 
-  selectedRegions, 
-  onProviderChange, 
-  onServiceChange, 
-  onRegionsChange 
+const StatusPageProviderSelector = ({
+  selectedProvider,
+  selectedService,
+  selectedRegions,
+  onProviderChange,
+  onServiceChange,
+  onRegionsChange,
 }) => {
   const [providers, setProviders] = useState([]);
   const [services, setServices] = useState([]);
@@ -60,7 +60,7 @@ const StatusPageProviderSelector = ({
     try {
       const response = await fetch('/api/status-page-providers');
       const data = await response.json();
-      
+
       if (data.success) {
         setProviders(data.providers);
       } else {
@@ -73,13 +73,15 @@ const StatusPageProviderSelector = ({
     }
   };
 
-  const loadServices = async (provider) => {
+  const loadServices = async provider => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/status-page-providers?provider=${provider}`);
+      const response = await fetch(
+        `/api/status-page-providers?provider=${provider}`
+      );
       const data = await response.json();
-      
+
       if (data.success) {
         setServices(data.services);
       } else {
@@ -96,9 +98,11 @@ const StatusPageProviderSelector = ({
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/status-page-providers?provider=${provider}&service=${service}`);
+      const response = await fetch(
+        `/api/status-page-providers?provider=${provider}&service=${service}`
+      );
       const data = await response.json();
-      
+
       if (data.success) {
         setRegions(data.regions);
       } else {
@@ -111,18 +115,18 @@ const StatusPageProviderSelector = ({
     }
   };
 
-  const handleProviderChange = (providerId) => {
+  const handleProviderChange = providerId => {
     onProviderChange(providerId);
     onServiceChange(''); // Reset service selection
     onRegionsChange([]); // Reset regions selection
   };
 
-  const handleServiceChange = (serviceId) => {
+  const handleServiceChange = serviceId => {
     onServiceChange(serviceId);
     onRegionsChange([]); // Reset regions selection
   };
 
-  const handleRegionToggle = (regionId) => {
+  const handleRegionToggle = regionId => {
     const newRegions = selectedRegions.includes(regionId)
       ? selectedRegions.filter(r => r !== regionId)
       : [...selectedRegions, regionId];
@@ -154,14 +158,14 @@ const StatusPageProviderSelector = ({
       <Typography variant="h6" sx={{ mb: 2 }}>
         Select Cloud Provider
       </Typography>
-      
+
       <Autocomplete
         value={selectedProviderObj || null}
         onChange={(event, newValue) => {
           handleProviderChange(newValue ? newValue.id : '');
         }}
         options={providers}
-        getOptionLabel={(option) => option.name}
+        getOptionLabel={option => option.name}
         renderOption={(props, option) => (
           <Box component="li" {...props}>
             <Box display="flex" alignItems="center" gap={2} width="100%">
@@ -171,16 +175,16 @@ const StatusPageProviderSelector = ({
                 <Typography variant="body2" color="text.secondary">
                   {option.description}
                 </Typography>
-                <Chip 
-                  label={`${option.service_count} services`} 
-                  size="small" 
+                <Chip
+                  label={`${option.service_count} services`}
+                  size="small"
                   sx={{ mt: 0.5 }}
                 />
               </Box>
             </Box>
           </Box>
         )}
-        renderInput={(params) => (
+        renderInput={params => (
           <TextField
             {...params}
             label="Search providers..."
@@ -203,14 +207,14 @@ const StatusPageProviderSelector = ({
           <Typography variant="h6" sx={{ mb: 2 }}>
             Select Service
           </Typography>
-          
+
           <Autocomplete
             value={services.find(s => s.id === selectedService) || null}
             onChange={(event, newValue) => {
               handleServiceChange(newValue ? newValue.id : '');
             }}
             options={services}
-            getOptionLabel={(option) => option.name}
+            getOptionLabel={option => option.name}
             renderOption={(props, option) => (
               <Box component="li" {...props}>
                 <Box>
@@ -221,7 +225,7 @@ const StatusPageProviderSelector = ({
                 </Box>
               </Box>
             )}
-            renderInput={(params) => (
+            renderInput={params => (
               <TextField
                 {...params}
                 label="Search services..."
@@ -246,12 +250,18 @@ const StatusPageProviderSelector = ({
           <Typography variant="h6" sx={{ mb: 2 }}>
             Select Regions
           </Typography>
-          
+
           <FormControlLabel
             control={
               <Checkbox
-                checked={selectedRegions.length === regions.length && regions.length > 0}
-                indeterminate={selectedRegions.length > 0 && selectedRegions.length < regions.length}
+                checked={
+                  selectedRegions.length === regions.length &&
+                  regions.length > 0
+                }
+                indeterminate={
+                  selectedRegions.length > 0 &&
+                  selectedRegions.length < regions.length
+                }
                 onChange={handleSelectAllRegions}
                 disabled={loading}
               />
@@ -259,9 +269,9 @@ const StatusPageProviderSelector = ({
             label="Select All Regions"
             sx={{ mb: 2 }}
           />
-          
+
           <Grid container spacing={1}>
-            {regions.map((region) => (
+            {regions.map(region => (
               <Grid item xs={12} sm={6} md={4} lg={3} key={region}>
                 <FormControlLabel
                   control={
@@ -273,14 +283,16 @@ const StatusPageProviderSelector = ({
                   }
                   label={
                     <Typography variant="body2">
-                      {region === 'global' ? 'Global' : region.replace(/-/g, ' ').toUpperCase()}
+                      {region === 'global'
+                        ? 'Global'
+                        : region.replace(/-/g, ' ').toUpperCase()}
                     </Typography>
                   }
                 />
               </Grid>
             ))}
           </Grid>
-          
+
           {selectedRegions.length > 0 && (
             <Box sx={{ mt: 2 }}>
               <Typography variant="body2" color="text.secondary">
