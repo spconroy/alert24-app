@@ -40,7 +40,7 @@ import { useOrganization, useSession } from '@/contexts/OrganizationContext';
 export default function NavBar() {
   const pathname = usePathname();
   const { data: session, status } = useSession();
-  const { currentOrganization, organizations, loading, switchOrganization } =
+  const { selectedOrganization, organizations, loading, switchOrganization } =
     useOrganization();
 
   const [defaultOrganizationId, setDefaultOrganizationId] = useState(null);
@@ -197,7 +197,7 @@ export default function NavBar() {
                 </InputLabel>
                 <Select
                   labelId="organization-select-label"
-                  value={currentOrganization?.id || ''}
+                  value={selectedOrganization?.id || ''}
                   onChange={e => handleOrganizationChange(e.target.value)}
                   label="Organization"
                   size="small"
