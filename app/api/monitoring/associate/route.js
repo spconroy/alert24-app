@@ -13,6 +13,38 @@ const db = new SupabaseClient();
 
 export const runtime = 'edge';
 
+// Helper function to safely extract monitoring check data
+// Handles both old JSON format and new direct database fields
+function getCheckData(check) {
+  // If data is available directly from database columns (new format)
+  if (check.check_type) {
+    return {
+      check_type: check.check_type,
+      target_url: check.target_url,
+      organization_id: check.organization_id,
+      linked_service_id: check.linked_service_id,
+      name: check.name,
+      url: check.target_url,
+      ...check
+    };
+  }
+  
+  // Fall back to parsing JSON from description field (old format)
+  try {
+    if (check.description && typeof check.description === 'string') {
+      const parsed = JSON.parse(check.description);
+      return parsed;
+    } else if (check.monitoring_data && typeof check.monitoring_data === 'string') {
+      const parsed = JSON.parse(check.monitoring_data);
+      return parsed;
+    }
+    return check.description || check.monitoring_data || {};
+  } catch (e) {
+    console.warn('Failed to parse check data as JSON:', e);
+    return {};
+  }
+}
+
 // GET - Get associations for monitoring checks
 export const GET = withErrorHandler(async request => {
   const session = await auth();
@@ -56,9 +88,7 @@ export const GET = withErrorHandler(async request => {
     const associations = [];
 
     for (const check of monitoringChecks) {
-      const checkData = JSON.parse(
-        check.description || check.monitoring_data || '{}'
-      );
+      const checkData = getCheckData(check);
       const linkedServiceId = checkData.linked_service_id;
 
       associations.push({

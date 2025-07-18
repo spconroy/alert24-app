@@ -7,11 +7,40 @@ const db = new SupabaseClient();
 
 export const runtime = 'edge';
 
+// Helper function to safely extract monitoring check data
+// Handles both old JSON format and new direct database fields
+function getCheckData(check) {
+  // If data is available directly from database columns (new format)
+  if (check.check_type) {
+    return {
+      check_type: check.check_type,
+      target_url: check.target_url,
+      organization_id: check.organization_id,
+      linked_service_id: check.linked_service_id,
+      name: check.name,
+      url: check.target_url,
+      ...check
+    };
+  }
+  
+  // Fall back to parsing JSON from description field (old format)
+  try {
+    if (check.description && typeof check.description === 'string') {
+      const parsed = JSON.parse(check.description);
+      return parsed;
+    }
+    return check.description || {};
+  } catch (e) {
+    console.warn('Failed to parse check description as JSON:', e);
+    return {};
+  }
+}
+
 // Update the status of a service linked to this monitoring check
 async function updateLinkedServiceStatus(check, result) {
   try {
-    // Parse check data from the service description
-    const checkData = JSON.parse(check.description);
+    // Get check data using helper function
+    const checkData = getCheckData(check);
     const linkedServiceId = checkData.linked_service_id;
 
     if (!linkedServiceId) {
@@ -78,8 +107,8 @@ async function updateLinkedServiceStatus(check, result) {
 // Resolve incident when monitoring check recovers
 async function resolveIncidentForRecovery(check) {
   try {
-    // Parse check data from the service description
-    const checkData = JSON.parse(check.description);
+    // Get check data using helper function
+    const checkData = getCheckData(check);
 
     // Find open monitoring-related incidents for this check
     const existingIncidents = await db.getIncidentsByOrganization(
@@ -114,8 +143,8 @@ async function resolveIncidentForRecovery(check) {
 // Create incident for monitoring check failure
 async function createIncidentForFailure(check, result) {
   try {
-    // Parse check data from the service description
-    const checkData = JSON.parse(check.description);
+    // Get check data using helper function
+    const checkData = getCheckData(check);
 
     // Get organization details
     const organization = await db.getOrganizationById(
@@ -184,8 +213,8 @@ async function createIncidentForFailure(check, result) {
 // Send failure notifications for monitoring checks
 async function sendFailureNotifications(check, result) {
   try {
-    // Parse check data from the service description
-    const checkData = JSON.parse(check.description);
+    // Get check data using helper function
+    const checkData = getCheckData(check);
 
     // Get organization details
     const organization = await db.getOrganizationById(

@@ -89,26 +89,46 @@ export default function EditMonitoringCheckPage() {
       const result = await response.json();
       const check = result.check;
 
-      // Parse the check data and populate form
-      const checkData =
-        typeof check.description === 'string'
-          ? JSON.parse(check.description)
-          : check.description;
+      // Handle both old JSON format and new direct database fields
+      let checkData = {};
+      
+      // Try to parse description as JSON (old format)
+      if (check.description && typeof check.description === 'string') {
+        try {
+          checkData = JSON.parse(check.description);
+        } catch (e) {
+          console.warn('Failed to parse check description as JSON:', e);
+          checkData = {};
+        }
+      } else if (check.description && typeof check.description === 'object') {
+        checkData = check.description;
+      }
+
+      // Debug logging
+      console.log('Check data from API:', check);
+      console.log('Parsed check data:', checkData);
+
+      // Check if this is a status page check
+      if (check.check_type === 'status_page') {
+        setError('Status page checks cannot be edited using the standard monitoring edit form. Please delete and recreate the check if needed.');
+        return;
+      }
 
       setFormData({
         name: check.name?.replace('[MONITORING] ', '') || '',
-        check_type: checkData.check_type || 'http',
-        target_url: checkData.target_url || '',
-        check_interval_seconds: checkData.check_interval_seconds || 300,
-        timeout_seconds: checkData.timeout_seconds || 30,
-        http_method: checkData.http_method || 'GET',
-        http_headers: checkData.http_headers || {},
-        expected_status_codes: checkData.expected_status_codes || [200],
-        keyword_match: checkData.keyword_match || '',
-        keyword_match_type: checkData.keyword_match_type || 'contains',
-        ssl_check_enabled: checkData.ssl_check_enabled || false,
-        follow_redirects: checkData.follow_redirects !== false,
-        notification_settings: checkData.notification_settings || {},
+        // Use direct field from database if available, otherwise fall back to parsed JSON
+        check_type: check.check_type || checkData.check_type || 'http',
+        target_url: check.target_url || checkData.target_url || '',
+        check_interval_seconds: check.check_interval_seconds || checkData.check_interval_seconds || 300,
+        timeout_seconds: check.timeout_seconds || checkData.timeout_seconds || 30,
+        http_method: check.http_method || checkData.http_method || 'GET',
+        http_headers: check.http_headers || checkData.http_headers || {},
+        expected_status_codes: check.expected_status_codes || checkData.expected_status_codes || [200],
+        keyword_match: check.keyword_match || checkData.keyword_match || '',
+        keyword_match_type: check.keyword_match_type || checkData.keyword_match_type || 'contains',
+        ssl_check_enabled: check.ssl_check_enabled || checkData.ssl_check_enabled || false,
+        follow_redirects: check.follow_redirects !== false && checkData.follow_redirects !== false,
+        notification_settings: check.notification_settings || checkData.notification_settings || {},
         is_active: check.is_active !== false,
       });
     } catch (err) {

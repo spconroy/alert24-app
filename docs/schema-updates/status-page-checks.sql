@@ -81,7 +81,7 @@ BEGIN
     END IF;
     
     -- Check if provider is valid
-    IF config->>'provider' NOT IN ('azure', 'aws', 'gcp') THEN
+    IF config->>'provider' NOT IN ('azure', 'aws', 'gcp', 'cloudflare', 'supabase') THEN
         RETURN FALSE;
     END IF;
     

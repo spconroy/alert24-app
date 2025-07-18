@@ -2,21 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import {
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Box,
   Typography,
   Chip,
   Grid,
-  Card,
-  CardContent,
-  CardActionArea,
   Checkbox,
   FormControlLabel,
   Alert,
-  CircularProgress
+  CircularProgress,
+  TextField,
+  Autocomplete
 } from '@mui/material';
 import { Cloud, Storage, Functions, Dns } from '@mui/icons-material';
 
@@ -142,6 +137,9 @@ const StatusPageProviderSelector = ({
     }
   };
 
+  // Get selected provider object
+  const selectedProviderObj = providers.find(p => p.id === selectedProvider);
+
   if (error) {
     return (
       <Alert severity="error" sx={{ mb: 2 }}>
@@ -157,37 +155,47 @@ const StatusPageProviderSelector = ({
         Select Cloud Provider
       </Typography>
       
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        {providers.map((provider) => (
-          <Grid item xs={12} md={4} key={provider.id}>
-            <Card 
-              sx={{ 
-                border: selectedProvider === provider.id ? 2 : 1,
-                borderColor: selectedProvider === provider.id ? 'primary.main' : 'divider'
-              }}
-            >
-              <CardActionArea onClick={() => handleProviderChange(provider.id)}>
-                <CardContent>
-                  <Box display="flex" alignItems="center" gap={2}>
-                    {providerIcons[provider.id]}
-                    <Box>
-                      <Typography variant="h6">{provider.name}</Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {provider.description}
-                      </Typography>
-                      <Chip 
-                        label={`${provider.service_count} services`} 
-                        size="small" 
-                        sx={{ mt: 1 }}
-                      />
-                    </Box>
-                  </Box>
-                </CardContent>
-              </CardActionArea>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+      <Autocomplete
+        value={selectedProviderObj || null}
+        onChange={(event, newValue) => {
+          handleProviderChange(newValue ? newValue.id : '');
+        }}
+        options={providers}
+        getOptionLabel={(option) => option.name}
+        renderOption={(props, option) => (
+          <Box component="li" {...props}>
+            <Box display="flex" alignItems="center" gap={2} width="100%">
+              {providerIcons[option.id]}
+              <Box flexGrow={1}>
+                <Typography variant="body1">{option.name}</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {option.description}
+                </Typography>
+                <Chip 
+                  label={`${option.service_count} services`} 
+                  size="small" 
+                  sx={{ mt: 0.5 }}
+                />
+              </Box>
+            </Box>
+          </Box>
+        )}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            label="Search providers..."
+            placeholder="Type to search providers"
+            fullWidth
+            variant="outlined"
+          />
+        )}
+        loading={loading}
+        sx={{ mb: 3 }}
+        noOptionsText="No providers found"
+        clearOnEscape
+        selectOnFocus
+        clearText="Clear selection"
+      />
 
       {/* Service Selection */}
       {selectedProvider && (
@@ -196,26 +204,39 @@ const StatusPageProviderSelector = ({
             Select Service
           </Typography>
           
-          <FormControl fullWidth>
-            <InputLabel>Service</InputLabel>
-            <Select
-              value={selectedService}
-              onChange={(e) => handleServiceChange(e.target.value)}
-              label="Service"
-              disabled={loading}
-            >
-              {services.map((service) => (
-                <MenuItem key={service.id} value={service.id}>
-                  <Box>
-                    <Typography variant="body1">{service.name}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {service.description}
-                    </Typography>
-                  </Box>
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <Autocomplete
+            value={services.find(s => s.id === selectedService) || null}
+            onChange={(event, newValue) => {
+              handleServiceChange(newValue ? newValue.id : '');
+            }}
+            options={services}
+            getOptionLabel={(option) => option.name}
+            renderOption={(props, option) => (
+              <Box component="li" {...props}>
+                <Box>
+                  <Typography variant="body1">{option.name}</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {option.description}
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Search services..."
+                placeholder="Type to search services"
+                fullWidth
+                variant="outlined"
+              />
+            )}
+            loading={loading}
+            disabled={loading}
+            noOptionsText="No services found"
+            clearOnEscape
+            selectOnFocus
+            clearText="Clear selection"
+          />
         </Box>
       )}
 
