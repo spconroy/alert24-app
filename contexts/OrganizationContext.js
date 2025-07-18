@@ -79,7 +79,7 @@ const setStoredOrganizationId = organizationId => {
 export function OrganizationProvider({ children }) {
   const { data: session, status } = useSession();
   const [organizations, setOrganizations] = useState([]);
-  const [currentOrganization, setCurrentOrganization] = useState(null);
+  const [selectedOrganization, setSelectedOrganization] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // Fetch organizations when user is authenticated
@@ -125,7 +125,7 @@ export function OrganizationProvider({ children }) {
               setStoredOrganizationId(selectedOrg.id);
             }
 
-            setCurrentOrganization(selectedOrg);
+            setSelectedOrganization(selectedOrg);
           } else {
             console.error(
               'Failed to fetch organizations:',
@@ -139,7 +139,7 @@ export function OrganizationProvider({ children }) {
       } else if (status === 'unauthenticated') {
         console.log('🚪 User not authenticated - clearing organizations');
         setOrganizations([]);
-        setCurrentOrganization(null);
+        setSelectedOrganization(null);
         setStoredOrganizationId(null);
       }
 
@@ -153,7 +153,7 @@ export function OrganizationProvider({ children }) {
     const org = organizations.find(o => o.id === organizationId);
     if (org) {
       console.log('🔄 Switching to organization:', org.name);
-      setCurrentOrganization(org);
+      setSelectedOrganization(org);
       setStoredOrganizationId(organizationId);
     }
   };
@@ -178,12 +178,12 @@ export function OrganizationProvider({ children }) {
 
           setOrganizations(orgs);
 
-          // Update current organization if it still exists
-          if (currentOrganization) {
-            const updatedCurrent = orgs.find(
-              o => o.id === currentOrganization.id
+          // Update selected organization if it still exists
+          if (selectedOrganization) {
+            const updatedSelected = orgs.find(
+              o => o.id === selectedOrganization.id
             );
-            setCurrentOrganization(updatedCurrent || orgs[0] || null);
+            setSelectedOrganization(updatedSelected || orgs[0] || null);
           }
         }
       } catch (error) {
@@ -198,7 +198,7 @@ export function OrganizationProvider({ children }) {
     session,
     status,
     organizations,
-    currentOrganization,
+    selectedOrganization,
     loading,
     switchOrganization,
     refreshOrganizations,
