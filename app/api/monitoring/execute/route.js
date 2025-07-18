@@ -273,19 +273,26 @@ async function createServiceStatusUpdate(
       return;
     }
 
+    // Get the status page ID from the service
+    if (!service.status_page_id) {
+      console.warn(
+        `Service ${service.name} (${service.id}) has no status_page_id, cannot create status update`
+      );
+      return;
+    }
+
+    const title = `${service.name} Status Update`;
     const statusMessage =
       newStatus === 'down'
-        ? `Service is down due to monitoring check failure: ${result.error_message}`
-        : `Service is degraded due to monitoring check issues: ${result.error_message}`;
+        ? `${service.name} is currently down due to monitoring check failure: ${result.error_message}`
+        : `${service.name} is experiencing degraded performance due to monitoring check issues: ${result.error_message}`;
 
     const { error } = await db.client.from('status_updates').insert({
-      service_id: service.id,
-      status: newStatus,
+      status_page_id: service.status_page_id,
+      title: title,
       message: statusMessage,
+      status: newStatus,
       created_by: monitoringCheck.created_by,
-      organization_id:
-        service.organization_id || monitoringCheck.organization_id,
-      created_at: new Date().toISOString(),
     });
 
     if (error) {
