@@ -39,67 +39,13 @@ import { useOrganization, useSession } from '@/contexts/OrganizationContext';
 
 export default function NavBar() {
   const pathname = usePathname();
-  const { data: session, status, signOut } = useSession();
+  const { data: session, status } = useSession();
   const { currentOrganization, organizations, loading, switchOrganization } =
     useOrganization();
 
   const [defaultOrganizationId, setDefaultOrganizationId] = useState(null);
   const [settingDefault, setSettingDefault] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
-  const [incidentMenuAnchor, setIncidentMenuAnchor] = useState(null);
-  const [monitoringMenuAnchor, setMonitoringMenuAnchor] = useState(null);
-
-  // Fetch default organization when session is available
-  useEffect(() => {
-    if (session) {
-      fetchDefaultOrganization();
-    }
-  }, [session]);
-
-  const fetchDefaultOrganization = async () => {
-    try {
-      const response = await fetch('/api/user/default-organization');
-      if (response.ok) {
-        const data = await response.json();
-        if (data.hasDefault) {
-          setDefaultOrganizationId(data.defaultOrganization.id);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching default organization:', error);
-    }
-  };
-
-  const handleSetDefault = async (organizationId, isDefault) => {
-    if (settingDefault) return;
-
-    setSettingDefault(true);
-    try {
-      if (isDefault) {
-        const response = await fetch('/api/user/default-organization', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ organizationId }),
-        });
-
-        if (response.ok) {
-          setDefaultOrganizationId(organizationId);
-        }
-      } else {
-        const response = await fetch('/api/user/default-organization', {
-          method: 'DELETE',
-        });
-
-        if (response.ok) {
-          setDefaultOrganizationId(null);
-        }
-      }
-    } catch (error) {
-      console.error('Error setting default organization:', error);
-    } finally {
-      setSettingDefault(false);
-    }
-  };
 
   const handleOrganizationChange = organizationId => {
     switchOrganization(organizationId);
@@ -134,12 +80,16 @@ export default function NavBar() {
     },
   ];
 
-  if (status === 'loading') {
+  // Show loading state only when session status is loading AND organizations are loading
+  if (status === 'loading' || (status === 'authenticated' && loading)) {
     return (
       <AppBar position="static">
         <Toolbar>
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+            Alert24
+          </Typography>
           <CircularProgress size={24} color="inherit" />
-          <Typography variant="h6" sx={{ ml: 2 }}>
+          <Typography variant="body2" sx={{ ml: 2 }}>
             Loading...
           </Typography>
         </Toolbar>
@@ -154,7 +104,7 @@ export default function NavBar() {
           Alert24
         </Typography>
 
-        {status === 'authenticated' ? (
+        {status === 'authenticated' && session ? (
           <>
             {/* Organization Selector */}
             {organizations.length > 0 && (
@@ -164,6 +114,13 @@ export default function NavBar() {
                   onChange={e => handleOrganizationChange(e.target.value)}
                   displayEmpty
                   size="small"
+                  sx={{
+                    color: 'white',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(255,255,255,0.3)',
+                    },
+                    '& .MuiSvgIcon-root': { color: 'white' },
+                  }}
                 >
                   {organizations.map(org => (
                     <MenuItem key={org.id} value={org.id}>
@@ -188,6 +145,9 @@ export default function NavBar() {
                       pathname === item.path
                         ? 'rgba(255,255,255,0.1)'
                         : 'transparent',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255,255,255,0.1)',
+                    },
                   }}
                 >
                   {item.label}
@@ -206,6 +166,13 @@ export default function NavBar() {
                 variant="outlined"
                 size="small"
                 onClick={handleSignOut}
+                sx={{
+                  borderColor: 'rgba(255,255,255,0.3)',
+                  '&:hover': {
+                    borderColor: 'rgba(255,255,255,0.5)',
+                    backgroundColor: 'rgba(255,255,255,0.1)',
+                  },
+                }}
               >
                 Sign out
               </Button>
