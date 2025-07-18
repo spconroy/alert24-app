@@ -54,14 +54,14 @@ export default function IncidentsPage() {
     hasMore: false,
   });
 
-  const { session } = useOrganization();
+  const { session, selectedOrganization } = useOrganization();
 
   useEffect(() => {
     if (session) {
       fetchIncidents();
       fetchOrganizations();
     }
-  }, [session, filters, pagination.offset]);
+  }, [session, selectedOrganization, filters, pagination.offset]);
 
   const fetchOrganizations = async () => {
     try {
@@ -80,7 +80,16 @@ export default function IncidentsPage() {
       setLoading(true);
       setError(null);
 
+      // Require organization to be selected
+      if (!selectedOrganization?.id) {
+        setLoading(false);
+        return;
+      }
+
       const params = new URLSearchParams();
+
+      // Add organization_id (required)
+      params.append('organization_id', selectedOrganization.id);
 
       // Add filters
       Object.entries(filters).forEach(([key, value]) => {
