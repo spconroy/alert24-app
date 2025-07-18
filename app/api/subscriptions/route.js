@@ -12,6 +12,8 @@ export async function POST(req) {
     const body = await req.json();
     const { status_page_id, email } = body;
 
+    console.log('📧 Subscription request:', { status_page_id, email });
+
     if (!status_page_id || !email) {
       return NextResponse.json(
         { error: 'Missing status_page_id or email' },
@@ -29,9 +31,15 @@ export async function POST(req) {
     }
 
     // Check if status page exists and is public
-    const statusPage = await db.getStatusPageById(status_page_id);
+    console.log('🔍 Checking status page:', status_page_id);
+    const { data: statusPage, error: statusPageError } = await db.client
+      .from('status_pages')
+      .select('id, name, is_public')
+      .eq('id', status_page_id)
+      .single();
 
-    if (!statusPage) {
+    if (statusPageError || !statusPage) {
+      console.error('❌ Status page not found:', statusPageError);
       return NextResponse.json(
         { error: 'Status page not found' },
         { status: 404 }
@@ -46,10 +54,24 @@ export async function POST(req) {
     }
 
     // Check if subscription already exists
-    const existingSubscription = await db.getSubscription(
-      status_page_id,
-      email
-    );
+    console.log('🔍 Checking existing subscription');
+    const { data: existingSubscription, error: existingError } = await db.client
+      .from('subscriptions')
+      .select('id')
+      .eq('status_page_id', status_page_id)
+      .eq('email', email)
+      .maybeSingle();
+
+    if (existingError && existingError.code !== 'PGRST116') {
+      console.error('❌ Error checking existing subscription:', existingError);
+      return NextResponse.json(
+        {
+          error: 'Database error checking subscription',
+          details: existingError.message,
+        },
+        { status: 500 }
+      );
+    }
 
     if (existingSubscription) {
       return NextResponse.json(
@@ -65,28 +87,54 @@ export async function POST(req) {
       .map(b => b.toString(16).padStart(2, '0'))
       .join('');
 
-    // Create subscription
-    const subscription = await db.createSubscription({
+    // Create subscription with all required fields
+    console.log('✅ Creating subscription');
+    const subscriptionData = {
       status_page_id,
-      email,
+      email: email.toLowerCase().trim(),
       unsubscribe_token: unsubscribeToken,
-      subscribed_at: new Date().toISOString(),
       is_active: true,
-    });
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data: subscription, error: createError } = await db.client
+      .from('subscriptions')
+      .insert(subscriptionData)
+      .select()
+      .single();
+
+    if (createError) {
+      console.error('❌ Error creating subscription:', createError);
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Failed to create subscription',
+          details: createError.message,
+          code: createError.code,
+          hint: createError.hint,
+        },
+        { status: 500 }
+      );
+    }
+
+    console.log('✅ Subscription created successfully:', subscription.id);
 
     return NextResponse.json({
       success: true,
       message: 'Successfully subscribed to status page updates',
       subscription_id: subscription.id,
       unsubscribe_token: unsubscribeToken,
+      status_page_name: statusPage.name,
     });
   } catch (error) {
-    console.error('Error creating subscription:', error);
+    console.error('❌ Subscription API error:', error);
     return NextResponse.json(
       {
         success: false,
         error: 'Failed to create subscription',
         details: error.message,
+        stack: error.stack,
       },
       { status: 500 }
     );
@@ -106,9 +154,14 @@ export async function DELETE(req) {
     }
 
     // Unsubscribe using token
-    const unsubscribed = await db.unsubscribeByToken(token);
+    const { data: unsubscribed, error } = await db.client
+      .from('subscriptions')
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq('unsubscribe_token', token)
+      .select()
+      .single();
 
-    if (!unsubscribed) {
+    if (error || !unsubscribed) {
       return NextResponse.json(
         { error: 'Invalid unsubscribe token' },
         { status: 404 }
@@ -120,7 +173,7 @@ export async function DELETE(req) {
       message: 'Successfully unsubscribed from status page updates',
     });
   } catch (error) {
-    console.error('Error unsubscribing:', error);
+    console.error('❌ Error unsubscribing:', error);
     return NextResponse.json(
       {
         success: false,
