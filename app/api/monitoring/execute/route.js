@@ -266,8 +266,10 @@ async function executeSslCheck(check, result, startTime) {
 async function executeStatusPageCheck(check, result, startTime) {
   try {
     // Import the status page scraper
-    const { scrapeStatusPage } = await import('../../../../lib/status-page-scraper.js');
-    
+    const { scrapeStatusPage } = await import(
+      '../../../../lib/status-page-scraper.js'
+    );
+
     // Extract configuration from status_page_config
     const config = check.status_page_config;
     if (!config || !config.provider || !config.service) {
@@ -277,29 +279,31 @@ async function executeStatusPageCheck(check, result, startTime) {
       return result;
     }
 
-    console.log(`Executing status page check: ${config.provider}/${config.service}`);
-    
+    console.log(
+      `Executing status page check: ${config.provider}/${config.service}`
+    );
+
     // Scrape the status page
     const statusResult = await scrapeStatusPage(
       config.provider,
       config.service,
       config.regions || []
     );
-    
+
     result.response_time_ms = Date.now() - startTime;
-    
+
     // Check if the status is successful
     const successfulStatuses = ['up', 'operational'];
     result.is_successful = successfulStatuses.includes(statusResult.status);
-    
+
     // Set status code based on result
     result.status_code = result.is_successful ? 200 : 503;
-    
+
     // Set error message if not successful
     if (!result.is_successful) {
       result.error_message = `Status page shows ${statusResult.status} for ${statusResult.provider} ${statusResult.service}`;
     }
-    
+
     // Store additional status page data
     result.status_page_data = {
       provider: statusResult.provider,
@@ -308,13 +312,14 @@ async function executeStatusPageCheck(check, result, startTime) {
       status: statusResult.status,
       raw_status: statusResult.raw_status,
       url: statusResult.url,
-      last_updated: statusResult.last_updated
+      last_updated: statusResult.last_updated,
     };
-    
-    console.log(`Status page check result: ${statusResult.status} for ${statusResult.provider}/${statusResult.service}`);
-    
+
+    console.log(
+      `Status page check result: ${statusResult.status} for ${statusResult.provider}/${statusResult.service}`
+    );
+
     return result;
-    
   } catch (error) {
     result.response_time_ms = Date.now() - startTime;
     result.is_successful = false;
@@ -427,10 +432,10 @@ async function updateMonitoringCheckStatus(checkId, result) {
       updateData.failure_message = result.error_message;
     }
 
-    // Calculate next check time
-    const intervalSeconds = monitoringCheck.check_interval_seconds || 300;
-    const nextCheckTime = new Date(Date.now() + intervalSeconds * 1000);
-    updateData.next_check_at = nextCheckTime.toISOString();
+    // Calculate next check time - removed since next_check_at column doesn't exist
+    // const intervalSeconds = monitoringCheck.check_interval_seconds || 300;
+    // const nextCheckTime = new Date(Date.now() + intervalSeconds * 1000);
+    // updateData.next_check_at = nextCheckTime.toISOString();
 
     const { error: updateError } = await db.client
       .from('monitoring_checks')
@@ -456,11 +461,13 @@ async function updateMonitoringCheckStatus(checkId, result) {
 async function updateLinkedServiceStatus(monitoringCheck, result) {
   try {
     const updateResults = [];
-    
+
     // Handle direct linked service (for status page checks)
     if (monitoringCheck.linked_service_id) {
-      console.log(`Processing direct linked service: ${monitoringCheck.linked_service_id}`);
-      
+      console.log(
+        `Processing direct linked service: ${monitoringCheck.linked_service_id}`
+      );
+
       // Get the linked service
       const { data: linkedService, error: fetchError } = await db.client
         .from('services')
@@ -469,7 +476,9 @@ async function updateLinkedServiceStatus(monitoringCheck, result) {
         .single();
 
       if (fetchError || !linkedService) {
-        console.warn(`Direct linked service ${monitoringCheck.linked_service_id} not found`);
+        console.warn(
+          `Direct linked service ${monitoringCheck.linked_service_id} not found`
+        );
       } else {
         // Process the direct linked service
         const updateResult = await processServiceUpdate(
@@ -495,11 +504,14 @@ async function updateLinkedServiceStatus(monitoringCheck, result) {
     if (associationError) {
       console.warn('Error fetching service associations:', associationError);
     } else if (associations && associations.length > 0) {
-      console.log(`Processing ${associations.length} junction table associations`);
-      
+      console.log(
+        `Processing ${associations.length} junction table associations`
+      );
+
       for (const association of associations) {
         const serviceId = association.service_id;
-        const configuredFailureStatus = association.failure_status || 'degraded';
+        const configuredFailureStatus =
+          association.failure_status || 'degraded';
         const configuredFailureMessage = association.failure_message || null;
 
         // Get the linked service
@@ -510,7 +522,9 @@ async function updateLinkedServiceStatus(monitoringCheck, result) {
           .single();
 
         if (fetchError || !linkedService) {
-          console.warn(`Associated service ${serviceId} not found or not accessible`);
+          console.warn(
+            `Associated service ${serviceId} not found or not accessible`
+          );
           continue;
         }
 
@@ -521,7 +535,7 @@ async function updateLinkedServiceStatus(monitoringCheck, result) {
           result,
           {
             failure_behavior: 'always_degraded', // Default behavior for junction table
-            failure_message: configuredFailureMessage
+            failure_message: configuredFailureMessage,
           }
         );
         if (updateResult) {
@@ -537,7 +551,12 @@ async function updateLinkedServiceStatus(monitoringCheck, result) {
 }
 
 // Helper function to process service updates with failure behavior configuration
-async function processServiceUpdate(linkedService, monitoringCheck, result, config) {
+async function processServiceUpdate(
+  linkedService,
+  monitoringCheck,
+  result,
+  config
+) {
   try {
     // Determine new service status based on monitoring result and configuration
     let newStatus = 'operational';
@@ -572,7 +591,10 @@ async function processServiceUpdate(linkedService, monitoringCheck, result, conf
         failureMessage = customFailureMessage;
       } else {
         // Generate default message based on check type
-        if (monitoringCheck.check_type === 'status_page' && result.status_page_data) {
+        if (
+          monitoringCheck.check_type === 'status_page' &&
+          result.status_page_data
+        ) {
           const provider = result.status_page_data.provider;
           const service = result.status_page_data.service;
           const status = result.status_page_data.status;
@@ -628,7 +650,6 @@ async function processServiceUpdate(linkedService, monitoringCheck, result, conf
     return null;
   }
 }
-
 
 export async function POST(req) {
   try {
