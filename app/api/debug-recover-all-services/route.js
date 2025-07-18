@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { SupabaseClient } from '@/lib/db-supabase';
 
+export const runtime = 'edge';
+
 const db = new SupabaseClient();
 
 export async function POST(req) {

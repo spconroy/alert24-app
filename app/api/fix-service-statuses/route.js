@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { SupabaseClient } from '@/lib/db-supabase';
 
+export const runtime = 'edge';
+
 const db = new SupabaseClient();
 
 export async function POST(request) {
@@ -83,7 +85,8 @@ export async function POST(request) {
           newServiceStatus = 'down';
           shouldUpdate = true;
         } else if (
-          (check.current_status === 'up' || check.current_status === 'inactive') &&
+          (check.current_status === 'up' ||
+            check.current_status === 'inactive') &&
           service.status === 'down'
         ) {
           newServiceStatus = 'operational';
