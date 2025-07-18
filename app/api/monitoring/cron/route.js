@@ -435,6 +435,7 @@ async function updateLinkedServiceStatus(monitoringCheck, result) {
     for (const association of associations) {
       const serviceId = association.service_id;
       const configuredFailureStatus = association.failure_status || 'degraded';
+      const customFailureMessage = association.failure_message;
 
       // Get the linked service
       const { data: linkedService, error: fetchError } = await db.client
@@ -491,7 +492,8 @@ async function updateLinkedServiceStatus(monitoringCheck, result) {
             linkedService,
             newStatus,
             monitoringCheck,
-            result
+            result,
+            customFailureMessage
           );
         }
       }
@@ -508,7 +510,8 @@ async function createServiceStatusUpdate(
   service,
   newStatus,
   monitoringCheck,
-  result
+  result,
+  customFailureMessage = null
 ) {
   try {
     // Only create status updates for degraded or down states
@@ -525,10 +528,17 @@ async function createServiceStatusUpdate(
     }
 
     const title = `${service.name} Status Update`;
-    const statusMessage =
-      newStatus === 'down'
-        ? `${service.name} is currently down due to monitoring check failure: ${result.error_message}`
-        : `${service.name} is experiencing degraded performance due to monitoring check issues: ${result.error_message}`;
+
+    // Use custom failure message if provided, otherwise use default message
+    let statusMessage;
+    if (customFailureMessage && customFailureMessage.trim()) {
+      statusMessage = customFailureMessage;
+    } else {
+      statusMessage =
+        newStatus === 'down'
+          ? `${service.name} is currently down due to monitoring check failure: ${result.error_message}`
+          : `${service.name} is experiencing degraded performance due to monitoring check issues: ${result.error_message}`;
+    }
 
     const { error } = await db.client.from('status_updates').insert({
       status_page_id: service.status_page_id,
