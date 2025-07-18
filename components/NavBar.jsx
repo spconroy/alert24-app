@@ -31,6 +31,7 @@ import EscalatorWarningIcon from '@mui/icons-material/EscalatorWarning';
 import SettingsIcon from '@mui/icons-material/Settings';
 import HelpIcon from '@mui/icons-material/Help';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import BugIcon from '@mui/icons-material/Bug';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useOrganization } from '@/contexts/OrganizationContext';
@@ -187,6 +188,11 @@ export default function NavBar() {
       label: 'Settings',
       href: '/settings',
       icon: <SettingsIcon />,
+    },
+    {
+      label: 'Debug',
+      href: '/debug',
+      icon: <BugIcon />,
     },
     {
       label: 'Help',
