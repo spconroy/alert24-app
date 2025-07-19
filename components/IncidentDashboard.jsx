@@ -269,7 +269,7 @@ export default function IncidentDashboard() {
             width: { xs: '100%', sm: 'auto' },
           }}
         >
-          <Tooltip title="Refresh Dashboard">
+          <Tooltip title="Refresh dashboard data - Updates all metrics, incidents, and monitoring status">
             <IconButton onClick={fetchDashboardData} color="primary">
               <RefreshIcon />
             </IconButton>
@@ -375,9 +375,24 @@ export default function IncidentDashboard() {
           >
             <Card>
               <CardContent>
-                <Typography variant="h6" color="text.secondary" gutterBottom>
-                  System Status
-                </Typography>
+                <Box
+                  sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}
+                >
+                  <Typography variant="h6" color="text.secondary">
+                    System Status
+                  </Typography>
+                  <Tooltip
+                    title="Overall health status of your monitored services. Green = all operational, orange = some issues, red = outages detected."
+                    arrow
+                    placement="top"
+                  >
+                    <InfoIcon
+                      fontSize="small"
+                      color="action"
+                      sx={{ cursor: 'help', opacity: 0.7 }}
+                    />
+                  </Tooltip>
+                </Box>
                 <Box
                   sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}
                 >
@@ -427,9 +442,24 @@ export default function IncidentDashboard() {
           >
             <Card>
               <CardContent>
-                <Typography variant="h6" color="text.secondary" gutterBottom>
-                  Active Incidents
-                </Typography>
+                <Box
+                  sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}
+                >
+                  <Typography variant="h6" color="text.secondary">
+                    Active Incidents
+                  </Typography>
+                  <Tooltip
+                    title="Number of currently open incidents requiring attention. Click 'View All' to see incident details and manage responses."
+                    arrow
+                    placement="top"
+                  >
+                    <InfoIcon
+                      fontSize="small"
+                      color="action"
+                      sx={{ cursor: 'help', opacity: 0.7 }}
+                    />
+                  </Tooltip>
+                </Box>
                 <Box display="flex" alignItems="center" gap={1} sx={{ mb: 1 }}>
                   <Badge badgeContent={activeIncidents.length} color="error">
                     <NotificationsIcon color="action" />
@@ -498,14 +528,33 @@ export default function IncidentDashboard() {
                       mb: 1,
                     }}
                   />
-                  <Typography
-                    variant="h6"
-                    color="primary.main"
-                    gutterBottom
-                    sx={{ fontWeight: 600 }}
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      mb: 1,
+                    }}
                   >
-                    Start Monitoring
-                  </Typography>
+                    <Typography
+                      variant="h6"
+                      color="primary.main"
+                      sx={{ fontWeight: 600 }}
+                    >
+                      Start Monitoring
+                    </Typography>
+                    <Tooltip
+                      title="Set up automated checks to monitor your websites, APIs, and services. Get instant alerts when issues are detected."
+                      arrow
+                      placement="top"
+                    >
+                      <InfoIcon
+                        fontSize="small"
+                        color="primary"
+                        sx={{ cursor: 'help', opacity: 0.8 }}
+                      />
+                    </Tooltip>
+                  </Box>
                   <Typography
                     variant="body2"
                     color="text.secondary"
@@ -749,12 +798,25 @@ export default function IncidentDashboard() {
                     flexWrap: 'wrap',
                   }}
                 >
-                  <Typography
-                    variant="h6"
-                    sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}
-                  >
-                    Recent Incidents
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography
+                      variant="h6"
+                      sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}
+                    >
+                      Recent Incidents
+                    </Typography>
+                    <Tooltip
+                      title="Latest incidents in your organization. Track status, assign team members, and manage resolution progress."
+                      arrow
+                      placement="top"
+                    >
+                      <InfoIcon
+                        fontSize="small"
+                        color="action"
+                        sx={{ cursor: 'help', opacity: 0.7 }}
+                      />
+                    </Tooltip>
+                  </Box>
                   {incidents.length > 0 && (
                     <Chip
                       label={`${activeIncidents.length} active`}
@@ -809,46 +871,61 @@ export default function IncidentDashboard() {
                         scrollbarWidth: 'none',
                       }}
                     >
-                      <Button
-                        size="small"
-                        variant="text"
-                        sx={{
-                          minWidth: 'auto',
-                          borderBottom: 2,
-                          borderColor: 'primary.main',
-                          borderRadius: 0,
-                          color: 'primary.main',
-                          fontWeight: 600,
-                          fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                          whiteSpace: 'nowrap',
-                        }}
+                      <Tooltip
+                        title="All incidents regardless of status"
+                        placement="top"
                       >
-                        All ({incidents.length})
-                      </Button>
-                      <Button
-                        size="small"
-                        variant="text"
-                        color="inherit"
-                        sx={{
-                          minWidth: 'auto',
-                          fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                          whiteSpace: 'nowrap',
-                        }}
+                        <Button
+                          size="small"
+                          variant="text"
+                          sx={{
+                            minWidth: 'auto',
+                            borderBottom: 2,
+                            borderColor: 'primary.main',
+                            borderRadius: 0,
+                            color: 'primary.main',
+                            fontWeight: 600,
+                            fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          All ({incidents.length})
+                        </Button>
+                      </Tooltip>
+                      <Tooltip
+                        title="Incidents currently open and requiring attention"
+                        placement="top"
                       >
-                        Active ({activeIncidents.length})
-                      </Button>
-                      <Button
-                        size="small"
-                        variant="text"
-                        color="inherit"
-                        sx={{
-                          minWidth: 'auto',
-                          fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                          whiteSpace: 'nowrap',
-                        }}
+                        <Button
+                          size="small"
+                          variant="text"
+                          color="inherit"
+                          sx={{
+                            minWidth: 'auto',
+                            fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          Active ({activeIncidents.length})
+                        </Button>
+                      </Tooltip>
+                      <Tooltip
+                        title="Incidents that have been resolved and closed"
+                        placement="top"
                       >
-                        Resolved ({incidents.length - activeIncidents.length})
-                      </Button>
+                        <Button
+                          size="small"
+                          variant="text"
+                          color="inherit"
+                          sx={{
+                            minWidth: 'auto',
+                            fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          Resolved ({incidents.length - activeIncidents.length})
+                        </Button>
+                      </Tooltip>
                     </Box>
                   </Box>
                 </Box>
@@ -1076,9 +1153,22 @@ export default function IncidentDashboard() {
           {/* Current On-Call */}
           <Card sx={{ mb: 3 }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Currently On-Call
-              </Typography>
+              <Box
+                sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}
+              >
+                <Typography variant="h6">Currently On-Call</Typography>
+                <Tooltip
+                  title="Team members currently responsible for responding to incidents. On-call schedules ensure 24/7 coverage for your services."
+                  arrow
+                  placement="top"
+                >
+                  <InfoIcon
+                    fontSize="small"
+                    color="action"
+                    sx={{ cursor: 'help', opacity: 0.7 }}
+                  />
+                </Tooltip>
+              </Box>
               <Divider sx={{ mb: 2 }} />
 
               {currentlyOnCall.length === 0 ? (
@@ -1289,7 +1379,7 @@ export default function IncidentDashboard() {
                   Quick Actions
                 </Typography>
                 {/* Setup progress indicator */}
-                <Tooltip title="Setup completion progress">
+                <Tooltip title="Platform setup completion: Add monitoring and on-call schedules to reach 100%. Complete setup ensures effective incident management.">
                   <Chip
                     label={`${Math.round((((monitoringStats.total > 0 ? 1 : 0) + (currentlyOnCall.length > 0 ? 1 : 0)) / 2) * 100)}%`}
                     color={
