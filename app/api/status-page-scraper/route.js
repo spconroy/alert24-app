@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { SessionManager } from '@/lib/session-manager';
 import { 
   scrapeStatusPage, 
   scrapeProviderServices, 
@@ -10,7 +10,8 @@ export const runtime = 'edge';
 
 export async function POST(req) {
   try {
-    const session = await auth();
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(request);
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -118,7 +119,8 @@ export async function POST(req) {
 
 export async function GET(req) {
   try {
-    const session = await auth();
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(request);
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

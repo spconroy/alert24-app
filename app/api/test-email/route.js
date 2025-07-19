@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { SessionManager } from '@/lib/session-manager';
 
 export const runtime = 'edge';
 
@@ -73,7 +73,8 @@ async function sendTestEmail(toEmail, fromEmail, apiKey) {
 
 export async function POST(req) {
   try {
-    const session = await auth();
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(request);
     const { action, testEmail } = await req.json();
 
     if (action === 'check-config') {

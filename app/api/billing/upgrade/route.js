@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { SessionManager } from '@/lib/session-manager';
 import { SupabaseClient } from '@/lib/db-supabase';
 import Stripe from 'stripe';
 
@@ -48,7 +48,8 @@ const PLANS = {
 // POST /api/billing/upgrade - Upgrade or downgrade plan
 export async function POST(request) {
   try {
-    const session = await auth();
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(request);
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

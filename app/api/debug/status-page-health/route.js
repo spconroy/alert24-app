@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { SessionManager } from '@/lib/session-manager';
 
 export const runtime = 'edge';
 
@@ -172,7 +172,8 @@ async function testStatusPageAPI(url, apiUrl, serviceName) {
 export async function GET(req) {
   try {
     // For debug purposes, let's make this more permissive
-    const session = await auth();
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(request);
     if (!session || !session.user?.email) {
       return NextResponse.json({ 
         error: 'Unauthorized - Please sign in first',

@@ -1,11 +1,12 @@
-import { auth } from '@/auth';
+import { SessionManager } from '@/lib/session-manager';
 import { SupabaseClient } from '@/lib/db-supabase';
 
 export const runtime = 'edge';
 
-export async function POST() {
+export async function POST(request) {
   try {
-    const session = await auth();
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(request);
 
     if (!session || !session.user?.email) {
       return Response.json(

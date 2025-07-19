@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { SessionManager } from '@/lib/session-manager';
 import { SupabaseClient } from '@/lib/db-supabase';
 
 export const runtime = 'edge';
@@ -8,7 +8,8 @@ const db = new SupabaseClient();
 
 export async function POST(request) {
   try {
-    const session = await auth();
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(request);
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

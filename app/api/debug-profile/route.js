@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { SessionManager } from '@/lib/session-manager';
 import { SupabaseClient } from '@/lib/db-supabase';
 
 const db = new SupabaseClient();
@@ -9,7 +9,8 @@ export const runtime = 'edge';
 export async function GET(req) {
   try {
     // Test authentication
-    const session = await auth();
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(request);
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'No session found' }, { status: 401 });
     }

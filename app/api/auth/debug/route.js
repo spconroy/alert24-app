@@ -1,12 +1,13 @@
-import { auth } from '@/auth';
+import { SessionManager } from '@/lib/session-manager';
 
 export const runtime = 'edge';
 
-export async function GET() {
+export async function GET(request) {
   try {
     console.log('🔍 Debug endpoint called');
 
-    const session = await auth();
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(request);
 
     const debugInfo = {
       timestamp: new Date().toISOString(),
