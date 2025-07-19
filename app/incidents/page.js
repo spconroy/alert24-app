@@ -186,59 +186,34 @@ export default function IncidentsPage() {
 
   return (
     <ProtectedRoute>
-      {/* Enhanced Header Section with Visual Interest */}
+      {/* Subtle Header Section */}
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
-          py: 4,
+          background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+          py: 3,
           px: 3,
           mb: 3,
-          borderRadius: '0 0 16px 16px',
-          boxShadow: '0 8px 32px rgba(102, 126, 234, 0.15)',
-          position: 'relative',
-          overflow: 'hidden',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background:
-              'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.05"%3E%3Ccircle cx="36" cy="24" r="6"/%3E%3Ccircle cx="6" cy="54" r="6"/%3E%3Ccircle cx="24" cy="6" r="6"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
-            opacity: 0.3,
-          },
+          borderRadius: 2,
+          border: '1px solid',
+          borderColor: 'divider',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
         }}
       >
-        <Box
-          display="flex"
-          justifyContent="space-between"
-          alignItems="center"
-          position="relative"
-          zIndex={1}
-        >
+        <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box>
             <Typography
-              variant="h3"
+              variant="h4"
               component="h1"
               gutterBottom
               sx={{
-                fontWeight: 700,
-                textShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                mb: 1,
+                fontWeight: 600,
+                color: 'text.primary',
+                mb: 0.5,
               }}
             >
               🚨 Incidents
             </Typography>
-            <Typography
-              variant="h6"
-              sx={{
-                opacity: 0.9,
-                fontWeight: 400,
-                textShadow: '0 1px 2px rgba(0,0,0,0.1)',
-              }}
-            >
+            <Typography variant="body1" color="text.secondary">
               Manage and track all incidents across your organizations
             </Typography>
           </Box>
@@ -246,15 +221,11 @@ export default function IncidentsPage() {
             <Tooltip title="Refresh" arrow>
               <IconButton
                 onClick={fetchIncidents}
+                color="primary"
                 sx={{
-                  backgroundColor: 'rgba(255,255,255,0.15)',
-                  color: 'white',
-                  backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255,255,255,0.2)',
                   '&:hover': {
-                    backgroundColor: 'rgba(255,255,255,0.25)',
                     transform: 'translateY(-1px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    boxShadow: '0 2px 8px rgba(25, 118, 210, 0.3)',
                   },
                   transition: 'all 0.2s ease',
                 }}
@@ -270,16 +241,11 @@ export default function IncidentsPage() {
                 variant="contained"
                 startIcon={<AddIcon />}
                 sx={{
-                  backgroundColor: 'rgba(255,255,255,0.15)',
-                  color: 'white',
-                  backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255,255,255,0.2)',
                   fontWeight: 600,
                   px: 3,
                   '&:hover': {
-                    backgroundColor: 'rgba(255,255,255,0.25)',
                     transform: 'translateY(-1px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)',
                   },
                   transition: 'all 0.2s ease',
                 }}
