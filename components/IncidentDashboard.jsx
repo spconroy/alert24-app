@@ -32,12 +32,18 @@ import Brightness7Icon from '@mui/icons-material/Brightness7';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import NoSSR from './NoSSR';
 
-// CSS for pulse animation
-const pulseAnimation = `
+// CSS for animations
+const animations = `
   @keyframes pulse {
     0% { opacity: 1; transform: scale(1); }
     50% { opacity: 0.7; transform: scale(1.1); }
     100% { opacity: 1; transform: scale(1); }
+  }
+  
+  @keyframes celebration-pulse {
+    0% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.2); }
+    100% { opacity: 0.3; transform: scale(1); }
   }
 `;
 
@@ -274,8 +280,8 @@ export default function IncidentDashboard() {
   return (
     <ThemeProvider theme={theme}>
       <Box>
-        {/* Add pulse animation styles */}
-        <style>{pulseAnimation}</style>
+        {/* Add animation styles */}
+        <style>{animations}</style>
 
         {/* Header */}
         <Box
@@ -384,6 +390,50 @@ export default function IncidentDashboard() {
             )}
           </Box>
         </Box>
+
+        {/* Setup Completion Banner */}
+        {monitoringStats.total > 0 && currentlyOnCall.length > 0 && (
+          <Box
+            sx={{
+              mb: 3,
+              p: 2,
+              background:
+                'linear-gradient(90deg, #e8f5e8 0%, #f1f8e9 50%, #e8f5e8 100%)',
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'success.light',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 2,
+            }}
+          >
+            <Box
+              sx={{
+                width: 24,
+                height: 24,
+                borderRadius: '50%',
+                backgroundColor: 'success.main',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontSize: '14px',
+                fontWeight: 'bold',
+              }}
+            >
+              ✓
+            </Box>
+            <Typography
+              variant="body1"
+              color="success.dark"
+              sx={{ fontWeight: 600 }}
+            >
+              🎉 Congratulations! Your incident management system is fully
+              configured and ready.
+            </Typography>
+          </Box>
+        )}
 
         {/* Status Overview Cards */}
         <Box sx={{ mb: 4 }}>
@@ -1812,26 +1862,121 @@ export default function IncidentDashboard() {
                   <Box
                     sx={{
                       mb: 3,
-                      p: 2,
-                      backgroundColor: 'success.50',
-                      borderRadius: 2,
-                      border: '1px solid',
-                      borderColor: 'success.200',
+                      p: 3,
+                      background:
+                        'linear-gradient(135deg, #e8f5e8 0%, #f1f8e9 100%)',
+                      borderRadius: 3,
+                      border: '2px solid',
+                      borderColor: 'success.main',
                       textAlign: 'center',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: -50,
+                        left: -50,
+                        width: 100,
+                        height: 100,
+                        background:
+                          'radial-gradient(circle, rgba(76, 175, 80, 0.1) 0%, transparent 70%)',
+                        animation: 'celebration-pulse 2s ease-in-out infinite',
+                      },
                     }}
                   >
-                    <Typography
-                      variant="subtitle2"
-                      color="success.main"
-                      sx={{ fontWeight: 600, mb: 1 }}
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        gap: 1,
+                        mb: 2,
+                      }}
                     >
-                      🎉 Setup Complete!
+                      <Box
+                        sx={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: '50%',
+                          backgroundColor: 'success.main',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'white',
+                          fontSize: '18px',
+                          fontWeight: 'bold',
+                        }}
+                      >
+                        ✓
+                      </Box>
+                      <Typography
+                        variant="h6"
+                        color="success.main"
+                        sx={{ fontWeight: 700 }}
+                      >
+                        🎉 Setup Complete!
+                      </Typography>
+                    </Box>
+                    <Typography
+                      variant="body2"
+                      color="success.dark"
+                      sx={{ fontWeight: 500, mb: 1 }}
+                    >
+                      You&apos;ve completed the initial setup! Now you&apos;re
+                      ready to respond to incidents 24/7.
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      Your incident management system is ready. You can now
-                      create incidents, manage escalations, and monitor your
-                      services.
+                      Your monitoring and on-call teams are configured. You can
+                      create incidents, manage escalations, and track service
+                      health.
                     </Typography>
+
+                    {/* Success metrics */}
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        gap: 3,
+                        mt: 2,
+                      }}
+                    >
+                      <Box sx={{ textAlign: 'center' }}>
+                        <Typography
+                          variant="h6"
+                          color="success.main"
+                          sx={{ fontWeight: 600 }}
+                        >
+                          {monitoringStats.total}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Services Monitored
+                        </Typography>
+                      </Box>
+                      <Box sx={{ textAlign: 'center' }}>
+                        <Typography
+                          variant="h6"
+                          color="success.main"
+                          sx={{ fontWeight: 600 }}
+                        >
+                          {currentlyOnCall.length}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          On-Call Members
+                        </Typography>
+                      </Box>
+                      <Box sx={{ textAlign: 'center' }}>
+                        <Typography
+                          variant="h6"
+                          color="success.main"
+                          sx={{ fontWeight: 600 }}
+                        >
+                          24/7
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Coverage Ready
+                        </Typography>
+                      </Box>
+                    </Box>
                   </Box>
                 )}
 
