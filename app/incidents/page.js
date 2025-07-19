@@ -396,7 +396,7 @@ export default function IncidentsPage() {
                 </FormControl>
               </Grid>
 
-              <Grid item xs={12} md={2}>
+              <Grid item xs={12} md={3}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Status</InputLabel>
                   <Select
@@ -501,7 +501,7 @@ export default function IncidentsPage() {
                 </FormControl>
               </Grid>
 
-              <Grid item xs={12} md={2}>
+              <Grid item xs={12} md={3}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Severity</InputLabel>
                   <Select
@@ -575,7 +575,7 @@ export default function IncidentsPage() {
                 </FormControl>
               </Grid>
 
-              <Grid item xs={12} md={5}>
+              <Grid item xs={12} md={3}>
                 <TextField
                   fullWidth
                   size="small"
