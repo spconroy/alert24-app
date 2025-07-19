@@ -73,6 +73,56 @@ export async function GET(request) {
       user = newUser;
     }
 
+    // Check for authorized domains and auto-enroll user
+    console.log('🔄 Checking for authorized domains');
+    try {
+      const { data: authorizedDomains, error: domainError } =
+        await db.client.rpc('check_authorized_domain', {
+          email_address: user.email,
+        });
+
+      if (!domainError && authorizedDomains && authorizedDomains.length > 0) {
+        console.log('✅ Found authorized domain(s) for:', user.email);
+
+        // Auto-enroll user in each organization with authorized domain
+        for (const domain of authorizedDomains) {
+          console.log(
+            `🔄 Auto-enrolling user in organization: ${domain.organization_name}`
+          );
+
+          // Use the database function to enroll user
+          const { data: enrollmentResult, error: enrollmentError } =
+            await db.client.rpc('enroll_user_via_domain', {
+              p_user_id: user.id,
+              p_email: user.email,
+              p_ip_address: null, // Could extract from request if needed
+              p_user_agent: null, // Could extract from request if needed
+            });
+
+          if (enrollmentError) {
+            console.error('❌ Error auto-enrolling user:', enrollmentError);
+          } else if (
+            enrollmentResult &&
+            enrollmentResult.length > 0 &&
+            enrollmentResult[0].success
+          ) {
+            console.log(
+              `✅ Successfully auto-enrolled user as ${enrollmentResult[0].role} in organization ${enrollmentResult[0].organization_id}`
+            );
+          } else {
+            console.log(
+              `ℹ️ Auto-enrollment skipped: ${enrollmentResult?.[0]?.message || 'Unknown reason'}`
+            );
+          }
+        }
+      } else {
+        console.log('ℹ️ No authorized domains found for:', user.email);
+      }
+    } catch (domainCheckError) {
+      console.error('❌ Error checking authorized domains:', domainCheckError);
+      // Don't fail the login process if domain checking fails
+    }
+
     // Create session
     console.log('🔄 Creating session');
     const sessionToken = await sessionManager.createSessionToken({

@@ -8,6 +8,7 @@ import React, { useState, useEffect } from 'react';
 import Alert from '@mui/material/Alert';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import AuthorizedDomainsManager from '@/components/AuthorizedDomainsManager';
 
 export default function SettingsPage() {
   const [showCreateOrg, setShowCreateOrg] = useState(false);
@@ -100,6 +101,13 @@ export default function SettingsPage() {
 
                     {/* Organization Members Section */}
                     <OrganizationMembers orgId={selectedOrganization.id} />
+
+                    {/* Authorized Domains Section - Only for admins and owners */}
+                    {['admin', 'owner'].includes(selectedOrganization.role) && (
+                      <Box sx={{ mt: 6 }}>
+                        <AuthorizedDomainsManager />
+                      </Box>
+                    )}
                   </>
                 )}
               </>
