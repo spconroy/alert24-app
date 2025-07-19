@@ -524,16 +524,27 @@ export default function MonitoringPage() {
       check_type: check.check_type,
       target_url: check.target_url,
       status_page_url: check.status_page_url,
+      status_page_config: check.status_page_config,
       all_keys: Object.keys(check),
     });
 
     // For status page checks, use the pre-populated status_page_url from API
-    if (check.check_type === 'status_page' && check.status_page_url) {
-      console.log('✅ Status page check with URL:', {
-        checkName: check.name,
-        statusPageUrl: check.status_page_url,
-      });
-      return check.status_page_url;
+    if (check.check_type === 'status_page') {
+      if (check.status_page_url) {
+        console.log('✅ Status page check with URL:', {
+          checkName: check.name,
+          statusPageUrl: check.status_page_url,
+        });
+        return check.status_page_url;
+      } else {
+        console.log('⚠️ Status page check missing URL:', {
+          checkName: check.name,
+          hasConfig: !!check.status_page_config,
+          provider: check.status_page_config?.provider,
+        });
+        // Fallback: if no status_page_url, show that it's a status page check
+        return 'Status Page Check';
+      }
     }
 
     console.log(
