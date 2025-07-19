@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { SessionManager } from '@/lib/session-manager';
 import { SupabaseClient } from '@/lib/db-supabase';
 
 const db = new SupabaseClient();
@@ -104,7 +104,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const session = await auth();
+    const sessionManager = new SessionManager(); const session = await sessionManager.getSessionFromRequest(req);
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -166,7 +166,7 @@ export async function POST(request) {
 
 export async function PUT(request) {
   try {
-    const session = await auth();
+    const sessionManager = new SessionManager(); const session = await sessionManager.getSessionFromRequest(req);
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -203,7 +203,7 @@ export async function PUT(request) {
 
 export async function DELETE(request) {
   try {
-    const session = await auth();
+    const sessionManager = new SessionManager(); const session = await sessionManager.getSessionFromRequest(req);
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
