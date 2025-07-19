@@ -54,7 +54,6 @@ export default function CreateEscalationPolicyPage() {
     ],
   });
 
-  const [organizations, setOrganizations] = useState([]);
   const [organizationMembers, setOrganizationMembers] = useState([]);
   const [onCallSchedules, setOnCallSchedules] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -71,37 +70,8 @@ export default function CreateEscalationPolicyPage() {
       }));
       fetchOrganizationMembers(selectedOrganization.id);
       fetchOnCallSchedules(selectedOrganization.id);
-    } else if (session) {
-      fetchOrganizations();
     }
   }, [session, selectedOrganization]);
-
-  useEffect(() => {
-    if (formData.organization_id && !selectedOrganization?.id) {
-      fetchOrganizationMembers(formData.organization_id);
-      fetchOnCallSchedules(formData.organization_id);
-    }
-  }, [formData.organization_id, selectedOrganization]);
-
-  const fetchOrganizations = async () => {
-    try {
-      const response = await fetch('/api/organizations');
-      if (response.ok) {
-        const data = await response.json();
-        setOrganizations(data.organizations || []);
-
-        // Auto-select if only one organization
-        if (data.organizations?.length === 1) {
-          setFormData(prev => ({
-            ...prev,
-            organization_id: data.organizations[0].id,
-          }));
-        }
-      }
-    } catch (err) {
-      console.error('Error fetching organizations:', err);
-    }
-  };
 
   const fetchOrganizationMembers = async orgId => {
     try {
@@ -117,7 +87,9 @@ export default function CreateEscalationPolicyPage() {
 
   const fetchOnCallSchedules = async orgId => {
     try {
-      const response = await fetch(`/api/on-call-schedules?organization_id=${orgId}`);
+      const response = await fetch(
+        `/api/on-call-schedules?organization_id=${orgId}`
+      );
       if (response.ok) {
         const data = await response.json();
         setOnCallSchedules(data.schedules || []);
@@ -130,8 +102,6 @@ export default function CreateEscalationPolicyPage() {
   const validateForm = () => {
     const errors = {};
 
-    if (!formData.organization_id)
-      errors.organization_id = 'Organization is required';
     if (!formData.name.trim()) errors.name = 'Policy name is required';
 
     // Validate notification rules
@@ -280,6 +250,34 @@ export default function CreateEscalationPolicyPage() {
     }
   };
 
+  // Show organization selection prompt if no organization is selected
+  if (!selectedOrganization?.id) {
+    return (
+      <ProtectedRoute>
+        <Box sx={{ p: 3 }}>
+          <Box display="flex" alignItems="center" gap={2} mb={4}>
+            <Button
+              component={Link}
+              href="/escalation-policies"
+              startIcon={<ArrowBackIcon />}
+              variant="outlined"
+            >
+              Back to Escalation Policies
+            </Button>
+            <Typography variant="h4" component="h1">
+              Create Escalation Policy
+            </Typography>
+          </Box>
+
+          <Alert severity="warning">
+            Please select an organization from the navigation bar to create an
+            escalation policy.
+          </Alert>
+        </Box>
+      </ProtectedRoute>
+    );
+  }
+
   return (
     <ProtectedRoute>
       <Box sx={{ p: 3 }}>
@@ -287,15 +285,20 @@ export default function CreateEscalationPolicyPage() {
         <Box display="flex" alignItems="center" gap={2} mb={4}>
           <Button
             component={Link}
-            href="/settings"
+            href="/escalation-policies"
             startIcon={<ArrowBackIcon />}
             variant="outlined"
           >
-            Back to Settings
+            Back to Escalation Policies
           </Button>
-          <Typography variant="h4" component="h1">
-            Create Escalation Policy
-          </Typography>
+          <Box>
+            <Typography variant="h4" component="h1">
+              Create Escalation Policy
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              For organization: <strong>{selectedOrganization.name}</strong>
+            </Typography>
+          </Box>
         </Box>
 
         {/* Error Alert */}
@@ -310,37 +313,6 @@ export default function CreateEscalationPolicyPage() {
           <CardContent>
             <form onSubmit={handleSubmit}>
               <Grid container spacing={3}>
-                {/* Organization Selection */}
-                <Grid item xs={12}>
-                  <FormControl fullWidth error={!!formErrors.organization_id}>
-                    <InputLabel>Organization *</InputLabel>
-                    <Select
-                      value={formData.organization_id}
-                      label="Organization *"
-                      onChange={e =>
-                        handleInputChange('organization_id', e.target.value)
-                      }
-                      disabled={!!selectedOrganization?.id}
-                    >
-                      {organizations.map(org => (
-                        <MenuItem key={org.id} value={org.id}>
-                          {org.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                    {formErrors.organization_id && (
-                      <FormHelperText>
-                        {formErrors.organization_id}
-                      </FormHelperText>
-                    )}
-                    {selectedOrganization?.id && (
-                      <FormHelperText>
-                        Using organization selected in navigation: {selectedOrganization.name}
-                      </FormHelperText>
-                    )}
-                  </FormControl>
-                </Grid>
-
                 {/* Policy Name */}
                 <Grid item xs={12}>
                   <TextField
@@ -556,7 +528,10 @@ export default function CreateEscalationPolicyPage() {
                                 )}
                                 {rule.target_type === 'on_call' &&
                                   onCallSchedules.map(schedule => (
-                                    <MenuItem key={schedule.id} value={schedule.id}>
+                                    <MenuItem
+                                      key={schedule.id}
+                                      value={schedule.id}
+                                    >
                                       {schedule.name}
                                     </MenuItem>
                                   ))}
@@ -592,7 +567,10 @@ export default function CreateEscalationPolicyPage() {
                                 {rule.target_type === 'team' &&
                                   'Engineering Team'}
                                 {rule.target_type === 'on_call' &&
-                                  (onCallSchedules.find(s => s.id === rule.target_id)?.name || 'Selected On-Call Schedule')}
+                                  (onCallSchedules.find(
+                                    s => s.id === rule.target_id
+                                  )?.name ||
+                                    'Selected On-Call Schedule')}
                                 {!rule.target_id && 'selected target'}
                               </Typography>
                             </Box>
