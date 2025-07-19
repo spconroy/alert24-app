@@ -211,10 +211,11 @@ export default function IncidentsPage() {
                 mb: 0.5,
               }}
             >
-              🚨 Incidents
+              🚨 Incident Tracker
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              Manage and track all incidents across your organizations
+              Monitor and manage service disruptions across your systems in
+              real-time
             </Typography>
           </Box>
           <Box display="flex" gap={2}>

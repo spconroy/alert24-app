@@ -406,12 +406,20 @@ export default function NavBar() {
                       <Button
                         onClick={handleOrgMenuOpen}
                         color="inherit"
-                        startIcon={<BusinessIcon />}
-                        endIcon={<KeyboardArrowDownIcon />}
+                        startIcon={<BusinessIcon fontSize="small" />}
+                        endIcon={<KeyboardArrowDownIcon fontSize="small" />}
                         sx={{
                           textTransform: 'none',
                           maxWidth: 160,
+                          opacity: 0.8,
+                          fontSize: '0.85rem',
+                          fontWeight: 400,
+                          padding: '4px 8px',
                           '& .MuiButton-startIcon': { mr: 0.5 },
+                          '&:hover': {
+                            opacity: 1,
+                            backgroundColor: 'rgba(255,255,255,0.08)',
+                          },
                         }}
                       >
                         <Box
@@ -419,6 +427,7 @@ export default function NavBar() {
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
+                            fontWeight: 400,
                           }}
                         >
                           {selectedOrganization?.name || 'Select Org'}
