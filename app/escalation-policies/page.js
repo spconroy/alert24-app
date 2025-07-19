@@ -19,6 +19,9 @@ import {
   Alert,
   CircularProgress,
   Fab,
+  Fade,
+  Slide,
+  Badge,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -141,12 +144,32 @@ export default function EscalationPoliciesPage() {
           mb={4}
         >
           <Box>
-            <Typography variant="h4" component="h1" gutterBottom>
-              Escalation Policies
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+              <Typography variant="h4" component="h1">
+                Escalation Policies
+              </Typography>
+              {escalationPolicies.length > 0 && (
+                <Badge badgeContent={escalationPolicies.length} color="primary">
+                  <Chip
+                    label={`${escalationPolicies.length} Active`}
+                    color="success"
+                    size="small"
+                  />
+                </Badge>
+              )}
+            </Box>
             <Typography variant="body1" color="text.secondary">
               Manage how incidents are escalated through your team
             </Typography>
+            {/* Gamification: Setup progress */}
+            {escalationPolicies.length === 0 && (
+              <Box sx={{ mt: 1 }}>
+                <Typography variant="caption" color="text.secondary">
+                  🎯 Setup Progress: Step 2 of 5 complete • Add escalation
+                  policies to ensure no incidents are missed
+                </Typography>
+              </Box>
+            )}
           </Box>
           <Box display="flex" gap={2}>
             <Tooltip title="Refresh">
@@ -427,6 +450,73 @@ export default function EscalationPoliciesPage() {
             <AddIcon />
           </Fab>
         )}
+
+        {/* Floating Help Sidebar - Large screens only */}
+        <Fade in={true}>
+          <Card
+            sx={{
+              position: 'fixed',
+              bottom: 24,
+              right: 24,
+              width: 320,
+              display: { xs: 'none', lg: 'block' },
+              boxShadow: 6,
+              border: '1px solid',
+              borderColor: 'primary.light',
+            }}
+          >
+            <CardContent sx={{ p: 2 }}>
+              <Box
+                sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}
+              >
+                <HelpOutlineIcon color="primary" fontSize="small" />
+                <Typography
+                  variant="subtitle2"
+                  color="primary"
+                  sx={{ fontWeight: 600 }}
+                >
+                  Need help creating policies?
+                </Typography>
+              </Box>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: 'block', mb: 2 }}
+              >
+                Escalation policies ensure incidents reach the right person at
+                the right time.
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  fullWidth
+                  sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
+                >
+                  📖 View Examples
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  fullWidth
+                  sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
+                >
+                  🎥 Watch Tutorial
+                </Button>
+                <Button
+                  component={Link}
+                  href="/escalation-policies/new?template=recommended"
+                  size="small"
+                  variant="contained"
+                  fullWidth
+                  sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
+                >
+                  ⚡ Quick Setup
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+        </Fade>
       </Box>
     </ProtectedRoute>
   );
