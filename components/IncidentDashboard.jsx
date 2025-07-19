@@ -231,21 +231,64 @@ export default function IncidentDashboard() {
             organization
           </Typography>
         </Box>
-        <Box display="flex" gap={2}>
+        <Box display="flex" gap={2} alignItems="center">
           <Tooltip title="Refresh Dashboard">
             <IconButton onClick={fetchDashboardData} color="primary">
               <RefreshIcon />
             </IconButton>
           </Tooltip>
-          <Button
-            component={Link}
-            href="/incidents/new"
-            variant="contained"
-            startIcon={<AddIcon />}
-            color="error"
-          >
-            Create Incident
-          </Button>
+
+          {/* Contextual Primary CTA based on app state */}
+          {monitoringStats.total === 0 ? (
+            <Button
+              component={Link}
+              href="/monitoring/new"
+              variant="contained"
+              startIcon={<MonitorIcon />}
+              color="primary"
+              size="large"
+              sx={{ px: 3 }}
+            >
+              Add First Monitor
+            </Button>
+          ) : currentlyOnCall.length === 0 ? (
+            <Button
+              component={Link}
+              href="/on-call/new"
+              variant="contained"
+              startIcon={<PeopleIcon />}
+              color="primary"
+              size="large"
+              sx={{ px: 3 }}
+            >
+              Set Up On-Call
+            </Button>
+          ) : (
+            <Button
+              component={Link}
+              href="/incidents/new"
+              variant="contained"
+              startIcon={<AddIcon />}
+              color="error"
+              sx={{ px: 3 }}
+            >
+              Create Incident
+            </Button>
+          )}
+
+          {/* Secondary action - always available but less prominent */}
+          {(monitoringStats.total > 0 || currentlyOnCall.length > 0) && (
+            <Button
+              component={Link}
+              href="/incidents/new"
+              variant="outlined"
+              startIcon={<AddIcon />}
+              color="error"
+              size="small"
+            >
+              Create Incident
+            </Button>
+          )}
         </Box>
       </Box>
 
@@ -297,72 +340,266 @@ export default function IncidentDashboard() {
               <Typography variant="h6" color="text.secondary" gutterBottom>
                 Active Incidents
               </Typography>
-              <Box display="flex" alignItems="center" gap={1}>
+              <Box display="flex" alignItems="center" gap={1} sx={{ mb: 1 }}>
                 <Badge badgeContent={activeIncidents.length} color="error">
                   <NotificationsIcon color="action" />
                 </Badge>
                 <Typography variant="h4">{activeIncidents.length}</Typography>
               </Box>
+              {activeIncidents.length === 0 ? (
+                <Typography
+                  variant="body2"
+                  color="success.main"
+                  sx={{ fontWeight: 500 }}
+                >
+                  ✅ All Clear
+                </Typography>
+              ) : (
+                <Box sx={{ mt: 1 }}>
+                  <Button
+                    component={Link}
+                    href="/incidents"
+                    variant="outlined"
+                    size="small"
+                    color="error"
+                    fullWidth
+                  >
+                    View All
+                  </Button>
+                </Box>
+              )}
             </CardContent>
           </Card>
         </Grid>
 
         {/* Monitoring Status */}
         <Grid item xs={12} md={3}>
-          <Card
-            component={Link}
-            href="/monitoring"
-            sx={{
-              textDecoration: 'none',
-              cursor: 'pointer',
-              '&:hover': {
-                backgroundColor: 'action.hover',
-                transform: 'translateY(-1px)',
-                boxShadow: 2,
-              },
-              transition: 'all 0.2s ease-in-out',
-            }}
-          >
-            <CardContent>
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                Monitoring
-              </Typography>
-              <Box display="flex" alignItems="center" gap={1}>
-                <Badge
-                  badgeContent={
-                    (monitoringStats.down || 0) + (monitoringStats.warning || 0)
-                  }
-                  color={getMonitoringStatusColor()}
+          {monitoringStats.total === 0 ? (
+            <Card
+              sx={{
+                border: '2px solid',
+                borderColor: 'primary.main',
+                backgroundColor: 'primary.50',
+                position: 'relative',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: 4,
+                },
+                transition: 'all 0.2s ease-in-out',
+              }}
+            >
+              <CardContent sx={{ textAlign: 'center', py: 3 }}>
+                <MonitorIcon
+                  sx={{
+                    fontSize: 32,
+                    color: 'primary.main',
+                    mb: 1,
+                  }}
+                />
+                <Typography
+                  variant="h6"
+                  color="primary.main"
+                  gutterBottom
+                  sx={{ fontWeight: 600 }}
                 >
-                  <MonitorIcon color="action" />
-                </Badge>
-                <Typography variant="h4">
-                  {monitoringStats.up || 0}/{monitoringStats.total || 0}
+                  Start Monitoring
                 </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 2 }}
+                >
+                  Add your first service to monitor uptime and performance
+                </Typography>
+                <Button
+                  component={Link}
+                  href="/monitoring/new"
+                  variant="contained"
+                  color="primary"
+                  size="small"
+                  startIcon={<AddIcon />}
+                  fullWidth
+                >
+                  Add Monitor
+                </Button>
+              </CardContent>
+              {/* Priority indicator */}
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 8,
+                  right: 8,
+                  backgroundColor: 'warning.main',
+                  color: 'white',
+                  borderRadius: '50%',
+                  width: 20,
+                  height: 20,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                }}
+              >
+                1
               </Box>
-              <Typography variant="body2" color="text.secondary">
-                Services Up • Click to view details
-              </Typography>
-            </CardContent>
-          </Card>
+            </Card>
+          ) : (
+            <Card
+              component={Link}
+              href="/monitoring"
+              sx={{
+                textDecoration: 'none',
+                cursor: 'pointer',
+                '&:hover': {
+                  backgroundColor: 'action.hover',
+                  transform: 'translateY(-1px)',
+                  boxShadow: 2,
+                },
+                transition: 'all 0.2s ease-in-out',
+              }}
+            >
+              <CardContent>
+                <Typography variant="h6" color="text.secondary" gutterBottom>
+                  Monitoring
+                </Typography>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Badge
+                    badgeContent={
+                      (monitoringStats.down || 0) +
+                      (monitoringStats.warning || 0)
+                    }
+                    color={getMonitoringStatusColor()}
+                  >
+                    <MonitorIcon color="action" />
+                  </Badge>
+                  <Typography variant="h4">
+                    {monitoringStats.up || 0}/{monitoringStats.total || 0}
+                  </Typography>
+                </Box>
+                <Typography variant="body2" color="text.secondary">
+                  Services Up • Click to view details
+                </Typography>
+                {/* Add more button for existing monitoring */}
+                <Box sx={{ mt: 1 }}>
+                  <Button
+                    component={Link}
+                    href="/monitoring/new"
+                    variant="outlined"
+                    size="small"
+                    startIcon={<AddIcon />}
+                    fullWidth
+                    onClick={e => e.stopPropagation()}
+                  >
+                    Add More
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
+          )}
         </Grid>
 
         {/* On-Call Status */}
         <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                On-Call Now
-              </Typography>
-              <Box display="flex" alignItems="center" gap={1}>
-                <PeopleIcon color="action" />
-                <Typography variant="h4">{currentlyOnCall.length}</Typography>
+          {currentlyOnCall.length === 0 && monitoringStats.total > 0 ? (
+            <Card
+              sx={{
+                border: '2px solid',
+                borderColor: 'warning.main',
+                backgroundColor: 'warning.50',
+                position: 'relative',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: 4,
+                },
+                transition: 'all 0.2s ease-in-out',
+              }}
+            >
+              <CardContent sx={{ textAlign: 'center', py: 3 }}>
+                <PeopleIcon
+                  sx={{
+                    fontSize: 32,
+                    color: 'warning.main',
+                    mb: 1,
+                  }}
+                />
+                <Typography
+                  variant="h6"
+                  color="warning.main"
+                  gutterBottom
+                  sx={{ fontWeight: 600 }}
+                >
+                  Set Up On-Call
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 2 }}
+                >
+                  Ensure incidents are handled 24/7 with on-call schedules
+                </Typography>
+                <Button
+                  component={Link}
+                  href="/on-call/new"
+                  variant="contained"
+                  color="warning"
+                  size="small"
+                  startIcon={<AddIcon />}
+                  fullWidth
+                >
+                  Create Schedule
+                </Button>
+              </CardContent>
+              {/* Priority indicator */}
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 8,
+                  right: 8,
+                  backgroundColor: 'error.main',
+                  color: 'white',
+                  borderRadius: '50%',
+                  width: 20,
+                  height: 20,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                }}
+              >
+                2
               </Box>
-              <Typography variant="body2" color="text.secondary">
-                Team Members
-              </Typography>
-            </CardContent>
-          </Card>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent>
+                <Typography variant="h6" color="text.secondary" gutterBottom>
+                  On-Call Now
+                </Typography>
+                <Box display="flex" alignItems="center" gap={1} sx={{ mb: 1 }}>
+                  <PeopleIcon color="action" />
+                  <Typography variant="h4">{currentlyOnCall.length}</Typography>
+                </Box>
+                <Typography variant="body2" color="text.secondary">
+                  Team Members
+                </Typography>
+                {currentlyOnCall.length > 0 && (
+                  <Box sx={{ mt: 1 }}>
+                    <Button
+                      component={Link}
+                      href="/on-call"
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                    >
+                      View Schedule
+                    </Button>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </Grid>
       </Grid>
 
