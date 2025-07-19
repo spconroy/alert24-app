@@ -5,14 +5,17 @@ import path from 'path';
 
 const db = new SupabaseClient();
 
-export const runtime = 'nodejs';
+export const runtime = 'edge';
 
 export async function POST() {
   try {
     console.log('Starting migration 12_missing_columns_and_fixes.sql...');
 
     // Read the migration file
-    const migrationPath = path.join(process.cwd(), 'docs/schema-updates/12_missing_columns_and_fixes.sql');
+    const migrationPath = path.join(
+      process.cwd(),
+      'docs/schema-updates/12_missing_columns_and_fixes.sql'
+    );
     const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
 
     // Since Supabase doesn't support raw SQL execution through the client,
@@ -27,19 +30,19 @@ export async function POST() {
         '1. Copy the migration SQL below',
         '2. Go to your Supabase dashboard > SQL Editor',
         '3. Paste and run the migration',
-        '4. Or use: psql "postgresql://postgres:password@host:port/database" -f docs/schema-updates/12_missing_columns_and_fixes.sql'
+        '4. Or use: psql "postgresql://postgres:password@host:port/database" -f docs/schema-updates/12_missing_columns_and_fixes.sql',
       ],
       migration_sql: migrationSQL,
-      warning: 'This migration adds critical missing columns and tables. Please apply it immediately.'
+      warning:
+        'This migration adds critical missing columns and tables. Please apply it immediately.',
     };
 
     return NextResponse.json({
       success: true,
       timestamp: new Date().toISOString(),
       message: 'Migration content ready for application',
-      ...results
+      ...results,
     });
-
   } catch (error) {
     console.error('Migration preparation error:', error);
 

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/db-supabase';
 
+export const runtime = 'edge';
+
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -9,7 +11,8 @@ export async function GET(request) {
     const type = searchParams.get('type');
 
     if (!token || !email) {
-      return new Response(`
+      return new Response(
+        `
         <!DOCTYPE html>
         <html>
         <head>
@@ -24,10 +27,12 @@ export async function GET(request) {
           <p>The unsubscribe link is invalid or has expired. Please contact support if you continue to receive unwanted emails.</p>
         </body>
         </html>
-      `, {
-        status: 400,
-        headers: { 'Content-Type': 'text/html' },
-      });
+      `,
+        {
+          status: 400,
+          headers: { 'Content-Type': 'text/html' },
+        }
+      );
     }
 
     // Verify token (in a real implementation, you'd validate a JWT or similar)
@@ -39,7 +44,8 @@ export async function GET(request) {
       .single();
 
     if (!user) {
-      return new Response(`
+      return new Response(
+        `
         <!DOCTYPE html>
         <html>
         <head>
@@ -54,10 +60,12 @@ export async function GET(request) {
           <p>The email address ${email} was not found in our system.</p>
         </body>
         </html>
-      `, {
-        status: 404,
-        headers: { 'Content-Type': 'text/html' },
-      });
+      `,
+        {
+          status: 404,
+          headers: { 'Content-Type': 'text/html' },
+        }
+      );
     }
 
     // Get or create notification preferences
@@ -83,7 +91,8 @@ export async function GET(request) {
 
       if (error) {
         console.error('Error creating preferences:', error);
-        return new Response(`
+        return new Response(
+          `
           <!DOCTYPE html>
           <html>
           <head>
@@ -98,10 +107,12 @@ export async function GET(request) {
             <p>An error occurred while processing your request. Please try again later.</p>
           </body>
           </html>
-        `, {
-          status: 500,
-          headers: { 'Content-Type': 'text/html' },
-        });
+        `,
+          {
+            status: 500,
+            headers: { 'Content-Type': 'text/html' },
+          }
+        );
       }
 
       preferences = newPreferences;
@@ -116,9 +127,11 @@ export async function GET(request) {
     };
 
     const currentType = type || 'all';
-    const displayName = typeDisplayNames[currentType] || 'All Email Notifications';
+    const displayName =
+      typeDisplayNames[currentType] || 'All Email Notifications';
 
-    return new Response(`
+    return new Response(
+      `
       <!DOCTYPE html>
       <html>
       <head>
@@ -232,13 +245,16 @@ export async function GET(request) {
         </div>
       </body>
       </html>
-    `, {
-      status: 200,
-      headers: { 'Content-Type': 'text/html' },
-    });
+    `,
+      {
+        status: 200,
+        headers: { 'Content-Type': 'text/html' },
+      }
+    );
   } catch (error) {
     console.error('Error in unsubscribe GET:', error);
-    return new Response(`
+    return new Response(
+      `
       <!DOCTYPE html>
       <html>
       <head>
@@ -253,10 +269,12 @@ export async function GET(request) {
         <p>An error occurred while processing your request. Please try again later.</p>
       </body>
       </html>
-    `, {
-      status: 500,
-      headers: { 'Content-Type': 'text/html' },
-    });
+    `,
+      {
+        status: 500,
+        headers: { 'Content-Type': 'text/html' },
+      }
+    );
   }
 }
 
@@ -267,7 +285,8 @@ export async function POST(request) {
     const email = formData.get('email');
 
     if (!token || !email) {
-      return new Response(`
+      return new Response(
+        `
         <!DOCTYPE html>
         <html>
         <head>
@@ -282,10 +301,12 @@ export async function POST(request) {
           <p>Missing required parameters.</p>
         </body>
         </html>
-      `, {
-        status: 400,
-        headers: { 'Content-Type': 'text/html' },
-      });
+      `,
+        {
+          status: 400,
+          headers: { 'Content-Type': 'text/html' },
+        }
+      );
     }
 
     // Get user
@@ -296,7 +317,8 @@ export async function POST(request) {
       .single();
 
     if (!user) {
-      return new Response(`
+      return new Response(
+        `
         <!DOCTYPE html>
         <html>
         <head>
@@ -311,10 +333,12 @@ export async function POST(request) {
           <p>The email address was not found in our system.</p>
         </body>
         </html>
-      `, {
-        status: 404,
-        headers: { 'Content-Type': 'text/html' },
-      });
+      `,
+        {
+          status: 404,
+          headers: { 'Content-Type': 'text/html' },
+        }
+      );
     }
 
     // Update preferences
@@ -325,17 +349,16 @@ export async function POST(request) {
       email_updates: formData.get('email_updates') === 'on',
     };
 
-    const { error } = await supabase
-      .from('notification_preferences')
-      .upsert({
-        user_id: user.id,
-        ...preferences,
-        updated_at: new Date().toISOString(),
-      });
+    const { error } = await supabase.from('notification_preferences').upsert({
+      user_id: user.id,
+      ...preferences,
+      updated_at: new Date().toISOString(),
+    });
 
     if (error) {
       console.error('Error updating preferences:', error);
-      return new Response(`
+      return new Response(
+        `
         <!DOCTYPE html>
         <html>
         <head>
@@ -350,14 +373,17 @@ export async function POST(request) {
           <p>An error occurred while updating your preferences. Please try again later.</p>
         </body>
         </html>
-      `, {
-        status: 500,
-        headers: { 'Content-Type': 'text/html' },
-      });
+      `,
+        {
+          status: 500,
+          headers: { 'Content-Type': 'text/html' },
+        }
+      );
     }
 
     // Success page
-    return new Response(`
+    return new Response(
+      `
       <!DOCTYPE html>
       <html>
       <head>
@@ -404,13 +430,16 @@ export async function POST(request) {
         </div>
       </body>
       </html>
-    `, {
-      status: 200,
-      headers: { 'Content-Type': 'text/html' },
-    });
+    `,
+      {
+        status: 200,
+        headers: { 'Content-Type': 'text/html' },
+      }
+    );
   } catch (error) {
     console.error('Error in unsubscribe POST:', error);
-    return new Response(`
+    return new Response(
+      `
       <!DOCTYPE html>
       <html>
       <head>
@@ -425,9 +454,11 @@ export async function POST(request) {
         <p>An error occurred while processing your request. Please try again later.</p>
       </body>
       </html>
-    `, {
-      status: 500,
-      headers: { 'Content-Type': 'text/html' },
-    });
+    `,
+      {
+        status: 500,
+        headers: { 'Content-Type': 'text/html' },
+      }
+    );
   }
 }
