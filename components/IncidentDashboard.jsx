@@ -293,315 +293,388 @@ export default function IncidentDashboard() {
       </Box>
 
       {/* Status Overview Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        {/* Overall System Status */}
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                System Status
-              </Typography>
-              <Box
-                sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}
-              >
-                <Box
-                  sx={{
-                    width: 12,
-                    height: 12,
-                    borderRadius: '50%',
-                    backgroundColor:
-                      overallStatus.color === 'success'
-                        ? '#4caf50'
-                        : overallStatus.color === 'warning'
-                          ? '#ff9800'
-                          : '#f44336',
-                  }}
-                />
-                <Chip
-                  label={overallStatus.status}
-                  color={overallStatus.color}
-                  variant="filled"
-                  sx={{ fontSize: '0.875rem', fontWeight: 'bold' }}
-                />
-              </Box>
-              {overallStatus.color === 'success' && (
-                <Typography variant="caption" color="text.secondary">
-                  All services reporting normally
-                </Typography>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
+      <Box sx={{ mb: 4 }}>
+        {/* Section Headers */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+          <Typography
+            variant="h6"
+            color="text.secondary"
+            sx={{ fontWeight: 500 }}
+          >
+            🔧 System Health
+          </Typography>
+          <Typography
+            variant="h6"
+            color="text.secondary"
+            sx={{ fontWeight: 500 }}
+          >
+            🚨 Incident Response
+          </Typography>
+        </Box>
 
-        {/* Active Incidents */}
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                Active Incidents
-              </Typography>
-              <Box display="flex" alignItems="center" gap={1} sx={{ mb: 1 }}>
-                <Badge badgeContent={activeIncidents.length} color="error">
-                  <NotificationsIcon color="action" />
-                </Badge>
-                <Typography variant="h4">{activeIncidents.length}</Typography>
-              </Box>
-              {activeIncidents.length === 0 ? (
-                <Typography
-                  variant="body2"
-                  color="success.main"
-                  sx={{ fontWeight: 500 }}
-                >
-                  ✅ All Clear
-                </Typography>
-              ) : (
-                <Box sx={{ mt: 1 }}>
-                  <Button
-                    component={Link}
-                    href="/incidents"
-                    variant="outlined"
-                    size="small"
-                    color="error"
-                    fullWidth
-                  >
-                    View All
-                  </Button>
-                </Box>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Monitoring Status */}
-        <Grid item xs={12} md={3}>
-          {monitoringStats.total === 0 ? (
-            <Card
-              sx={{
-                border: '2px solid',
-                borderColor: 'primary.main',
-                backgroundColor: 'primary.50',
-                position: 'relative',
-                '&:hover': {
-                  transform: 'translateY(-2px)',
-                  boxShadow: 4,
-                },
-                transition: 'all 0.2s ease-in-out',
-              }}
-            >
-              <CardContent sx={{ textAlign: 'center', py: 3 }}>
-                <MonitorIcon
-                  sx={{
-                    fontSize: 32,
-                    color: 'primary.main',
-                    mb: 1,
-                  }}
-                />
-                <Typography
-                  variant="h6"
-                  color="primary.main"
-                  gutterBottom
-                  sx={{ fontWeight: 600 }}
-                >
-                  Start Monitoring
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mb: 2 }}
-                >
-                  Add your first service to monitor uptime and performance
-                </Typography>
-                <Button
-                  component={Link}
-                  href="/monitoring/new"
-                  variant="contained"
-                  color="primary"
-                  size="small"
-                  startIcon={<AddIcon />}
-                  fullWidth
-                >
-                  Add Monitor
-                </Button>
-              </CardContent>
-              {/* Priority indicator */}
-              <Box
-                sx={{
-                  position: 'absolute',
-                  top: 8,
-                  right: 8,
-                  backgroundColor: 'warning.main',
-                  color: 'white',
-                  borderRadius: '50%',
-                  width: 20,
-                  height: 20,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '12px',
-                  fontWeight: 'bold',
-                }}
-              >
-                1
-              </Box>
-            </Card>
-          ) : (
-            <Card
-              component={Link}
-              href="/monitoring"
-              sx={{
-                textDecoration: 'none',
-                cursor: 'pointer',
-                '&:hover': {
-                  backgroundColor: 'action.hover',
-                  transform: 'translateY(-1px)',
-                  boxShadow: 2,
-                },
-                transition: 'all 0.2s ease-in-out',
-              }}
-            >
-              <CardContent>
-                <Typography variant="h6" color="text.secondary" gutterBottom>
-                  Monitoring
-                </Typography>
-                <Box display="flex" alignItems="center" gap={1}>
-                  <Badge
-                    badgeContent={
-                      (monitoringStats.down || 0) +
-                      (monitoringStats.warning || 0)
-                    }
-                    color={getMonitoringStatusColor()}
-                  >
-                    <MonitorIcon color="action" />
-                  </Badge>
-                  <Typography variant="h4">
-                    {monitoringStats.up || 0}/{monitoringStats.total || 0}
-                  </Typography>
-                </Box>
-                <Typography variant="body2" color="text.secondary">
-                  Services Up • Click to view details
-                </Typography>
-                {/* Add more button for existing monitoring */}
-                <Box sx={{ mt: 1 }}>
-                  <Button
-                    component={Link}
-                    href="/monitoring/new"
-                    variant="outlined"
-                    size="small"
-                    startIcon={<AddIcon />}
-                    fullWidth
-                    onClick={e => e.stopPropagation()}
-                  >
-                    Add More
-                  </Button>
-                </Box>
-              </CardContent>
-            </Card>
-          )}
-        </Grid>
-
-        {/* On-Call Status */}
-        <Grid item xs={12} md={3}>
-          {currentlyOnCall.length === 0 && monitoringStats.total > 0 ? (
-            <Card
-              sx={{
-                border: '2px solid',
-                borderColor: 'warning.main',
-                backgroundColor: 'warning.50',
-                position: 'relative',
-                '&:hover': {
-                  transform: 'translateY(-2px)',
-                  boxShadow: 4,
-                },
-                transition: 'all 0.2s ease-in-out',
-              }}
-            >
-              <CardContent sx={{ textAlign: 'center', py: 3 }}>
-                <PeopleIcon
-                  sx={{
-                    fontSize: 32,
-                    color: 'warning.main',
-                    mb: 1,
-                  }}
-                />
-                <Typography
-                  variant="h6"
-                  color="warning.main"
-                  gutterBottom
-                  sx={{ fontWeight: 600 }}
-                >
-                  Set Up On-Call
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mb: 2 }}
-                >
-                  Ensure incidents are handled 24/7 with on-call schedules
-                </Typography>
-                <Button
-                  component={Link}
-                  href="/on-call/new"
-                  variant="contained"
-                  color="warning"
-                  size="small"
-                  startIcon={<AddIcon />}
-                  fullWidth
-                >
-                  Create Schedule
-                </Button>
-              </CardContent>
-              {/* Priority indicator */}
-              <Box
-                sx={{
-                  position: 'absolute',
-                  top: 8,
-                  right: 8,
-                  backgroundColor: 'error.main',
-                  color: 'white',
-                  borderRadius: '50%',
-                  width: 20,
-                  height: 20,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '12px',
-                  fontWeight: 'bold',
-                }}
-              >
-                2
-              </Box>
-            </Card>
-          ) : (
+        <Grid container spacing={3}>
+          {/* System Health Cards */}
+          {/* Overall System Status */}
+          <Grid
+            item
+            xs={12}
+            md={3}
+            sx={{
+              '& .MuiCard-root': {
+                backgroundColor: 'rgba(33, 150, 243, 0.02)',
+                borderLeft: '3px solid transparent',
+                borderLeftColor: 'primary.light',
+              },
+            }}
+          >
             <Card>
               <CardContent>
                 <Typography variant="h6" color="text.secondary" gutterBottom>
-                  On-Call Now
+                  System Status
+                </Typography>
+                <Box
+                  sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}
+                >
+                  <Box
+                    sx={{
+                      width: 12,
+                      height: 12,
+                      borderRadius: '50%',
+                      backgroundColor:
+                        overallStatus.color === 'success'
+                          ? '#4caf50'
+                          : overallStatus.color === 'warning'
+                            ? '#ff9800'
+                            : '#f44336',
+                    }}
+                  />
+                  <Chip
+                    label={overallStatus.status}
+                    color={overallStatus.color}
+                    variant="filled"
+                    sx={{ fontSize: '0.875rem', fontWeight: 'bold' }}
+                  />
+                </Box>
+                {overallStatus.color === 'success' && (
+                  <Typography variant="caption" color="text.secondary">
+                    All services reporting normally
+                  </Typography>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Incident Response Cards */}
+          {/* Active Incidents */}
+          <Grid
+            item
+            xs={12}
+            md={3}
+            sx={{
+              '& .MuiCard-root': {
+                backgroundColor: 'rgba(255, 152, 0, 0.02)',
+                borderLeft: '3px solid transparent',
+                borderLeftColor: 'warning.light',
+              },
+            }}
+          >
+            <Card>
+              <CardContent>
+                <Typography variant="h6" color="text.secondary" gutterBottom>
+                  Active Incidents
                 </Typography>
                 <Box display="flex" alignItems="center" gap={1} sx={{ mb: 1 }}>
-                  <PeopleIcon color="action" />
-                  <Typography variant="h4">{currentlyOnCall.length}</Typography>
+                  <Badge badgeContent={activeIncidents.length} color="error">
+                    <NotificationsIcon color="action" />
+                  </Badge>
+                  <Typography variant="h4">{activeIncidents.length}</Typography>
                 </Box>
-                <Typography variant="body2" color="text.secondary">
-                  Team Members
-                </Typography>
-                {currentlyOnCall.length > 0 && (
+                {activeIncidents.length === 0 ? (
+                  <Typography
+                    variant="body2"
+                    color="success.main"
+                    sx={{ fontWeight: 500 }}
+                  >
+                    ✅ All Clear
+                  </Typography>
+                ) : (
                   <Box sx={{ mt: 1 }}>
                     <Button
                       component={Link}
-                      href="/on-call"
+                      href="/incidents"
                       variant="outlined"
                       size="small"
+                      color="error"
                       fullWidth
                     >
-                      View Schedule
+                      View All
                     </Button>
                   </Box>
                 )}
               </CardContent>
             </Card>
-          )}
+          </Grid>
+
+          {/* Monitoring Status */}
+          <Grid
+            item
+            xs={12}
+            md={3}
+            sx={{
+              '& .MuiCard-root': {
+                backgroundColor: 'rgba(33, 150, 243, 0.02)',
+                borderLeft: '3px solid transparent',
+                borderLeftColor: 'primary.light',
+              },
+            }}
+          >
+            {monitoringStats.total === 0 ? (
+              <Card
+                sx={{
+                  border: '2px solid',
+                  borderColor: 'primary.main',
+                  backgroundColor: 'primary.50',
+                  position: 'relative',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: 4,
+                  },
+                  transition: 'all 0.2s ease-in-out',
+                }}
+              >
+                <CardContent sx={{ textAlign: 'center', py: 3 }}>
+                  <MonitorIcon
+                    sx={{
+                      fontSize: 32,
+                      color: 'primary.main',
+                      mb: 1,
+                    }}
+                  />
+                  <Typography
+                    variant="h6"
+                    color="primary.main"
+                    gutterBottom
+                    sx={{ fontWeight: 600 }}
+                  >
+                    Start Monitoring
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 2 }}
+                  >
+                    Add your first service to monitor uptime and performance
+                  </Typography>
+                  <Button
+                    component={Link}
+                    href="/monitoring/new"
+                    variant="contained"
+                    color="primary"
+                    size="small"
+                    startIcon={<AddIcon />}
+                    fullWidth
+                  >
+                    Add Monitor
+                  </Button>
+                </CardContent>
+                {/* Priority indicator */}
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    backgroundColor: 'warning.main',
+                    color: 'white',
+                    borderRadius: '50%',
+                    width: 20,
+                    height: 20,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                  }}
+                >
+                  1
+                </Box>
+              </Card>
+            ) : (
+              <Card
+                component={Link}
+                href="/monitoring"
+                sx={{
+                  textDecoration: 'none',
+                  cursor: 'pointer',
+                  '&:hover': {
+                    backgroundColor: 'action.hover',
+                    transform: 'translateY(-1px)',
+                    boxShadow: 2,
+                  },
+                  transition: 'all 0.2s ease-in-out',
+                }}
+              >
+                <CardContent>
+                  <Typography variant="h6" color="text.secondary" gutterBottom>
+                    Monitoring
+                  </Typography>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Badge
+                      badgeContent={
+                        (monitoringStats.down || 0) +
+                        (monitoringStats.warning || 0)
+                      }
+                      color={getMonitoringStatusColor()}
+                    >
+                      <MonitorIcon color="action" />
+                    </Badge>
+                    <Typography variant="h4">
+                      {monitoringStats.up || 0}/{monitoringStats.total || 0}
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Services Up • Click to view details
+                  </Typography>
+                  {/* Add more button for existing monitoring */}
+                  <Box sx={{ mt: 1 }}>
+                    <Button
+                      component={Link}
+                      href="/monitoring/new"
+                      variant="outlined"
+                      size="small"
+                      startIcon={<AddIcon />}
+                      fullWidth
+                      onClick={e => e.stopPropagation()}
+                    >
+                      Add More
+                    </Button>
+                  </Box>
+                </CardContent>
+              </Card>
+            )}
+          </Grid>
+
+          {/* On-Call Status */}
+          <Grid
+            item
+            xs={12}
+            md={3}
+            sx={{
+              '& .MuiCard-root': {
+                backgroundColor: 'rgba(255, 152, 0, 0.02)',
+                borderLeft: '3px solid transparent',
+                borderLeftColor: 'warning.light',
+              },
+            }}
+          >
+            {currentlyOnCall.length === 0 && monitoringStats.total > 0 ? (
+              <Card
+                sx={{
+                  border: '2px solid',
+                  borderColor: 'warning.main',
+                  backgroundColor: 'warning.50',
+                  position: 'relative',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: 4,
+                  },
+                  transition: 'all 0.2s ease-in-out',
+                }}
+              >
+                <CardContent sx={{ textAlign: 'center', py: 3 }}>
+                  <PeopleIcon
+                    sx={{
+                      fontSize: 32,
+                      color: 'warning.main',
+                      mb: 1,
+                    }}
+                  />
+                  <Typography
+                    variant="h6"
+                    color="warning.main"
+                    gutterBottom
+                    sx={{ fontWeight: 600 }}
+                  >
+                    Set Up On-Call
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 2 }}
+                  >
+                    Ensure incidents are handled 24/7 with on-call schedules
+                  </Typography>
+                  <Button
+                    component={Link}
+                    href="/on-call/new"
+                    variant="contained"
+                    color="warning"
+                    size="small"
+                    startIcon={<AddIcon />}
+                    fullWidth
+                  >
+                    Create Schedule
+                  </Button>
+                </CardContent>
+                {/* Priority indicator */}
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    backgroundColor: 'error.main',
+                    color: 'white',
+                    borderRadius: '50%',
+                    width: 20,
+                    height: 20,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                  }}
+                >
+                  2
+                </Box>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" color="text.secondary" gutterBottom>
+                    On-Call Now
+                  </Typography>
+                  <Box
+                    display="flex"
+                    alignItems="center"
+                    gap={1}
+                    sx={{ mb: 1 }}
+                  >
+                    <PeopleIcon color="action" />
+                    <Typography variant="h4">
+                      {currentlyOnCall.length}
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Team Members
+                  </Typography>
+                  {currentlyOnCall.length > 0 && (
+                    <Box sx={{ mt: 1 }}>
+                      <Button
+                        component={Link}
+                        href="/on-call"
+                        variant="outlined"
+                        size="small"
+                        fullWidth
+                      >
+                        View Schedule
+                      </Button>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </Grid>
         </Grid>
-      </Grid>
+      </Box>
 
       {/* Main Content Grid */}
       <Grid container spacing={3}>
