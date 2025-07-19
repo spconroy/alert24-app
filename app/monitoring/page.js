@@ -205,6 +205,18 @@ export default function MonitoringPage() {
           '🔍 First status page check full object:',
           statusPageChecks[0]
         );
+        console.log(
+          '🔍 Does first check have status_page_config?',
+          !!statusPageChecks[0].status_page_config
+        );
+        console.log(
+          '🔍 status_page_config value:',
+          statusPageChecks[0].status_page_config
+        );
+        console.log(
+          '🔍 All keys in first check:',
+          Object.keys(statusPageChecks[0])
+        );
       }
 
       setMonitoringChecks(checks);
@@ -520,6 +532,8 @@ export default function MonitoringPage() {
       check_type: check.check_type,
       has_status_page_config: !!check.status_page_config,
       target_url: check.target_url,
+      all_keys: Object.keys(check),
+      status_page_config_value: check.status_page_config,
     });
 
     // For status page checks, show the provider's status page URL
