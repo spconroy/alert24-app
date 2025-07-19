@@ -1267,44 +1267,35 @@ export default function IncidentDashboard() {
                   <Box
                     sx={{
                       textAlign: 'center',
-                      py: 3,
-                      backgroundColor: 'grey.50',
-                      borderRadius: 2,
+                      py: 2,
+                      backgroundColor: 'grey.25',
+                      borderRadius: 1,
                       border: '1px solid',
-                      borderColor: 'divider',
+                      borderColor: 'grey.200',
                     }}
                   >
                     <PeopleIcon
                       sx={{
-                        fontSize: 40,
+                        fontSize: 32,
                         color: 'text.disabled',
                         mb: 1,
+                        opacity: 0.6,
                       }}
                     />
                     <Typography
-                      variant="subtitle1"
+                      variant="body2"
                       color="text.secondary"
                       gutterBottom
                     >
                       No on-call team configured
                     </Typography>
                     <Typography
-                      variant="body2"
+                      variant="caption"
                       color="text.secondary"
-                      sx={{ mb: 2 }}
+                      sx={{ opacity: 0.8 }}
                     >
-                      Set up your first on-call schedule to ensure incidents are
-                      handled 24/7.
+                      Complete setup above to configure 24/7 coverage
                     </Typography>
-                    <Button
-                      component={Link}
-                      href="/on-call/new"
-                      variant="contained"
-                      size="small"
-                      startIcon={<AddIcon />}
-                    >
-                      Create Schedule
-                    </Button>
                   </Box>
                 ) : (
                   <Box>
@@ -1423,30 +1414,27 @@ export default function IncidentDashboard() {
                   </Box>
                 )}
 
-                <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+                <Box sx={{ mt: 2 }}>
                   <Button
                     component={Link}
                     href="/on-call"
                     variant="outlined"
                     fullWidth
                     startIcon={<PeopleIcon />}
+                    size="small"
+                    sx={{
+                      color: 'text.secondary',
+                      borderColor: 'grey.300',
+                      '&:hover': {
+                        borderColor: 'grey.400',
+                        backgroundColor: 'grey.50',
+                      },
+                    }}
                   >
                     {currentlyOnCall.length > 0
                       ? 'View All Schedules'
                       : 'Manage Schedules'}
                   </Button>
-                  {currentlyOnCall.length === 0 && (
-                    <Button
-                      component={Link}
-                      href="/on-call/new"
-                      variant="contained"
-                      color="warning"
-                      startIcon={<AddIcon />}
-                      sx={{ whiteSpace: 'nowrap' }}
-                    >
-                      Add Schedule
-                    </Button>
-                  )}
                 </Box>
               </CardContent>
             </Card>
