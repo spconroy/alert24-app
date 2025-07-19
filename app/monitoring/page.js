@@ -47,7 +47,6 @@ import { useOrganization } from '@/contexts/OrganizationContext';
 import MonitoringServiceAssociation from '@/components/MonitoringServiceAssociation';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { STATUS_PAGE_PROVIDERS } from '@/lib/status-page-providers';
 
 export default function MonitoringPage() {
   // Debug: Check if STATUS_PAGE_PROVIDERS is imported correctly
@@ -530,38 +529,18 @@ export default function MonitoringPage() {
   const getTargetDisplay = check => {
     console.log('🎯 getTargetDisplay called for:', check.name, {
       check_type: check.check_type,
-      has_status_page_config: !!check.status_page_config,
       target_url: check.target_url,
+      status_page_url: check.status_page_url,
       all_keys: Object.keys(check),
-      status_page_config_value: check.status_page_config,
     });
 
-    // For status page checks, show the provider's status page URL
-    if (check.check_type === 'status_page' && check.status_page_config) {
-      const { provider } = check.status_page_config;
-
-      // Temporary hardcoded provider URLs for testing
-      const PROVIDER_URLS = {
-        azure: 'https://status.azure.com/',
-        aws: 'https://status.aws.amazon.com/',
-        gcp: 'https://status.cloud.google.com/',
-        cloudflare: 'https://www.cloudflarestatus.com/',
-        supabase: 'https://status.supabase.com/',
-      };
-
-      console.log('✅ Status page check detected:', {
+    // For status page checks, use the pre-populated status_page_url from API
+    if (check.check_type === 'status_page' && check.status_page_url) {
+      console.log('✅ Status page check with URL:', {
         checkName: check.name,
-        provider: provider,
-        providerUrl: PROVIDER_URLS[provider],
-        returning: PROVIDER_URLS[provider] || 'PROVIDER_NOT_FOUND',
+        statusPageUrl: check.status_page_url,
       });
-
-      if (PROVIDER_URLS[provider]) {
-        return PROVIDER_URLS[provider];
-      } else {
-        console.warn('❌ Provider not found in PROVIDER_URLS:', provider);
-        return `PROVIDER_NOT_FOUND: ${provider}`;
-      }
+      return check.status_page_url;
     }
 
     console.log(

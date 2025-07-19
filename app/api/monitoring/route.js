@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { SupabaseClient } from '@/lib/db-supabase';
+import { STATUS_PAGE_PROVIDERS } from '@/lib/status-page-providers';
 
 const db = new SupabaseClient();
 
@@ -54,13 +55,30 @@ export async function GET(req) {
     }
 
     // Transform the data to match expected format
-    const formattedChecks = (monitoringChecks || []).map(check => ({
-      ...check,
-      is_active: check.status === 'active' || check.is_active,
-      organization_name: check.organization_name || check.organizations?.name,
-      created_by_name: check.created_by_user?.name,
-      created_by_email: check.created_by_user?.email,
-    }));
+    const formattedChecks = (monitoringChecks || []).map(check => {
+      let status_page_url = null;
+
+      // For status page checks, populate the URL based on provider
+      if (
+        check.check_type === 'status_page' &&
+        check.status_page_config?.provider
+      ) {
+        const provider = check.status_page_config.provider;
+        const providerConfig = STATUS_PAGE_PROVIDERS[provider];
+        if (providerConfig) {
+          status_page_url = providerConfig.url;
+        }
+      }
+
+      return {
+        ...check,
+        is_active: check.status === 'active' || check.is_active,
+        organization_name: check.organization_name || check.organizations?.name,
+        created_by_name: check.created_by_user?.name,
+        created_by_email: check.created_by_user?.email,
+        status_page_url: status_page_url, // Add the populated URL
+      };
+    });
 
     // Debug: Check if status_page_config is present in the final response
     const statusPageChecks = formattedChecks.filter(
