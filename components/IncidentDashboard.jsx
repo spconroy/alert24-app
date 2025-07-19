@@ -582,25 +582,13 @@ export default function IncidentDashboard() {
               {monitoringStats.total === 0 ? (
                 <Card
                   sx={{
-                    border: '2px solid',
-                    borderColor: 'primary.main',
-                    backgroundColor: 'primary.50',
+                    border: '1px solid',
+                    borderColor: 'primary.light',
+                    backgroundColor: 'primary.25',
                     position: 'relative',
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: 4,
-                    },
-                    transition: 'all 0.2s ease-in-out',
                   }}
                 >
-                  <CardContent sx={{ textAlign: 'center', py: 3 }}>
-                    <MonitorIcon
-                      sx={{
-                        fontSize: 32,
-                        color: 'primary.main',
-                        mb: 1,
-                      }}
-                    />
+                  <CardContent>
                     <Box
                       sx={{
                         display: 'flex',
@@ -609,64 +597,75 @@ export default function IncidentDashboard() {
                         mb: 1,
                       }}
                     >
-                      <Typography
-                        variant="h6"
-                        color="primary.main"
-                        sx={{ fontWeight: 600 }}
-                      >
-                        Start Monitoring
+                      <Typography variant="h6" color="text.secondary">
+                        Monitoring Setup
                       </Typography>
                       <Tooltip
-                        title="Set up automated checks to monitor your websites, APIs, and services. Get instant alerts when issues are detected."
+                        title="Set up automated checks to monitor your websites, APIs, and services"
                         arrow
                         placement="top"
                       >
                         <InfoIcon
                           fontSize="small"
-                          color="primary"
-                          sx={{ cursor: 'help', opacity: 0.8 }}
+                          color="action"
+                          sx={{ cursor: 'help', opacity: 0.7 }}
                         />
                       </Tooltip>
                     </Box>
+
+                    <Box
+                      display="flex"
+                      alignItems="center"
+                      gap={1}
+                      sx={{ mb: 1 }}
+                    >
+                      <MonitorIcon color="primary" sx={{ fontSize: 20 }} />
+                      <Typography variant="h4" color="primary.main">
+                        !
+                      </Typography>
+                    </Box>
+
                     <Typography
                       variant="body2"
                       color="text.secondary"
-                      sx={{ mb: 2 }}
+                      sx={{ mb: 1 }}
                     >
-                      Add your first service to monitor uptime and performance
+                      Setup Required
                     </Typography>
+
                     <Button
                       component={Link}
                       href="/monitoring/new"
-                      variant="contained"
+                      variant="outlined"
                       color="primary"
                       size="small"
-                      startIcon={<AddIcon />}
                       fullWidth
+                      sx={{ fontSize: '0.75rem' }}
                     >
-                      Add Monitor
+                      Configure
                     </Button>
+
+                    {/* Small priority indicator */}
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        top: 6,
+                        right: 6,
+                        backgroundColor: 'primary.main',
+                        color: 'white',
+                        borderRadius: '50%',
+                        width: 16,
+                        height: 16,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '10px',
+                        fontWeight: 'bold',
+                      }}
+                    >
+                      1
+                    </Box>
                   </CardContent>
-                  {/* Priority indicator */}
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      top: 8,
-                      right: 8,
-                      backgroundColor: 'warning.main',
-                      color: 'white',
-                      borderRadius: '50%',
-                      width: 20,
-                      height: 20,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '12px',
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    1
-                  </Box>
                 </Card>
               ) : (
                 <Card
@@ -744,72 +743,90 @@ export default function IncidentDashboard() {
               {currentlyOnCall.length === 0 && monitoringStats.total > 0 ? (
                 <Card
                   sx={{
-                    border: '2px solid',
-                    borderColor: 'warning.main',
-                    backgroundColor: 'warning.50',
+                    border: '1px solid',
+                    borderColor: 'warning.light',
+                    backgroundColor: 'warning.25',
                     position: 'relative',
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: 4,
-                    },
-                    transition: 'all 0.2s ease-in-out',
                   }}
                 >
-                  <CardContent sx={{ textAlign: 'center', py: 3 }}>
-                    <PeopleIcon
+                  <CardContent>
+                    <Box
                       sx={{
-                        fontSize: 32,
-                        color: 'warning.main',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
                         mb: 1,
                       }}
-                    />
-                    <Typography
-                      variant="h6"
-                      color="warning.main"
-                      gutterBottom
-                      sx={{ fontWeight: 600 }}
                     >
-                      Set Up On-Call
-                    </Typography>
+                      <Typography variant="h6" color="text.secondary">
+                        On-Call Setup
+                      </Typography>
+                      <Tooltip
+                        title="Configure 24/7 incident response coverage with on-call schedules"
+                        arrow
+                        placement="top"
+                      >
+                        <InfoIcon
+                          fontSize="small"
+                          color="action"
+                          sx={{ cursor: 'help', opacity: 0.7 }}
+                        />
+                      </Tooltip>
+                    </Box>
+
+                    <Box
+                      display="flex"
+                      alignItems="center"
+                      gap={1}
+                      sx={{ mb: 1 }}
+                    >
+                      <PeopleIcon color="warning" sx={{ fontSize: 20 }} />
+                      <Typography variant="h4" color="warning.main">
+                        !
+                      </Typography>
+                    </Box>
+
                     <Typography
                       variant="body2"
                       color="text.secondary"
-                      sx={{ mb: 2 }}
+                      sx={{ mb: 1 }}
                     >
-                      Ensure incidents are handled 24/7 with on-call schedules
+                      Setup Required
                     </Typography>
+
                     <Button
                       component={Link}
                       href="/on-call/new"
-                      variant="contained"
+                      variant="outlined"
                       color="warning"
                       size="small"
-                      startIcon={<AddIcon />}
                       fullWidth
+                      sx={{ fontSize: '0.75rem' }}
                     >
-                      Create Schedule
+                      Configure
                     </Button>
+
+                    {/* Small priority indicator */}
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        top: 6,
+                        right: 6,
+                        backgroundColor: 'warning.main',
+                        color: 'white',
+                        borderRadius: '50%',
+                        width: 16,
+                        height: 16,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '10px',
+                        fontWeight: 'bold',
+                      }}
+                    >
+                      2
+                    </Box>
                   </CardContent>
-                  {/* Priority indicator */}
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      top: 8,
-                      right: 8,
-                      backgroundColor: 'error.main',
-                      color: 'white',
-                      borderRadius: '50%',
-                      width: 20,
-                      height: 20,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '12px',
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    2
-                  </Box>
                 </Card>
               ) : (
                 <Card>
