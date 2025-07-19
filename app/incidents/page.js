@@ -34,6 +34,10 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import WarningIcon from '@mui/icons-material/Warning';
 import MonitorIcon from '@mui/icons-material/Monitor';
+import BusinessIcon from '@mui/icons-material/Business';
+import FlagIcon from '@mui/icons-material/Flag';
+import PriorityHighIcon from '@mui/icons-material/PriorityHigh';
+import SearchIcon from '@mui/icons-material/Search';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useOrganization } from '@/contexts/OrganizationContext';
 
@@ -225,26 +229,77 @@ export default function IncidentsPage() {
             <Box display="flex" alignItems="center" gap={2} mb={2}>
               <FilterListIcon color="action" />
               <Typography variant="h6">Filters</Typography>
-              <Button variant="text" size="small" onClick={clearFilters}>
-                Clear All
-              </Button>
+
+              {/* Active filter count indicator */}
+              {Object.values(filters).filter(v => v).length > 0 && (
+                <Chip
+                  label={`${Object.values(filters).filter(v => v).length} active`}
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                />
+              )}
+
+              <Box sx={{ ml: 'auto' }}>
+                <Button
+                  variant="text"
+                  size="small"
+                  onClick={clearFilters}
+                  disabled={Object.values(filters).every(v => !v)}
+                  sx={{
+                    color: Object.values(filters).some(v => v)
+                      ? 'primary.main'
+                      : 'text.disabled',
+                  }}
+                >
+                  Clear All
+                </Button>
+              </Box>
             </Box>
 
             <Grid container spacing={2}>
               <Grid item xs={12} md={3}>
                 <FormControl fullWidth size="small">
-                  <InputLabel>Organization</InputLabel>
+                  <InputLabel
+                    sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+                  >
+                    Organization
+                  </InputLabel>
                   <Select
                     value={filters.organization_id}
                     label="Organization"
                     onChange={e =>
                       handleFilterChange('organization_id', e.target.value)
                     }
+                    renderValue={selected => {
+                      if (!selected) return 'All Organizations';
+                      const org = organizations.find(o => o.id === selected);
+                      return (
+                        <Box
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        >
+                          <BusinessIcon fontSize="small" color="action" />
+                          {org?.name || 'Unknown'}
+                        </Box>
+                      );
+                    }}
                   >
-                    <MenuItem value="">All Organizations</MenuItem>
+                    <MenuItem value="">
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
+                        <BusinessIcon fontSize="small" color="action" />
+                        All Organizations
+                      </Box>
+                    </MenuItem>
                     {organizations.map(org => (
                       <MenuItem key={org.id} value={org.id}>
-                        {org.name}
+                        <Box
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        >
+                          <BusinessIcon fontSize="small" color="action" />
+                          {org.name}
+                        </Box>
                       </MenuItem>
                     ))}
                   </Select>
@@ -258,12 +313,100 @@ export default function IncidentsPage() {
                     value={filters.status}
                     label="Status"
                     onChange={e => handleFilterChange('status', e.target.value)}
+                    renderValue={selected => {
+                      if (!selected) return 'All Statuses';
+                      const statusColors = {
+                        open: 'error.main',
+                        investigating: 'warning.main',
+                        monitoring: 'info.main',
+                        resolved: 'success.main',
+                      };
+                      return (
+                        <Box
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        >
+                          <Box
+                            sx={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: '50%',
+                              bgcolor:
+                                statusColors[selected] || 'action.disabled',
+                            }}
+                          />
+                          {selected.charAt(0).toUpperCase() + selected.slice(1)}
+                        </Box>
+                      );
+                    }}
                   >
-                    <MenuItem value="">All Status</MenuItem>
-                    <MenuItem value="open">Open</MenuItem>
-                    <MenuItem value="investigating">Investigating</MenuItem>
-                    <MenuItem value="monitoring">Monitoring</MenuItem>
-                    <MenuItem value="resolved">Resolved</MenuItem>
+                    <MenuItem value="">
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
+                        <FlagIcon fontSize="small" color="action" />
+                        All Statuses
+                      </Box>
+                    </MenuItem>
+                    <MenuItem value="open">
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
+                        <Box
+                          sx={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: '50%',
+                            bgcolor: 'error.main',
+                          }}
+                        />
+                        Open
+                      </Box>
+                    </MenuItem>
+                    <MenuItem value="investigating">
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
+                        <Box
+                          sx={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: '50%',
+                            bgcolor: 'warning.main',
+                          }}
+                        />
+                        Investigating
+                      </Box>
+                    </MenuItem>
+                    <MenuItem value="monitoring">
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
+                        <Box
+                          sx={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: '50%',
+                            bgcolor: 'info.main',
+                          }}
+                        />
+                        Monitoring
+                      </Box>
+                    </MenuItem>
+                    <MenuItem value="resolved">
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
+                        <Box
+                          sx={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: '50%',
+                            bgcolor: 'success.main',
+                          }}
+                        />
+                        Resolved
+                      </Box>
+                    </MenuItem>
                   </Select>
                 </FormControl>
               </Grid>
@@ -277,12 +420,67 @@ export default function IncidentsPage() {
                     onChange={e =>
                       handleFilterChange('severity', e.target.value)
                     }
+                    renderValue={selected => {
+                      if (!selected) return 'All Severities';
+                      const severityColors = {
+                        critical: 'error',
+                        high: 'warning',
+                        medium: 'info',
+                        low: 'success',
+                      };
+                      return (
+                        <Box
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        >
+                          <PriorityHighIcon
+                            fontSize="small"
+                            color={severityColors[selected] || 'action'}
+                          />
+                          {selected.charAt(0).toUpperCase() + selected.slice(1)}
+                        </Box>
+                      );
+                    }}
                   >
-                    <MenuItem value="">All Severities</MenuItem>
-                    <MenuItem value="critical">Critical</MenuItem>
-                    <MenuItem value="high">High</MenuItem>
-                    <MenuItem value="medium">Medium</MenuItem>
-                    <MenuItem value="low">Low</MenuItem>
+                    <MenuItem value="">
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
+                        <PriorityHighIcon fontSize="small" color="action" />
+                        All Severities
+                      </Box>
+                    </MenuItem>
+                    <MenuItem value="critical">
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
+                        <PriorityHighIcon fontSize="small" color="error" />
+                        Critical
+                      </Box>
+                    </MenuItem>
+                    <MenuItem value="high">
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
+                        <PriorityHighIcon fontSize="small" color="warning" />
+                        High
+                      </Box>
+                    </MenuItem>
+                    <MenuItem value="medium">
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
+                        <PriorityHighIcon fontSize="small" color="info" />
+                        Medium
+                      </Box>
+                    </MenuItem>
+                    <MenuItem value="low">
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
+                        <PriorityHighIcon fontSize="small" color="success" />
+                        Low
+                      </Box>
+                    </MenuItem>
                   </Select>
                 </FormControl>
               </Grid>
@@ -295,6 +493,25 @@ export default function IncidentsPage() {
                   value={filters.search}
                   onChange={e => handleFilterChange('search', e.target.value)}
                   placeholder="Search by title, description, or ID"
+                  InputProps={{
+                    startAdornment: (
+                      <SearchIcon
+                        fontSize="small"
+                        sx={{ mr: 1, color: 'action.active' }}
+                      />
+                    ),
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: 'grey.50',
+                      '&:hover': {
+                        backgroundColor: 'background.paper',
+                      },
+                      '&.Mui-focused': {
+                        backgroundColor: 'background.paper',
+                      },
+                    },
+                  }}
                 />
               </Grid>
             </Grid>
