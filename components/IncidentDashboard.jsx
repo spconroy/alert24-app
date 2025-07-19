@@ -41,6 +41,11 @@ const pulseAnimation = `
   }
 `;
 
+// Button Hierarchy Standards for Dashboard Consistency:
+// 1. PRIMARY (variant="contained"): Setup actions, Create incident, Critical actions
+// 2. SECONDARY (variant="outlined"): Management, View details, Optional actions
+// 3. TERTIARY (variant="text"): Navigation, Filters, Show more links
+
 export default function IncidentDashboard() {
   const [incidents, setIncidents] = useState([]);
   const [monitoringStats, setMonitoringStats] = useState({
@@ -636,7 +641,7 @@ export default function IncidentDashboard() {
                     <Button
                       component={Link}
                       href="/monitoring/new"
-                      variant="outlined"
+                      variant="contained"
                       color="primary"
                       size="small"
                       fullWidth
@@ -797,7 +802,7 @@ export default function IncidentDashboard() {
                     <Button
                       component={Link}
                       href="/on-call/new"
-                      variant="outlined"
+                      variant="contained"
                       color="warning"
                       size="small"
                       fullWidth
