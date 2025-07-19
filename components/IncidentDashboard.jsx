@@ -258,12 +258,34 @@ export default function IncidentDashboard() {
               <Typography variant="h6" color="text.secondary" gutterBottom>
                 System Status
               </Typography>
-              <Chip
-                label={overallStatus.status}
-                color={overallStatus.color}
-                variant="filled"
-                sx={{ fontSize: '0.875rem', fontWeight: 'bold' }}
-              />
+              <Box
+                sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}
+              >
+                <Box
+                  sx={{
+                    width: 12,
+                    height: 12,
+                    borderRadius: '50%',
+                    backgroundColor:
+                      overallStatus.color === 'success'
+                        ? '#4caf50'
+                        : overallStatus.color === 'warning'
+                          ? '#ff9800'
+                          : '#f44336',
+                  }}
+                />
+                <Chip
+                  label={overallStatus.status}
+                  color={overallStatus.color}
+                  variant="filled"
+                  sx={{ fontSize: '0.875rem', fontWeight: 'bold' }}
+                />
+              </Box>
+              {overallStatus.color === 'success' && (
+                <Typography variant="caption" color="text.secondary">
+                  All services reporting normally
+                </Typography>
+              )}
             </CardContent>
           </Card>
         </Grid>
@@ -369,9 +391,57 @@ export default function IncidentDashboard() {
               <Divider sx={{ mb: 2 }} />
 
               {incidents.length === 0 ? (
-                <Typography color="text.secondary" textAlign="center" py={4}>
-                  No incidents found
-                </Typography>
+                <Box
+                  sx={{
+                    textAlign: 'center',
+                    py: 4,
+                    backgroundColor: 'grey.50',
+                    borderRadius: 2,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                  }}
+                >
+                  <NotificationsIcon
+                    sx={{
+                      fontSize: 48,
+                      color: 'text.disabled',
+                      mb: 2,
+                    }}
+                  />
+                  <Typography variant="h6" color="text.secondary" gutterBottom>
+                    No incidents yet
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 2 }}
+                  >
+                    Great! Your systems are running smoothly. When issues arise,
+                    they&apos;ll appear here.
+                  </Typography>
+                  <Box
+                    sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}
+                  >
+                    <Button
+                      component={Link}
+                      href="/incidents/new"
+                      variant="contained"
+                      size="small"
+                      startIcon={<AddIcon />}
+                    >
+                      Create Test Incident
+                    </Button>
+                    <Button
+                      component={Link}
+                      href="/monitoring/new"
+                      variant="outlined"
+                      size="small"
+                      startIcon={<MonitorIcon />}
+                    >
+                      Add Monitoring
+                    </Button>
+                  </Box>
+                </Box>
               ) : (
                 incidents.slice(0, 5).map(incident => (
                   <Box
@@ -430,9 +500,48 @@ export default function IncidentDashboard() {
               <Divider sx={{ mb: 2 }} />
 
               {currentlyOnCall.length === 0 ? (
-                <Typography color="text.secondary" textAlign="center" py={2}>
-                  No one is currently on-call
-                </Typography>
+                <Box
+                  sx={{
+                    textAlign: 'center',
+                    py: 3,
+                    backgroundColor: 'grey.50',
+                    borderRadius: 2,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                  }}
+                >
+                  <PeopleIcon
+                    sx={{
+                      fontSize: 40,
+                      color: 'text.disabled',
+                      mb: 1,
+                    }}
+                  />
+                  <Typography
+                    variant="subtitle1"
+                    color="text.secondary"
+                    gutterBottom
+                  >
+                    No on-call team configured
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 2 }}
+                  >
+                    Set up your first on-call schedule to ensure incidents are
+                    handled 24/7.
+                  </Typography>
+                  <Button
+                    component={Link}
+                    href="/on-call/new"
+                    variant="contained"
+                    size="small"
+                    startIcon={<AddIcon />}
+                  >
+                    Create Schedule
+                  </Button>
+                </Box>
               ) : (
                 currentlyOnCall.map(schedule => (
                   <Box key={schedule.id} sx={{ mb: 1 }}>
@@ -466,34 +575,89 @@ export default function IncidentDashboard() {
               </Typography>
               <Divider sx={{ mb: 2 }} />
 
-              <Box display="flex" flexDirection="column" gap={1}>
-                <Button
-                  component={Link}
-                  href="/monitoring/new"
-                  variant="outlined"
-                  startIcon={<MonitorIcon />}
-                  fullWidth
+              {/* Initial Setup Section */}
+              {(monitoringStats.total === 0 ||
+                currentlyOnCall.length === 0) && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography
+                    variant="subtitle2"
+                    color="primary"
+                    sx={{ mb: 1, fontWeight: 600 }}
+                  >
+                    🚀 Initial Setup
+                  </Typography>
+                  <Box display="flex" flexDirection="column" gap={1}>
+                    {monitoringStats.total === 0 && (
+                      <Button
+                        component={Link}
+                        href="/monitoring/new"
+                        variant="contained"
+                        startIcon={<MonitorIcon />}
+                        fullWidth
+                        sx={{ justifyContent: 'flex-start' }}
+                      >
+                        Add Your First Monitoring Check
+                      </Button>
+                    )}
+                    {currentlyOnCall.length === 0 && (
+                      <Button
+                        component={Link}
+                        href="/on-call/new"
+                        variant="contained"
+                        startIcon={<PeopleIcon />}
+                        fullWidth
+                        sx={{ justifyContent: 'flex-start' }}
+                      >
+                        Set Up On-Call Schedule
+                      </Button>
+                    )}
+                  </Box>
+                </Box>
+              )}
+
+              {/* Advanced Configuration */}
+              <Box>
+                <Typography
+                  variant="subtitle2"
+                  color="text.secondary"
+                  sx={{ mb: 1, fontWeight: 600 }}
                 >
-                  Add Monitoring Check
-                </Button>
-                <Button
-                  component={Link}
-                  href="/escalation-policies/new"
-                  variant="outlined"
-                  startIcon={<NotificationsIcon />}
-                  fullWidth
-                >
-                  Create Escalation Policy
-                </Button>
-                <Button
-                  component={Link}
-                  href="/organizations/new"
-                  variant="outlined"
-                  startIcon={<AddIcon />}
-                  fullWidth
-                >
-                  Add Organization
-                </Button>
+                  ⚙️ Advanced Configuration
+                </Typography>
+                <Box display="flex" flexDirection="column" gap={1}>
+                  <Button
+                    component={Link}
+                    href="/escalation-policies/new"
+                    variant="outlined"
+                    startIcon={<NotificationsIcon />}
+                    fullWidth
+                    sx={{ justifyContent: 'flex-start' }}
+                  >
+                    Create Escalation Policy
+                  </Button>
+                  <Button
+                    component={Link}
+                    href="/organizations/new"
+                    variant="outlined"
+                    startIcon={<AddIcon />}
+                    fullWidth
+                    sx={{ justifyContent: 'flex-start' }}
+                  >
+                    Add Organization
+                  </Button>
+                  {monitoringStats.total > 0 && (
+                    <Button
+                      component={Link}
+                      href="/monitoring/new"
+                      variant="outlined"
+                      startIcon={<MonitorIcon />}
+                      fullWidth
+                      sx={{ justifyContent: 'flex-start' }}
+                    >
+                      Add More Monitoring
+                    </Button>
+                  )}
+                </Box>
               </Box>
             </CardContent>
           </Card>
