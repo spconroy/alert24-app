@@ -15,6 +15,7 @@ import StatusUpdatesFeed from './StatusUpdatesFeed';
 import StatusPageSubscribe from './StatusPageSubscribe';
 import ServiceUptimeTimeline from './ServiceUptimeTimeline';
 import ServiceUptimeStats from './ServiceUptimeStats';
+import NoSSR from './NoSSR';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
 import ErrorIcon from '@mui/icons-material/Error';
@@ -117,7 +118,6 @@ export default function PublicStatusPage({
   };
 
   const overallStatus = getOverallStatus();
-  const lastUpdated = new Date().toLocaleString();
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'grey.50' }}>
@@ -187,7 +187,9 @@ export default function PublicStatusPage({
             color="text.secondary"
             sx={{ mt: 1, display: 'block' }}
           >
-            Last updated: {lastUpdated}
+            <NoSSR fallback="Last updated: Loading...">
+              Last updated: {new Date().toLocaleString()}
+            </NoSSR>
           </Typography>
         </Paper>
 

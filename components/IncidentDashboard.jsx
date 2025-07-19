@@ -26,6 +26,7 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import MonitorIcon from '@mui/icons-material/Monitor';
 import PeopleIcon from '@mui/icons-material/People';
 import { useOrganization } from '@/contexts/OrganizationContext';
+import NoSSR from './NoSSR';
 
 export default function IncidentDashboard() {
   const [incidents, setIncidents] = useState([]);
@@ -406,8 +407,10 @@ export default function IncidentDashboard() {
                     </Box>
                     <Typography variant="body2" color="text.secondary">
                       {incident.organization_name} •{' '}
-                      {incident.assigned_to_name || 'Unassigned'} •
-                      {new Date(incident.created_at).toLocaleDateString()}
+                      {incident.assigned_to_name || 'Unassigned'} •{' '}
+                      <NoSSR fallback="Loading...">
+                        {new Date(incident.created_at).toLocaleDateString()}
+                      </NoSSR>
                     </Typography>
                   </Box>
                 ))

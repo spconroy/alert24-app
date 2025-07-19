@@ -73,9 +73,15 @@ export default function DebugPage() {
 
   const tests = [
     {
-      name: 'Auth Debug',
+      name: 'Auth Debug (NextAuth)',
       description: 'Test NextAuth session and environment variables',
       endpoint: '/api/auth/debug',
+      icon: <SecurityIcon />,
+    },
+    {
+      name: 'Session Debug (Custom)',
+      description: 'Test custom session manager authentication',
+      endpoint: '/api/auth/session-debug',
       icon: <SecurityIcon />,
     },
     {

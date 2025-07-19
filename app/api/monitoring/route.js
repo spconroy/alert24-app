@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { SessionManager } from '@/lib/session-manager';
 import { SupabaseClient } from '@/lib/db-supabase';
 import { STATUS_PAGE_PROVIDERS } from '@/lib/status-page-providers';
 
@@ -18,10 +18,12 @@ export async function GET(req) {
       cookies: req.headers.get('cookie')?.length || 0
     });
 
+    // Use custom session manager instead of NextAuth
+    const sessionManager = new SessionManager();
     let session;
     try {
-      session = await auth();
-      console.log('🔍 Auth result:', {
+      session = await sessionManager.getSessionFromRequest(req);
+      console.log('🔍 Session result:', {
         hasSession: !!session,
         hasUser: !!session?.user,
         hasEmail: !!session?.user?.email,
@@ -29,12 +31,12 @@ export async function GET(req) {
         sessionKeys: session ? Object.keys(session) : [],
         userKeys: session?.user ? Object.keys(session.user) : []
       });
-    } catch (authError) {
-      console.error('🔥 Auth error:', authError);
+    } catch (sessionError) {
+      console.error('🔥 Session error:', sessionError);
       return NextResponse.json({ 
-        error: 'Authentication failed', 
-        details: authError.message,
-        code: 'AUTH_ERROR'
+        error: 'Session verification failed', 
+        details: sessionError.message,
+        code: 'SESSION_ERROR'
       }, { status: 401 });
     }
 
@@ -46,7 +48,8 @@ export async function GET(req) {
           hasSession: !!session,
           hasUser: !!session?.user,
           hasEmail: !!session?.user?.email,
-          cookieCount: req.headers.get('cookie')?.length || 0
+          cookieCount: req.headers.get('cookie')?.length || 0,
+          authSystem: 'custom-session-manager'
         }
       }, { status: 401 });
     }
