@@ -186,25 +186,79 @@ export default function IncidentsPage() {
 
   return (
     <ProtectedRoute>
-      <Box sx={{ p: 3 }}>
-        {/* Header */}
+      {/* Enhanced Header Section with Visual Interest */}
+      <Box
+        sx={{
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'white',
+          py: 4,
+          px: 3,
+          mb: 3,
+          borderRadius: '0 0 16px 16px',
+          boxShadow: '0 8px 32px rgba(102, 126, 234, 0.15)',
+          position: 'relative',
+          overflow: 'hidden',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background:
+              'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.05"%3E%3Ccircle cx="36" cy="24" r="6"/%3E%3Ccircle cx="6" cy="54" r="6"/%3E%3Ccircle cx="24" cy="6" r="6"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+            opacity: 0.3,
+          },
+        }}
+      >
         <Box
           display="flex"
           justifyContent="space-between"
           alignItems="center"
-          mb={4}
+          position="relative"
+          zIndex={1}
         >
           <Box>
-            <Typography variant="h4" component="h1" gutterBottom>
-              Incidents
+            <Typography
+              variant="h3"
+              component="h1"
+              gutterBottom
+              sx={{
+                fontWeight: 700,
+                textShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                mb: 1,
+              }}
+            >
+              🚨 Incidents
             </Typography>
-            <Typography variant="body1" color="text.secondary">
+            <Typography
+              variant="h6"
+              sx={{
+                opacity: 0.9,
+                fontWeight: 400,
+                textShadow: '0 1px 2px rgba(0,0,0,0.1)',
+              }}
+            >
               Manage and track all incidents across your organizations
             </Typography>
           </Box>
           <Box display="flex" gap={2}>
-            <Tooltip title="Refresh">
-              <IconButton onClick={fetchIncidents} color="primary">
+            <Tooltip title="Refresh" arrow>
+              <IconButton
+                onClick={fetchIncidents}
+                sx={{
+                  backgroundColor: 'rgba(255,255,255,0.15)',
+                  color: 'white',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  '&:hover': {
+                    backgroundColor: 'rgba(255,255,255,0.25)',
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                  },
+                  transition: 'all 0.2s ease',
+                }}
+              >
                 <RefreshIcon />
               </IconButton>
             </Tooltip>
@@ -213,43 +267,113 @@ export default function IncidentsPage() {
               <Button
                 component={Link}
                 href="/incidents/new"
-                variant="outlined"
+                variant="contained"
                 startIcon={<AddIcon />}
-                color="primary"
+                sx={{
+                  backgroundColor: 'rgba(255,255,255,0.15)',
+                  color: 'white',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  fontWeight: 600,
+                  px: 3,
+                  '&:hover': {
+                    backgroundColor: 'rgba(255,255,255,0.25)',
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                  },
+                  transition: 'all 0.2s ease',
+                }}
               >
                 Create Incident
               </Button>
             )}
           </Box>
         </Box>
+      </Box>
 
-        {/* Filters */}
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Box display="flex" alignItems="center" gap={2} mb={2}>
-              <FilterListIcon color="action" />
-              <Typography variant="h6">Filters</Typography>
+      <Box sx={{ px: 3, pb: 3 }}>
+        {/* Enhanced Filters Section */}
+        <Card
+          sx={{
+            mb: 4,
+            borderRadius: 3,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+            border: '1px solid rgba(0,0,0,0.05)',
+            background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+            overflow: 'hidden',
+            position: 'relative',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '4px',
+              background:
+                'linear-gradient(90deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
+            },
+          }}
+        >
+          <CardContent sx={{ pt: 3, pb: 3 }}>
+            <Box display="flex" alignItems="center" gap={2} mb={3}>
+              <Box
+                sx={{
+                  p: 1,
+                  borderRadius: 2,
+                  backgroundColor: 'primary.main',
+                  color: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <FilterListIcon />
+              </Box>
+              <Typography variant="h5" fontWeight="600" color="text.primary">
+                Filters & Search
+              </Typography>
 
               {/* Active filter count indicator */}
               {Object.values(filters).filter(v => v).length > 0 && (
                 <Chip
-                  label={`${Object.values(filters).filter(v => v).length} active`}
+                  label={`${Object.values(filters).filter(v => v).length} filter${Object.values(filters).filter(v => v).length > 1 ? 's' : ''} active`}
                   size="small"
                   color="primary"
-                  variant="outlined"
+                  sx={{
+                    backgroundColor: 'primary.main',
+                    color: 'white',
+                    fontWeight: 600,
+                    '& .MuiChip-deleteIcon': {
+                      color: 'rgba(255,255,255,0.7)',
+                      '&:hover': {
+                        color: 'white',
+                      },
+                    },
+                  }}
+                  onDelete={clearFilters}
                 />
               )}
 
               <Box sx={{ ml: 'auto' }}>
                 <Button
-                  variant="text"
+                  variant="outlined"
                   size="small"
                   onClick={clearFilters}
                   disabled={Object.values(filters).every(v => !v)}
                   sx={{
+                    borderRadius: 2,
+                    fontWeight: 500,
+                    borderColor: Object.values(filters).some(v => v)
+                      ? 'primary.main'
+                      : 'divider',
                     color: Object.values(filters).some(v => v)
                       ? 'primary.main'
                       : 'text.disabled',
+                    '&:hover': {
+                      backgroundColor: Object.values(filters).some(v => v)
+                        ? 'primary.50'
+                        : 'transparent',
+                    },
                   }}
                 >
                   Clear All
@@ -525,8 +649,100 @@ export default function IncidentsPage() {
           </Alert>
         )}
 
-        {/* Incidents Table */}
-        <Card>
+        {/* Enhanced Incidents Section */}
+        <Card
+          sx={{
+            borderRadius: 3,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+            border: '1px solid rgba(0,0,0,0.08)',
+            overflow: 'hidden',
+            background: 'linear-gradient(145deg, #ffffff 0%, #fafbfc 100%)',
+            position: 'relative',
+          }}
+        >
+          {/* Enhanced Header */}
+          {incidents.length > 0 && !loading && (
+            <Box
+              sx={{
+                background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                borderBottom: '2px solid #e2e8f0',
+                px: 3,
+                py: 2.5,
+              }}
+            >
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box
+                    sx={{
+                      p: 1.5,
+                      borderRadius: 2,
+                      backgroundColor: 'white',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <WarningIcon color="primary" />
+                  </Box>
+                  <Box>
+                    <Typography
+                      variant="h5"
+                      fontWeight="700"
+                      color="text.primary"
+                    >
+                      Active Incidents
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mt: 0.5 }}
+                    >
+                      {incidents.length} incident
+                      {incidents.length !== 1 ? 's' : ''} found
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {/* Quick Status Stats */}
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  {['open', 'investigating', 'monitoring', 'resolved'].map(
+                    status => {
+                      const count = incidents.filter(
+                        i => i.status === status
+                      ).length;
+                      const colors = {
+                        open: 'error',
+                        investigating: 'warning',
+                        monitoring: 'info',
+                        resolved: 'success',
+                      };
+                      return count > 0 ? (
+                        <Chip
+                          key={status}
+                          label={`${count} ${status}`}
+                          size="small"
+                          color={colors[status]}
+                          variant="outlined"
+                          sx={{
+                            backgroundColor: 'white',
+                            fontWeight: 600,
+                            textTransform: 'capitalize',
+                            borderWidth: 2,
+                          }}
+                        />
+                      ) : null;
+                    }
+                  )}
+                </Box>
+              </Box>
+            </Box>
+          )}
+
           <CardContent sx={{ p: 0 }}>
             {loading && incidents.length === 0 ? (
               <Box
@@ -664,22 +880,54 @@ export default function IncidentsPage() {
                 )}
               </Box>
             ) : (
-              <TableContainer>
-                <Table>
+              <TableContainer sx={{ backgroundColor: 'transparent' }}>
+                <Table sx={{ minWidth: 650 }}>
                   <TableHead>
-                    <TableRow>
-                      <TableCell>Title</TableCell>
-                      <TableCell>Organization</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell>Severity</TableCell>
-                      <TableCell>Assigned To</TableCell>
-                      <TableCell>Created</TableCell>
-                      <TableCell align="right">Actions</TableCell>
+                    <TableRow
+                      sx={{
+                        backgroundColor: 'rgba(99, 102, 241, 0.04)',
+                        '& .MuiTableCell-head': {
+                          fontWeight: 700,
+                          fontSize: '0.875rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px',
+                          color: 'text.primary',
+                          borderBottom: '2px solid rgba(99, 102, 241, 0.1)',
+                          py: 2,
+                        },
+                      }}
+                    >
+                      <TableCell>📋 Title</TableCell>
+                      <TableCell>🏢 Organization</TableCell>
+                      <TableCell>🚩 Status</TableCell>
+                      <TableCell>⚠️ Severity</TableCell>
+                      <TableCell>👤 Assigned To</TableCell>
+                      <TableCell>📅 Created</TableCell>
+                      <TableCell align="right">⚡ Actions</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {incidents.map(incident => (
-                      <TableRow key={incident.id} hover>
+                    {incidents.map((incident, index) => (
+                      <TableRow
+                        key={incident.id}
+                        hover
+                        sx={{
+                          backgroundColor:
+                            index % 2 === 0
+                              ? 'rgba(248, 250, 252, 0.3)'
+                              : 'white',
+                          '&:hover': {
+                            backgroundColor: 'rgba(99, 102, 241, 0.08)',
+                            transform: 'translateX(4px)',
+                            boxShadow: '4px 0 12px rgba(99, 102, 241, 0.15)',
+                            transition: 'all 0.2s ease',
+                          },
+                          '& .MuiTableCell-root': {
+                            borderBottom: '1px solid rgba(224, 224, 224, 0.5)',
+                            py: 2,
+                          },
+                        }}
+                      >
                         <TableCell>
                           <Box>
                             <Typography variant="subtitle2" fontWeight="medium">
@@ -755,22 +1003,50 @@ export default function IncidentsPage() {
               </TableContainer>
             )}
 
-            {/* Load More */}
+            {/* Enhanced Load More */}
             {pagination.hasMore && (
-              <Box textAlign="center" p={2}>
+              <Box
+                textAlign="center"
+                p={3}
+                sx={{
+                  backgroundColor: 'rgba(248, 250, 252, 0.5)',
+                  borderTop: '1px solid rgba(224, 224, 224, 0.5)',
+                }}
+              >
                 <Button
                   variant="outlined"
                   onClick={handleLoadMore}
                   disabled={loading}
+                  size="large"
+                  sx={{
+                    borderRadius: 3,
+                    fontWeight: 600,
+                    px: 4,
+                    py: 1.5,
+                    borderWidth: 2,
+                    '&:hover': {
+                      borderWidth: 2,
+                      transform: 'translateY(-1px)',
+                      boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)',
+                    },
+                    transition: 'all 0.2s ease',
+                  }}
                 >
-                  {loading ? <CircularProgress size={20} /> : 'Load More'}
+                  {loading ? (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CircularProgress size={20} />
+                      Loading...
+                    </Box>
+                  ) : (
+                    'Load More Incidents'
+                  )}
                 </Button>
               </Box>
             )}
           </CardContent>
         </Card>
 
-        {/* Floating Action Button for Mobile */}
+        {/* Enhanced Floating Action Button for Mobile */}
         <Fab
           color="error"
           aria-label="add"
@@ -778,12 +1054,25 @@ export default function IncidentsPage() {
           href="/incidents/new"
           sx={{
             position: 'fixed',
-            bottom: 16,
-            right: 16,
+            bottom: 24,
+            right: 24,
             display: { xs: 'flex', md: 'none' },
+            width: 64,
+            height: 64,
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            boxShadow: '0 8px 32px rgba(102, 126, 234, 0.4)',
+            '&:hover': {
+              background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+              transform: 'scale(1.1) translateY(-2px)',
+              boxShadow: '0 12px 40px rgba(102, 126, 234, 0.5)',
+            },
+            '&:active': {
+              transform: 'scale(1.05) translateY(-1px)',
+            },
+            transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
           }}
         >
-          <AddIcon />
+          <AddIcon sx={{ fontSize: 28 }} />
         </Fab>
       </Box>
     </ProtectedRoute>
