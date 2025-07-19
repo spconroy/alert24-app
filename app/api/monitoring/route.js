@@ -13,12 +13,42 @@ export async function GET(req) {
       hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
       hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
       runtime: process.env.NODE_ENV,
-      userAgent: req.headers.get('user-agent')?.substring(0, 50)
+      userAgent: req.headers.get('user-agent')?.substring(0, 50),
+      hasNextAuthSecret: !!process.env.NEXTAUTH_SECRET,
+      cookies: req.headers.get('cookie')?.length || 0
     });
 
-    const session = await auth();
+    let session;
+    try {
+      session = await auth();
+      console.log('🔍 Auth result:', {
+        hasSession: !!session,
+        hasUser: !!session?.user,
+        hasEmail: !!session?.user?.email,
+        email: session?.user?.email,
+        sessionKeys: session ? Object.keys(session) : [],
+        userKeys: session?.user ? Object.keys(session.user) : []
+      });
+    } catch (authError) {
+      console.error('🔥 Auth error:', authError);
+      return NextResponse.json({ 
+        error: 'Authentication failed', 
+        details: authError.message,
+        code: 'AUTH_ERROR'
+      }, { status: 401 });
+    }
+
     if (!session || !session.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      console.log('❌ No valid session found');
+      return NextResponse.json({ 
+        error: 'Unauthorized - No valid session',
+        debug: {
+          hasSession: !!session,
+          hasUser: !!session?.user,
+          hasEmail: !!session?.user?.email,
+          cookieCount: req.headers.get('cookie')?.length || 0
+        }
+      }, { status: 401 });
     }
 
     const { searchParams } = new URL(req.url);

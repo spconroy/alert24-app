@@ -28,6 +28,7 @@ import {
   CircularProgress,
   Paper,
 } from '@mui/material';
+import NoSSR from './NoSSR';
 import {
   Add as AddIcon,
   Person as PersonIcon,
@@ -245,7 +246,9 @@ export default function IncidentTimeline({
                 sx={{ m: 'auto 0', maxWidth: '100px', fontSize: '0.75rem' }}
                 color="text.secondary"
               >
-                {formatRelativeTime(update.created_at)}
+                <NoSSR fallback="...">
+                  {formatRelativeTime(update.created_at)}
+                </NoSSR>
               </TimelineOppositeContent>
               <TimelineSeparator>
                 <TimelineDot color={getStatusColor(update.status)}>
@@ -283,7 +286,9 @@ export default function IncidentTimeline({
                         />
                       </Box>
                       <Typography variant="caption" color="text.secondary">
-                        {formatDate(update.created_at)}
+                        <NoSSR fallback="Loading...">
+                          {formatDate(update.created_at)}
+                        </NoSSR>
                       </Typography>
                     </Box>
 

@@ -22,6 +22,7 @@ import {
   Info as InfoIcon,
   ExpandMore as ExpandMoreIcon,
 } from '@mui/icons-material';
+import NoSSR from './NoSSR';
 
 export default function StatusUpdatesFeed({
   statusPageId,
@@ -339,9 +340,17 @@ export default function StatusUpdatesFeed({
                   {update.message}
                 </Typography>
 
-                <Typography variant="caption" color="text.secondary">
-                  Posted {new Date(update.created_at).toLocaleString()}
-                </Typography>
+                <NoSSR
+                  fallback={
+                    <Typography variant="caption" color="text.secondary">
+                      Posted...
+                    </Typography>
+                  }
+                >
+                  <Typography variant="caption" color="text.secondary">
+                    Posted {new Date(update.created_at).toLocaleString()}
+                  </Typography>
+                </NoSSR>
               </CardContent>
             </Card>
           </Box>
