@@ -28,6 +28,15 @@ import PeopleIcon from '@mui/icons-material/People';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import NoSSR from './NoSSR';
 
+// CSS for pulse animation
+const pulseAnimation = `
+  @keyframes pulse {
+    0% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.1); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+`;
+
 export default function IncidentDashboard() {
   const [incidents, setIncidents] = useState([]);
   const [monitoringStats, setMonitoringStats] = useState({
@@ -215,6 +224,9 @@ export default function IncidentDashboard() {
 
   return (
     <Box>
+      {/* Add pulse animation styles */}
+      <style>{pulseAnimation}</style>
+
       {/* Header */}
       <Box
         display="flex"
@@ -853,27 +865,147 @@ export default function IncidentDashboard() {
                   </Button>
                 </Box>
               ) : (
-                currentlyOnCall.map(schedule => (
-                  <Box key={schedule.id} sx={{ mb: 1 }}>
-                    <Typography variant="subtitle2">
-                      {schedule.user_name}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {schedule.organization_name}
+                <Box>
+                  {currentlyOnCall.map((schedule, index) => (
+                    <Box
+                      key={schedule.id}
+                      sx={{
+                        mb: 2,
+                        p: 2,
+                        backgroundColor: 'success.50',
+                        borderRadius: 2,
+                        border: '1px solid',
+                        borderColor: 'success.200',
+                        position: 'relative',
+                      }}
+                    >
+                      {/* Online indicator */}
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          top: 8,
+                          right: 8,
+                          width: 8,
+                          height: 8,
+                          backgroundColor: 'success.main',
+                          borderRadius: '50%',
+                          animation: 'pulse 2s infinite',
+                        }}
+                      />
+
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
+                          mb: 1,
+                        }}
+                      >
+                        <PeopleIcon color="success" fontSize="small" />
+                        <Typography
+                          variant="subtitle2"
+                          sx={{ fontWeight: 600 }}
+                        >
+                          {schedule.user_name}
+                        </Typography>
+                      </Box>
+
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ display: 'block', mb: 1 }}
+                      >
+                        {schedule.organization_name}
+                      </Typography>
+
+                      {/* Schedule info */}
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 0.5,
+                          mb: 1,
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          color="success.main"
+                          sx={{ fontWeight: 500 }}
+                        >
+                          🕐 On-Call Now
+                        </Typography>
+                      </Box>
+
+                      {/* Contact actions */}
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Button
+                          component={Link}
+                          href={`/incidents/new?assignTo=${schedule.user_id}`}
+                          size="small"
+                          variant="outlined"
+                          color="success"
+                          sx={{ flex: 1, fontSize: '0.75rem' }}
+                        >
+                          Assign Incident
+                        </Button>
+                        <Tooltip title={`Contact ${schedule.user_name}`}>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="success"
+                            sx={{ minWidth: 'auto', px: 1 }}
+                          >
+                            📞
+                          </Button>
+                        </Tooltip>
+                      </Box>
+                    </Box>
+                  ))}
+
+                  {/* Summary footer */}
+                  <Box
+                    sx={{
+                      mt: 2,
+                      p: 1,
+                      backgroundColor: 'grey.50',
+                      borderRadius: 1,
+                      textAlign: 'center',
+                    }}
+                  >
+                    <Typography variant="caption" color="text.secondary">
+                      {currentlyOnCall.length} team member
+                      {currentlyOnCall.length > 1 ? 's' : ''} actively
+                      monitoring
                     </Typography>
                   </Box>
-                ))
+                </Box>
               )}
 
-              <Button
-                component={Link}
-                href="/on-call"
-                variant="outlined"
-                fullWidth
-                sx={{ mt: 2 }}
-              >
-                Manage Schedules
-              </Button>
+              <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+                <Button
+                  component={Link}
+                  href="/on-call"
+                  variant="outlined"
+                  fullWidth
+                  startIcon={<PeopleIcon />}
+                >
+                  {currentlyOnCall.length > 0
+                    ? 'View All Schedules'
+                    : 'Manage Schedules'}
+                </Button>
+                {currentlyOnCall.length === 0 && (
+                  <Button
+                    component={Link}
+                    href="/on-call/new"
+                    variant="contained"
+                    color="warning"
+                    startIcon={<AddIcon />}
+                    sx={{ whiteSpace: 'nowrap' }}
+                  >
+                    Add Schedule
+                  </Button>
+                )}
+              </Box>
             </CardContent>
           </Card>
 
