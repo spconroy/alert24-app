@@ -226,6 +226,79 @@ export default function DebugPage() {
                         </Alert>
                       ) : null}
                       
+                      {test.name === 'Environment Variables' && debugResults[test.name].success ? (
+                        <Box>
+                          <Typography variant="h6" gutterBottom>
+                            Environment Status
+                          </Typography>
+                          <Box display="grid" gridTemplateColumns="repeat(auto-fit, minmax(250px, 1fr))" gap={2} mb={3}>
+                            <Paper sx={{ p: 2 }}>
+                              <Typography variant="body2" color="text.secondary">Supabase URL</Typography>
+                              <Typography variant="body1">
+                                {debugResults[test.name].data.environment?.hasSupabaseUrl ? '✅ Set' : '❌ Missing'}
+                              </Typography>
+                              {debugResults[test.name].data.environment?.supabaseUrlPrefix && (
+                                <Typography variant="caption" color="text.secondary">
+                                  {debugResults[test.name].data.environment.supabaseUrlPrefix}...
+                                </Typography>
+                              )}
+                            </Paper>
+                            <Paper sx={{ p: 2 }}>
+                              <Typography variant="body2" color="text.secondary">Anon Key</Typography>
+                              <Typography variant="body1">
+                                {debugResults[test.name].data.environment?.hasSupabaseAnonKey ? '✅ Set' : '❌ Missing'}
+                              </Typography>
+                            </Paper>
+                            <Paper sx={{ p: 2 }}>
+                              <Typography variant="body2" color="text.secondary">Service Key</Typography>
+                              <Typography variant="body1">
+                                {debugResults[test.name].data.environment?.hasSupabaseServiceKey ? '✅ Set' : '❌ Missing'}
+                              </Typography>
+                            </Paper>
+                            <Paper sx={{ p: 2 }}>
+                              <Typography variant="body2" color="text.secondary">Environment</Typography>
+                              <Typography variant="body1">
+                                {debugResults[test.name].data.environment?.NODE_ENV || 'Unknown'}
+                              </Typography>
+                            </Paper>
+                          </Box>
+                        </Box>
+                      ) : null}
+                      
+                      {test.name === 'Monitoring Checks' && debugResults[test.name].data ? (
+                        <Box>
+                          <Typography variant="h6" gutterBottom>
+                            Monitoring Status
+                          </Typography>
+                          <Box display="grid" gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))" gap={2} mb={3}>
+                            <Paper sx={{ p: 2, textAlign: 'center' }}>
+                              <Typography variant="h4" color={debugResults[test.name].success ? 'success.main' : 'error.main'}>
+                                {debugResults[test.name].success ? '✅' : '❌'}
+                              </Typography>
+                              <Typography variant="body2">API Status</Typography>
+                            </Paper>
+                            <Paper sx={{ p: 2, textAlign: 'center' }}>
+                              <Typography variant="h4" color="info.main">
+                                {debugResults[test.name].data.count || 0}
+                              </Typography>
+                              <Typography variant="body2">Total Checks</Typography>
+                            </Paper>
+                          </Box>
+                          {debugResults[test.name].data.error && (
+                            <Alert severity="error" sx={{ mb: 2 }}>
+                              <Typography variant="body2">
+                                <strong>Error:</strong> {debugResults[test.name].data.error}
+                              </Typography>
+                              {debugResults[test.name].data.details && (
+                                <Typography variant="body2">
+                                  <strong>Details:</strong> {debugResults[test.name].data.details}
+                                </Typography>
+                              )}
+                            </Alert>
+                          )}
+                        </Box>
+                      ) : null}
+                      
                       {test.name === 'Status Page Health Check' && debugResults[test.name].success ? (
                         <Box>
                           <Typography variant="h6" gutterBottom>
