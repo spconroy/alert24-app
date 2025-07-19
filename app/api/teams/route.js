@@ -3,6 +3,8 @@ import { SessionManager } from '@/lib/session-manager';
 import { SupabaseClient } from '@/lib/db-supabase';
 
 const db = new SupabaseClient();
+const adminDb = new SupabaseClient();
+adminDb.client = adminDb.adminClient; // Use admin client to bypass RLS
 
 export const runtime = 'edge';
 
@@ -27,12 +29,19 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Organization ID required' }, { status: 400 });
     }
 
-    const teams = await db.getTeamGroups(organizationId);
+    // Verify user has access to this organization
+    const userOrgs = await db.getUserOrganizations(user.id);
+    const hasAccess = userOrgs.some(org => org.id === organizationId);
+    if (!hasAccess) {
+      return NextResponse.json({ error: 'Access denied to organization' }, { status: 403 });
+    }
+
+    const teams = await adminDb.getTeamGroups(organizationId);
     
     // Get memberships for each team
     const teamsWithMembers = await Promise.all(
       teams.map(async (team) => {
-        const memberships = await db.getTeamMemberships(team.id);
+        const memberships = await adminDb.getTeamMemberships(team.id);
         return {
           ...team,
           members: memberships
@@ -68,6 +77,13 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Name and organization ID required' }, { status: 400 });
     }
 
+    // Verify user has access to this organization
+    const userOrgs = await db.getUserOrganizations(user.id);
+    const hasAccess = userOrgs.some(org => org.id === organizationId);
+    if (!hasAccess) {
+      return NextResponse.json({ error: 'Access denied to organization' }, { status: 403 });
+    }
+
     const teamData = {
       name,
       description,
@@ -77,7 +93,7 @@ export async function POST(request) {
       is_active: true
     };
 
-    const team = await db.createTeamGroup(teamData);
+    const team = await adminDb.createTeamGroup(teamData);
     return NextResponse.json(team, { status: 201 });
   } catch (error) {
     console.error('Error creating team:', error);
