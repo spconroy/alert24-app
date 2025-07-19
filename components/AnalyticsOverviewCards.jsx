@@ -11,7 +11,7 @@ import {
   CircularProgress,
   IconButton,
   Tooltip,
-  LinearProgress
+  LinearProgress,
 } from '@mui/material';
 import {
   TrendingUp,
@@ -23,19 +23,42 @@ import {
   Assessment,
   Schedule,
   BugReport,
-  InfoOutlined
+  InfoOutlined,
 } from '@mui/icons-material';
 
-function MetricCard({ title, value, subtitle, trend, trendValue, icon, color = 'primary', loading = false, progress = null, tooltip }) {
+function MetricCard({
+  title,
+  value,
+  subtitle,
+  trend,
+  trendValue,
+  icon,
+  color = 'primary',
+  loading = false,
+  progress = null,
+  tooltip,
+}) {
   const IconComponent = icon;
-  
+
   return (
     <Card sx={{ height: '100%' }}>
       <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            mb: 2,
+          }}
+        >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <IconComponent color={color} />
-            <Typography variant="h6" component="h3" fontSize="0.875rem" fontWeight="600">
+            <Typography
+              variant="h6"
+              component="h3"
+              fontSize="0.875rem"
+              fontWeight="600"
+            >
               {title}
             </Typography>
             {tooltip && (
@@ -56,11 +79,13 @@ function MetricCard({ title, value, subtitle, trend, trendValue, icon, color = '
             />
           )}
         </Box>
-        
+
         {loading ? (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <CircularProgress size={20} />
-            <Typography variant="body2" color="text.secondary">Loading...</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Loading...
+            </Typography>
           </Box>
         ) : (
           <>
@@ -68,19 +93,33 @@ function MetricCard({ title, value, subtitle, trend, trendValue, icon, color = '
               {value}
             </Typography>
             {subtitle && (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mt: 0.5 }}
+              >
                 {subtitle}
               </Typography>
             )}
             {progress !== null && (
               <Box sx={{ mt: 2 }}>
-                <LinearProgress 
-                  variant="determinate" 
-                  value={progress} 
-                  color={progress >= 95 ? 'success' : progress >= 90 ? 'warning' : 'error'}
+                <LinearProgress
+                  variant="determinate"
+                  value={progress}
+                  color={
+                    progress >= 95
+                      ? 'success'
+                      : progress >= 90
+                        ? 'warning'
+                        : 'error'
+                  }
                   sx={{ height: 6, borderRadius: 3 }}
                 />
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ mt: 0.5, display: 'block' }}
+                >
                   {progress.toFixed(2)}%
                 </Typography>
               </Box>
@@ -92,7 +131,11 @@ function MetricCard({ title, value, subtitle, trend, trendValue, icon, color = '
   );
 }
 
-export default function AnalyticsOverviewCards({ organizationId, dateRange, services }) {
+export default function AnalyticsOverviewCards({
+  organizationId,
+  dateRange,
+  services,
+}) {
   const [metrics, setMetrics] = useState({
     overallUptime: { value: 0, loading: true },
     avgResponseTime: { value: 0, loading: true },
@@ -101,7 +144,7 @@ export default function AnalyticsOverviewCards({ organizationId, dateRange, serv
     mtta: { value: 0, loading: true },
     healthScore: { value: 0, loading: true },
     checksPerformed: { value: 0, loading: true },
-    failureRate: { value: 0, loading: true }
+    failureRate: { value: 0, loading: true },
   });
 
   useEffect(() => {
@@ -129,65 +172,65 @@ export default function AnalyticsOverviewCards({ organizationId, dateRange, serv
         body: JSON.stringify({
           organizationId,
           dateRange,
-          services
+          services,
         }),
       });
 
       if (response.ok) {
         const data = await response.json();
         setMetrics({
-          overallUptime: { 
-            value: data.overallUptime.toFixed(2) + '%', 
+          overallUptime: {
+            value: data.overallUptime.toFixed(2) + '%',
             loading: false,
             progress: data.overallUptime,
             trend: data.uptimeTrend > 0 ? 'up' : 'down',
-            trendValue: Math.abs(data.uptimeTrend).toFixed(2) + '%'
+            trendValue: Math.abs(data.uptimeTrend).toFixed(2) + '%',
           },
-          avgResponseTime: { 
-            value: data.avgResponseTime + 'ms', 
+          avgResponseTime: {
+            value: data.avgResponseTime + 'ms',
             loading: false,
             trend: data.responseTimeTrend < 0 ? 'up' : 'down',
-            trendValue: Math.abs(data.responseTimeTrend).toFixed(0) + 'ms'
+            trendValue: Math.abs(data.responseTimeTrend).toFixed(0) + 'ms',
           },
-          totalIncidents: { 
-            value: data.totalIncidents, 
+          totalIncidents: {
+            value: data.totalIncidents,
             loading: false,
             subtitle: `${data.openIncidents} currently open`,
             trend: data.incidentTrend < 0 ? 'up' : 'down',
-            trendValue: Math.abs(data.incidentTrend)
+            trendValue: Math.abs(data.incidentTrend),
           },
-          mttr: { 
-            value: formatDuration(data.mttr), 
+          mttr: {
+            value: formatDuration(data.mttr),
             loading: false,
             subtitle: 'Mean Time To Resolution',
             trend: data.mttrTrend < 0 ? 'up' : 'down',
-            trendValue: formatDuration(Math.abs(data.mttrTrend))
+            trendValue: formatDuration(Math.abs(data.mttrTrend)),
           },
-          mtta: { 
-            value: formatDuration(data.mtta), 
+          mtta: {
+            value: formatDuration(data.mtta),
             loading: false,
             subtitle: 'Mean Time To Acknowledgment',
             trend: data.mttaTrend < 0 ? 'up' : 'down',
-            trendValue: formatDuration(Math.abs(data.mttaTrend))
+            trendValue: formatDuration(Math.abs(data.mttaTrend)),
           },
-          healthScore: { 
-            value: data.healthScore, 
+          healthScore: {
+            value: data.healthScore,
             loading: false,
             progress: data.healthScore,
-            subtitle: getHealthScoreLabel(data.healthScore)
+            subtitle: getHealthScoreLabel(data.healthScore),
           },
-          checksPerformed: { 
-            value: data.checksPerformed.toLocaleString(), 
+          checksPerformed: {
+            value: data.checksPerformed.toLocaleString(),
             loading: false,
-            subtitle: `${data.checksPerDay} avg per day`
+            subtitle: `${data.checksPerDay} avg per day`,
           },
-          failureRate: { 
-            value: data.failureRate.toFixed(2) + '%', 
+          failureRate: {
+            value: data.failureRate.toFixed(2) + '%',
             loading: false,
             progress: 100 - data.failureRate,
             trend: data.failureRateTrend < 0 ? 'up' : 'down',
-            trendValue: Math.abs(data.failureRateTrend).toFixed(2) + '%'
-          }
+            trendValue: Math.abs(data.failureRateTrend).toFixed(2) + '%',
+          },
         });
       }
     } catch (error) {
@@ -203,13 +246,14 @@ export default function AnalyticsOverviewCards({ organizationId, dateRange, serv
     }
   };
 
-  const formatDuration = (minutes) => {
+  const formatDuration = minutes => {
     if (minutes < 60) return `${Math.round(minutes)}m`;
-    if (minutes < 1440) return `${Math.round(minutes / 60)}h ${Math.round(minutes % 60)}m`;
+    if (minutes < 1440)
+      return `${Math.round(minutes / 60)}h ${Math.round(minutes % 60)}m`;
     return `${Math.round(minutes / 1440)}d ${Math.round((minutes % 1440) / 60)}h`;
   };
 
-  const getHealthScoreLabel = (score) => {
+  const getHealthScoreLabel = score => {
     if (score >= 95) return 'Excellent';
     if (score >= 90) return 'Good';
     if (score >= 80) return 'Fair';

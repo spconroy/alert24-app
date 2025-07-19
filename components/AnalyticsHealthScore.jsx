@@ -10,12 +10,12 @@ import {
   CircularProgress,
   Paper,
   LinearProgress,
-  Chip
+  Chip,
 } from '@mui/material';
 import { Assessment, CheckCircle, Warning, Error } from '@mui/icons-material';
 
 function HealthScoreGauge({ score, title }) {
-  const getColor = (score) => {
+  const getColor = score => {
     if (score >= 95) return '#4caf50';
     if (score >= 90) return '#8bc34a';
     if (score >= 80) return '#ff9800';
@@ -23,7 +23,7 @@ function HealthScoreGauge({ score, title }) {
     return '#f44336';
   };
 
-  const getLabel = (score) => {
+  const getLabel = score => {
     if (score >= 95) return 'Excellent';
     if (score >= 90) return 'Good';
     if (score >= 80) return 'Fair';
@@ -70,7 +70,7 @@ function HealthScoreGauge({ score, title }) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              flexDirection: 'column'
+              flexDirection: 'column',
             }}
           >
             <Typography variant="h4" component="div" fontWeight="bold">
@@ -92,17 +92,22 @@ function HealthScoreGauge({ score, title }) {
 }
 
 function HealthFactors({ factors }) {
-  const getIcon = (type) => {
+  const getIcon = type => {
     switch (type) {
-      case 'uptime': return <CheckCircle />;
-      case 'performance': return <Assessment />;
-      case 'incidents': return <Warning />;
-      case 'alerts': return <Error />;
-      default: return <Assessment />;
+      case 'uptime':
+        return <CheckCircle />;
+      case 'performance':
+        return <Assessment />;
+      case 'incidents':
+        return <Warning />;
+      case 'alerts':
+        return <Error />;
+      default:
+        return <Assessment />;
     }
   };
 
-  const getColor = (score) => {
+  const getColor = score => {
     if (score >= 90) return 'success';
     if (score >= 70) return 'warning';
     return 'error';
@@ -117,7 +122,9 @@ function HealthFactors({ factors }) {
         <Box sx={{ mt: 2 }}>
           {factors.map((factor, index) => (
             <Box key={index} sx={{ mb: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <Box
+                sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}
+              >
                 {getIcon(factor.type)}
                 <Typography variant="body2" fontWeight="medium">
                   {factor.name}
@@ -134,7 +141,11 @@ function HealthFactors({ factors }) {
                 color={getColor(factor.score)}
                 sx={{ height: 6, borderRadius: 3 }}
               />
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: 'block', mt: 0.5 }}
+              >
                 {factor.description}
               </Typography>
             </Box>
@@ -145,12 +156,16 @@ function HealthFactors({ factors }) {
   );
 }
 
-export default function AnalyticsHealthScore({ organizationId, dateRange, services }) {
+export default function AnalyticsHealthScore({
+  organizationId,
+  dateRange,
+  services,
+}) {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({
     overallScore: 0,
     factors: [],
-    recommendations: []
+    recommendations: [],
   });
 
   useEffect(() => {
@@ -162,7 +177,7 @@ export default function AnalyticsHealthScore({ organizationId, dateRange, servic
   const loadHealthScoreData = async () => {
     try {
       setLoading(true);
-      
+
       const response = await fetch('/api/analytics/health-score', {
         method: 'POST',
         headers: {
@@ -171,7 +186,7 @@ export default function AnalyticsHealthScore({ organizationId, dateRange, servic
         body: JSON.stringify({
           organizationId,
           dateRange,
-          services
+          services,
         }),
       });
 
@@ -201,9 +216,12 @@ export default function AnalyticsHealthScore({ organizationId, dateRange, servic
     <Box sx={{ p: 3 }}>
       <Grid container spacing={3}>
         <Grid item xs={12} md={4}>
-          <HealthScoreGauge score={data.overallScore} title="Overall Health Score" />
+          <HealthScoreGauge
+            score={data.overallScore}
+            title="Overall Health Score"
+          />
         </Grid>
-        
+
         <Grid item xs={12} md={8}>
           <HealthFactors factors={data.factors} />
         </Grid>
@@ -220,14 +238,21 @@ export default function AnalyticsHealthScore({ organizationId, dateRange, servic
                   {data.recommendations.map((rec, index) => (
                     <Paper
                       key={index}
-                      sx={{ p: 2, mb: 2, backgroundColor: 'info.light', color: 'info.contrastText' }}
+                      sx={{
+                        p: 2,
+                        mb: 2,
+                        backgroundColor: 'info.light',
+                        color: 'info.contrastText',
+                      }}
                     >
-                      <Typography variant="body2" fontWeight="medium" gutterBottom>
+                      <Typography
+                        variant="body2"
+                        fontWeight="medium"
+                        gutterBottom
+                      >
                         {rec.title}
                       </Typography>
-                      <Typography variant="body2">
-                        {rec.description}
-                      </Typography>
+                      <Typography variant="body2">{rec.description}</Typography>
                       {rec.impact && (
                         <Chip
                           label={`Potential impact: +${rec.impact} points`}

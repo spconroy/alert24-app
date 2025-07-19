@@ -15,11 +15,15 @@ import {
   TableHead,
   TableRow,
   Chip,
-  LinearProgress
+  LinearProgress,
 } from '@mui/material';
 import { TrendingUp, TrendingDown } from '@mui/icons-material';
 
-export default function AnalyticsServiceComparison({ organizationId, dateRange, services }) {
+export default function AnalyticsServiceComparison({
+  organizationId,
+  dateRange,
+  services,
+}) {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState([]);
 
@@ -32,7 +36,7 @@ export default function AnalyticsServiceComparison({ organizationId, dateRange, 
   const loadComparisonData = async () => {
     try {
       setLoading(true);
-      
+
       const response = await fetch('/api/analytics/comparison', {
         method: 'POST',
         headers: {
@@ -41,7 +45,7 @@ export default function AnalyticsServiceComparison({ organizationId, dateRange, 
         body: JSON.stringify({
           organizationId,
           dateRange,
-          services
+          services,
         }),
       });
 
@@ -56,7 +60,7 @@ export default function AnalyticsServiceComparison({ organizationId, dateRange, 
     }
   };
 
-  const getUptimeColor = (uptime) => {
+  const getUptimeColor = uptime => {
     if (uptime >= 99.5) return 'success';
     if (uptime >= 95) return 'warning';
     return 'error';
@@ -105,17 +109,31 @@ export default function AnalyticsServiceComparison({ organizationId, dateRange, 
                   data.map((service, index) => (
                     <TableRow key={index}>
                       <TableCell>
-                        <Typography fontWeight="medium">{service.name}</Typography>
+                        <Typography fontWeight="medium">
+                          {service.name}
+                        </Typography>
                       </TableCell>
                       <TableCell>
                         <Box sx={{ minWidth: 120 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 1,
+                            }}
+                          >
                             <Typography variant="body2" fontWeight="medium">
                               {service.uptime.toFixed(2)}%
                             </Typography>
                             <Chip
                               size="small"
-                              label={service.uptime >= 99.5 ? 'Excellent' : service.uptime >= 95 ? 'Good' : 'Poor'}
+                              label={
+                                service.uptime >= 99.5
+                                  ? 'Excellent'
+                                  : service.uptime >= 95
+                                    ? 'Good'
+                                    : 'Poor'
+                              }
                               color={getUptimeColor(service.uptime)}
                             />
                           </Box>
@@ -141,13 +159,25 @@ export default function AnalyticsServiceComparison({ organizationId, dateRange, 
                           <LinearProgress
                             variant="determinate"
                             value={service.healthScore}
-                            color={service.healthScore >= 90 ? 'success' : service.healthScore >= 70 ? 'warning' : 'error'}
+                            color={
+                              service.healthScore >= 90
+                                ? 'success'
+                                : service.healthScore >= 70
+                                  ? 'warning'
+                                  : 'error'
+                            }
                             sx={{ mt: 0.5, height: 4 }}
                           />
                         </Box>
                       </TableCell>
                       <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.5,
+                          }}
+                        >
                           {service.trend > 0 ? (
                             <TrendingUp color="success" />
                           ) : service.trend < 0 ? (
@@ -155,9 +185,17 @@ export default function AnalyticsServiceComparison({ organizationId, dateRange, 
                           ) : null}
                           <Typography
                             variant="caption"
-                            color={service.trend > 0 ? 'success.main' : service.trend < 0 ? 'error.main' : 'text.secondary'}
+                            color={
+                              service.trend > 0
+                                ? 'success.main'
+                                : service.trend < 0
+                                  ? 'error.main'
+                                  : 'text.secondary'
+                            }
                           >
-                            {service.trend === 0 ? 'Stable' : `${Math.abs(service.trend).toFixed(1)}%`}
+                            {service.trend === 0
+                              ? 'Stable'
+                              : `${Math.abs(service.trend).toFixed(1)}%`}
                           </Typography>
                         </Box>
                       </TableCell>

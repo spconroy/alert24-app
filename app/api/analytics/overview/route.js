@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/db-supabase';
+import { db } from '@/lib/db-supabase';
 import { NextResponse } from 'next/server';
 
 export async function POST(request) {
@@ -6,7 +6,10 @@ export async function POST(request) {
     const { organizationId, dateRange, services } = await request.json();
 
     if (!organizationId) {
-      return NextResponse.json({ error: 'Organization ID is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Organization ID is required' },
+        { status: 400 }
+      );
     }
 
     if (!services || services.length === 0) {
@@ -26,7 +29,7 @@ export async function POST(request) {
         mttaTrend: 0,
         failureRateTrend: 0,
         openIncidents: 0,
-        checksPerDay: 0
+        checksPerDay: 0,
       });
     }
 
@@ -64,14 +67,17 @@ export async function POST(request) {
     }
 
     // Get monitoring checks for the selected services
-    const { data: monitoringChecks, error: checksError } = await supabase
+    const { data: monitoringChecks, error: checksError } = await db.supabase
       .from('service_monitoring_checks')
       .select('monitoring_check_id')
       .in('service_id', services);
 
     if (checksError) {
       console.error('Error fetching monitoring checks:', checksError);
-      return NextResponse.json({ error: 'Failed to fetch monitoring data' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to fetch monitoring data' },
+        { status: 500 }
+      );
     }
 
     const checkIds = monitoringChecks.map(check => check.monitoring_check_id);
@@ -93,23 +99,39 @@ export async function POST(request) {
         mttaTrend: 0,
         failureRateTrend: 0,
         openIncidents: 0,
-        checksPerDay: 0
+        checksPerDay: 0,
       });
     }
 
     // Calculate current period metrics
-    const currentMetrics = await calculateMetrics(checkIds, services, startDate, endDate, organizationId);
-    
+    const currentMetrics = await calculateMetrics(
+      checkIds,
+      services,
+      startDate,
+      endDate,
+      organizationId
+    );
+
     // Calculate previous period metrics for trends
-    const previousMetrics = await calculateMetrics(checkIds, services, previousStartDate, previousEndDate, organizationId);
+    const previousMetrics = await calculateMetrics(
+      checkIds,
+      services,
+      previousStartDate,
+      previousEndDate,
+      organizationId
+    );
 
     // Calculate trends
-    const uptimeTrend = currentMetrics.overallUptime - previousMetrics.overallUptime;
-    const responseTimeTrend = currentMetrics.avgResponseTime - previousMetrics.avgResponseTime;
-    const incidentTrend = currentMetrics.totalIncidents - previousMetrics.totalIncidents;
+    const uptimeTrend =
+      currentMetrics.overallUptime - previousMetrics.overallUptime;
+    const responseTimeTrend =
+      currentMetrics.avgResponseTime - previousMetrics.avgResponseTime;
+    const incidentTrend =
+      currentMetrics.totalIncidents - previousMetrics.totalIncidents;
     const mttrTrend = currentMetrics.mttr - previousMetrics.mttr;
     const mttaTrend = currentMetrics.mtta - previousMetrics.mtta;
-    const failureRateTrend = currentMetrics.failureRate - previousMetrics.failureRate;
+    const failureRateTrend =
+      currentMetrics.failureRate - previousMetrics.failureRate;
 
     return NextResponse.json({
       ...currentMetrics,
@@ -118,16 +140,24 @@ export async function POST(request) {
       incidentTrend,
       mttrTrend,
       mttaTrend,
-      failureRateTrend
+      failureRateTrend,
     });
-
   } catch (error) {
     console.error('Error in analytics overview:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
-async function calculateMetrics(checkIds, services, startDate, endDate, organizationId) {
+async function calculateMetrics(
+  checkIds,
+  services,
+  startDate,
+  endDate,
+  organizationId
+) {
   // Get monitoring statistics for uptime and performance
   const { data: stats, error: statsError } = await supabase
     .from('monitoring_statistics')
@@ -166,36 +196,45 @@ async function calculateMetrics(checkIds, services, startDate, endDate, organiza
 
   // Calculate metrics
   const totalChecks = checkResults?.length || 0;
-  const successfulChecks = checkResults?.filter(r => r.is_successful).length || 0;
+  const successfulChecks =
+    checkResults?.filter(r => r.is_successful).length || 0;
   const failedChecks = totalChecks - successfulChecks;
 
-  const overallUptime = totalChecks > 0 ? (successfulChecks / totalChecks) * 100 : 99.9;
-  const avgResponseTime = totalChecks > 0 
-    ? Math.round(checkResults.reduce((sum, r) => sum + (r.response_time || 0), 0) / totalChecks)
-    : 0;
+  const overallUptime =
+    totalChecks > 0 ? (successfulChecks / totalChecks) * 100 : 99.9;
+  const avgResponseTime =
+    totalChecks > 0
+      ? Math.round(
+          checkResults.reduce((sum, r) => sum + (r.response_time || 0), 0) /
+            totalChecks
+        )
+      : 0;
 
   const totalIncidents = incidents?.length || 0;
-  const openIncidents = incidents?.filter(i => i.status !== 'resolved').length || 0;
-  
+  const openIncidents =
+    incidents?.filter(i => i.status !== 'resolved').length || 0;
+
   // Calculate MTTR (Mean Time To Resolution)
   const resolvedIncidents = incidents?.filter(i => i.resolved_at) || [];
-  const mttr = resolvedIncidents.length > 0
-    ? resolvedIncidents.reduce((sum, incident) => {
-        const created = new Date(incident.created_at);
-        const resolved = new Date(incident.resolved_at);
-        return sum + (resolved - created) / (1000 * 60); // Convert to minutes
-      }, 0) / resolvedIncidents.length
-    : 0;
+  const mttr =
+    resolvedIncidents.length > 0
+      ? resolvedIncidents.reduce((sum, incident) => {
+          const created = new Date(incident.created_at);
+          const resolved = new Date(incident.resolved_at);
+          return sum + (resolved - created) / (1000 * 60); // Convert to minutes
+        }, 0) / resolvedIncidents.length
+      : 0;
 
   // Calculate MTTA (Mean Time To Acknowledgment)
   const acknowledgedIncidents = incidents?.filter(i => i.acknowledged_at) || [];
-  const mtta = acknowledgedIncidents.length > 0
-    ? acknowledgedIncidents.reduce((sum, incident) => {
-        const created = new Date(incident.created_at);
-        const acknowledged = new Date(incident.acknowledged_at);
-        return sum + (acknowledged - created) / (1000 * 60); // Convert to minutes
-      }, 0) / acknowledgedIncidents.length
-    : 0;
+  const mtta =
+    acknowledgedIncidents.length > 0
+      ? acknowledgedIncidents.reduce((sum, incident) => {
+          const created = new Date(incident.created_at);
+          const acknowledged = new Date(incident.acknowledged_at);
+          return sum + (acknowledged - created) / (1000 * 60); // Convert to minutes
+        }, 0) / acknowledgedIncidents.length
+      : 0;
 
   const failureRate = totalChecks > 0 ? (failedChecks / totalChecks) * 100 : 0;
 
@@ -205,13 +244,14 @@ async function calculateMetrics(checkIds, services, startDate, endDate, organiza
   const incidentWeight = 0.3;
 
   const uptimeScore = overallUptime;
-  const performanceScore = avgResponseTime > 0 ? Math.max(0, 100 - (avgResponseTime / 1000)) : 100;
-  const incidentScore = Math.max(0, 100 - (totalIncidents * 10));
+  const performanceScore =
+    avgResponseTime > 0 ? Math.max(0, 100 - avgResponseTime / 1000) : 100;
+  const incidentScore = Math.max(0, 100 - totalIncidents * 10);
 
   const healthScore = Math.round(
-    (uptimeScore * uptimeWeight) +
-    (performanceScore * performanceWeight) +
-    (incidentScore * incidentWeight)
+    uptimeScore * uptimeWeight +
+      performanceScore * performanceWeight +
+      incidentScore * incidentWeight
   );
 
   // Calculate checks per day
@@ -228,6 +268,6 @@ async function calculateMetrics(checkIds, services, startDate, endDate, organiza
     checksPerformed: totalChecks,
     failureRate,
     openIncidents,
-    checksPerDay
+    checksPerDay,
   };
 }

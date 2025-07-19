@@ -14,7 +14,7 @@ import {
   CircularProgress,
   Paper,
   Chip,
-  Tooltip
+  Tooltip,
 } from '@mui/material';
 import { TrendingUp, TrendingDown, Info } from '@mui/icons-material';
 
@@ -22,7 +22,7 @@ import { TrendingUp, TrendingDown, Info } from '@mui/icons-material';
 function UptimeChart({ data, title }) {
   const maxValue = Math.max(...data.map(d => d.value), 100);
   const minValue = Math.min(...data.map(d => d.value));
-  
+
   return (
     <Card>
       <CardContent>
@@ -30,11 +30,19 @@ function UptimeChart({ data, title }) {
           {title}
         </Typography>
         <Box sx={{ height: 200, position: 'relative', mt: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'end', height: '100%', gap: 1 }}>
+          <Box
+            sx={{ display: 'flex', alignItems: 'end', height: '100%', gap: 1 }}
+          >
             {data.map((point, index) => {
-              const height = ((point.value - minValue) / (maxValue - minValue)) * 100;
-              const color = point.value >= 99.5 ? '#4caf50' : point.value >= 95 ? '#ff9800' : '#f44336';
-              
+              const height =
+                ((point.value - minValue) / (maxValue - minValue)) * 100;
+              const color =
+                point.value >= 99.5
+                  ? '#4caf50'
+                  : point.value >= 95
+                    ? '#ff9800'
+                    : '#f44336';
+
               return (
                 <Tooltip
                   key={index}
@@ -51,35 +59,72 @@ function UptimeChart({ data, title }) {
                       transition: 'all 0.2s',
                       '&:hover': {
                         opacity: 0.8,
-                        transform: 'scaleY(1.05)'
-                      }
+                        transform: 'scaleY(1.05)',
+                      },
                     }}
                   />
                 </Tooltip>
               );
             })}
           </Box>
-          
+
           {/* Y-axis labels */}
-          <Box sx={{ position: 'absolute', left: -40, top: 0, height: '100%', display: 'flex', flexDirection: 'column-reverse', justifyContent: 'space-between' }}>
-            <Typography variant="caption" color="text.secondary">{minValue.toFixed(1)}%</Typography>
-            <Typography variant="caption" color="text.secondary">{((maxValue + minValue) / 2).toFixed(1)}%</Typography>
-            <Typography variant="caption" color="text.secondary">{maxValue.toFixed(1)}%</Typography>
+          <Box
+            sx={{
+              position: 'absolute',
+              left: -40,
+              top: 0,
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column-reverse',
+              justifyContent: 'space-between',
+            }}
+          >
+            <Typography variant="caption" color="text.secondary">
+              {minValue.toFixed(1)}%
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {((maxValue + minValue) / 2).toFixed(1)}%
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {maxValue.toFixed(1)}%
+            </Typography>
           </Box>
         </Box>
-        
+
         {/* Legend */}
         <Box sx={{ display: 'flex', gap: 2, mt: 2, flexWrap: 'wrap' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Box sx={{ width: 12, height: 12, backgroundColor: '#4caf50', borderRadius: 1 }} />
+            <Box
+              sx={{
+                width: 12,
+                height: 12,
+                backgroundColor: '#4caf50',
+                borderRadius: 1,
+              }}
+            />
             <Typography variant="caption">Excellent (≥99.5%)</Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Box sx={{ width: 12, height: 12, backgroundColor: '#ff9800', borderRadius: 1 }} />
+            <Box
+              sx={{
+                width: 12,
+                height: 12,
+                backgroundColor: '#ff9800',
+                borderRadius: 1,
+              }}
+            />
             <Typography variant="caption">Good (95-99.5%)</Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Box sx={{ width: 12, height: 12, backgroundColor: '#f44336', borderRadius: 1 }} />
+            <Box
+              sx={{
+                width: 12,
+                height: 12,
+                backgroundColor: '#f44336',
+                borderRadius: 1,
+              }}
+            />
             <Typography variant="caption">Poor (&lt;95%)</Typography>
           </Box>
         </Box>
@@ -91,7 +136,7 @@ function UptimeChart({ data, title }) {
 function UptimeHeatmap({ data }) {
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const hours = Array.from({ length: 24 }, (_, i) => i);
-  
+
   return (
     <Card>
       <CardContent>
@@ -101,26 +146,57 @@ function UptimeHeatmap({ data }) {
         <Box sx={{ overflow: 'auto' }}>
           <Box sx={{ minWidth: 600, mt: 2 }}>
             {/* Hours header */}
-            <Box sx={{ display: 'grid', gridTemplateColumns: '80px repeat(24, 1fr)', gap: 1, mb: 1 }}>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: '80px repeat(24, 1fr)',
+                gap: 1,
+                mb: 1,
+              }}
+            >
               <Box />
               {hours.map(hour => (
-                <Typography key={hour} variant="caption" sx={{ textAlign: 'center', fontSize: '0.7rem' }}>
+                <Typography
+                  key={hour}
+                  variant="caption"
+                  sx={{ textAlign: 'center', fontSize: '0.7rem' }}
+                >
                   {hour}
                 </Typography>
               ))}
             </Box>
-            
+
             {/* Days and heatmap */}
             {days.map((day, dayIndex) => (
-              <Box key={day} sx={{ display: 'grid', gridTemplateColumns: '80px repeat(24, 1fr)', gap: 1, mb: 1 }}>
-                <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center', fontSize: '0.8rem' }}>
+              <Box
+                key={day}
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: '80px repeat(24, 1fr)',
+                  gap: 1,
+                  mb: 1,
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    fontSize: '0.8rem',
+                  }}
+                >
                   {day}
                 </Typography>
                 {hours.map(hour => {
                   const uptimeValue = data[dayIndex]?.[hour] || 100;
                   const opacity = uptimeValue / 100;
-                  const color = uptimeValue >= 99.5 ? '#4caf50' : uptimeValue >= 95 ? '#ff9800' : '#f44336';
-                  
+                  const color =
+                    uptimeValue >= 99.5
+                      ? '#4caf50'
+                      : uptimeValue >= 95
+                        ? '#ff9800'
+                        : '#f44336';
+
                   return (
                     <Tooltip
                       key={hour}
@@ -134,7 +210,7 @@ function UptimeHeatmap({ data }) {
                           opacity: opacity,
                           borderRadius: 1,
                           cursor: 'pointer',
-                          border: '1px solid rgba(0,0,0,0.1)'
+                          border: '1px solid rgba(0,0,0,0.1)',
                         }}
                       />
                     </Tooltip>
@@ -149,7 +225,11 @@ function UptimeHeatmap({ data }) {
   );
 }
 
-export default function AnalyticsUptimeChart({ organizationId, dateRange, services }) {
+export default function AnalyticsUptimeChart({
+  organizationId,
+  dateRange,
+  services,
+}) {
   const [chartType, setChartType] = useState('timeline');
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({
@@ -160,8 +240,8 @@ export default function AnalyticsUptimeChart({ organizationId, dateRange, servic
       trend: 0,
       bestDay: '',
       worstDay: '',
-      totalDowntime: 0
-    }
+      totalDowntime: 0,
+    },
   });
 
   useEffect(() => {
@@ -173,7 +253,7 @@ export default function AnalyticsUptimeChart({ organizationId, dateRange, servic
   const loadUptimeData = async () => {
     try {
       setLoading(true);
-      
+
       const response = await fetch('/api/analytics/uptime', {
         method: 'POST',
         headers: {
@@ -182,7 +262,7 @@ export default function AnalyticsUptimeChart({ organizationId, dateRange, servic
         body: JSON.stringify({
           organizationId,
           dateRange,
-          services
+          services,
         }),
       });
 
@@ -197,9 +277,10 @@ export default function AnalyticsUptimeChart({ organizationId, dateRange, servic
     }
   };
 
-  const formatDowntime = (minutes) => {
+  const formatDowntime = minutes => {
     if (minutes < 60) return `${Math.round(minutes)}m`;
-    if (minutes < 1440) return `${Math.round(minutes / 60)}h ${Math.round(minutes % 60)}m`;
+    if (minutes < 1440)
+      return `${Math.round(minutes / 60)}h ${Math.round(minutes % 60)}m`;
     return `${Math.round(minutes / 1440)}d ${Math.round((minutes % 1440) / 60)}h`;
   };
 
@@ -221,17 +302,44 @@ export default function AnalyticsUptimeChart({ organizationId, dateRange, servic
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
-              <Typography variant="h6" component="div" fontSize="0.875rem" color="text.secondary">
+              <Typography
+                variant="h6"
+                component="div"
+                fontSize="0.875rem"
+                color="text.secondary"
+              >
                 Average Uptime
               </Typography>
-              <Typography variant="h4" component="div" fontWeight="bold" color="success.main">
+              <Typography
+                variant="h4"
+                component="div"
+                fontWeight="bold"
+                color="success.main"
+              >
                 {data.summary.averageUptime.toFixed(2)}%
               </Typography>
               {data.summary.trend !== 0 && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1 }}>
-                  {data.summary.trend > 0 ? <TrendingUp color="success" /> : <TrendingDown color="error" />}
-                  <Typography variant="caption" color={data.summary.trend > 0 ? 'success.main' : 'error.main'}>
-                    {Math.abs(data.summary.trend).toFixed(2)}% vs previous period
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    mt: 1,
+                  }}
+                >
+                  {data.summary.trend > 0 ? (
+                    <TrendingUp color="success" />
+                  ) : (
+                    <TrendingDown color="error" />
+                  )}
+                  <Typography
+                    variant="caption"
+                    color={
+                      data.summary.trend > 0 ? 'success.main' : 'error.main'
+                    }
+                  >
+                    {Math.abs(data.summary.trend).toFixed(2)}% vs previous
+                    period
                   </Typography>
                 </Box>
               )}
@@ -242,10 +350,20 @@ export default function AnalyticsUptimeChart({ organizationId, dateRange, servic
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
-              <Typography variant="h6" component="div" fontSize="0.875rem" color="text.secondary">
+              <Typography
+                variant="h6"
+                component="div"
+                fontSize="0.875rem"
+                color="text.secondary"
+              >
                 Total Downtime
               </Typography>
-              <Typography variant="h4" component="div" fontWeight="bold" color="error.main">
+              <Typography
+                variant="h4"
+                component="div"
+                fontWeight="bold"
+                color="error.main"
+              >
                 {formatDowntime(data.summary.totalDowntime)}
               </Typography>
             </CardContent>
@@ -255,7 +373,12 @@ export default function AnalyticsUptimeChart({ organizationId, dateRange, servic
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
-              <Typography variant="h6" component="div" fontSize="0.875rem" color="text.secondary">
+              <Typography
+                variant="h6"
+                component="div"
+                fontSize="0.875rem"
+                color="text.secondary"
+              >
                 Best Day
               </Typography>
               <Typography variant="h4" component="div" fontWeight="bold">
@@ -268,7 +391,12 @@ export default function AnalyticsUptimeChart({ organizationId, dateRange, servic
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
-              <Typography variant="h6" component="div" fontSize="0.875rem" color="text.secondary">
+              <Typography
+                variant="h6"
+                component="div"
+                fontSize="0.875rem"
+                color="text.secondary"
+              >
                 Worst Day
               </Typography>
               <Typography variant="h4" component="div" fontWeight="bold">
@@ -286,14 +414,14 @@ export default function AnalyticsUptimeChart({ organizationId, dateRange, servic
             <InputLabel>Chart Type</InputLabel>
             <Select
               value={chartType}
-              onChange={(e) => setChartType(e.target.value)}
+              onChange={e => setChartType(e.target.value)}
               label="Chart Type"
             >
               <MenuItem value="timeline">Timeline View</MenuItem>
               <MenuItem value="heatmap">Heatmap View</MenuItem>
             </Select>
           </FormControl>
-          
+
           <Typography variant="body2" color="text.secondary">
             Uptime tracking over time with detailed visualization
           </Typography>
@@ -308,11 +436,19 @@ export default function AnalyticsUptimeChart({ organizationId, dateRange, servic
       )}
 
       {/* SLA Information */}
-      <Paper sx={{ p: 2, mt: 3, backgroundColor: 'info.light', color: 'info.contrastText' }}>
+      <Paper
+        sx={{
+          p: 2,
+          mt: 3,
+          backgroundColor: 'info.light',
+          color: 'info.contrastText',
+        }}
+      >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Info />
           <Typography variant="body2">
-            <strong>SLA Targets:</strong> 99.9% (8.76h downtime/year) | 99.95% (4.38h downtime/year) | 99.99% (52.6min downtime/year)
+            <strong>SLA Targets:</strong> 99.9% (8.76h downtime/year) | 99.95%
+            (4.38h downtime/year) | 99.99% (52.6min downtime/year)
           </Typography>
         </Box>
       </Paper>

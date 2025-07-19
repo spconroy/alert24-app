@@ -15,11 +15,21 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TableRow
+  TableRow,
 } from '@mui/material';
-import { BugReport, Schedule, Timer, TrendingUp, TrendingDown } from '@mui/icons-material';
+import {
+  BugReport,
+  Schedule,
+  Timer,
+  TrendingUp,
+  TrendingDown,
+} from '@mui/icons-material';
 
-export default function AnalyticsIncidentMetrics({ organizationId, dateRange, services }) {
+export default function AnalyticsIncidentMetrics({
+  organizationId,
+  dateRange,
+  services,
+}) {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({
     summary: {
@@ -27,10 +37,10 @@ export default function AnalyticsIncidentMetrics({ organizationId, dateRange, se
       openIncidents: 0,
       mttr: 0,
       mtta: 0,
-      severity: { critical: 0, high: 0, medium: 0, low: 0 }
+      severity: { critical: 0, high: 0, medium: 0, low: 0 },
     },
     recentIncidents: [],
-    timeline: []
+    timeline: [],
   });
 
   useEffect(() => {
@@ -42,7 +52,7 @@ export default function AnalyticsIncidentMetrics({ organizationId, dateRange, se
   const loadIncidentData = async () => {
     try {
       setLoading(true);
-      
+
       const response = await fetch('/api/analytics/incidents', {
         method: 'POST',
         headers: {
@@ -51,7 +61,7 @@ export default function AnalyticsIncidentMetrics({ organizationId, dateRange, se
         body: JSON.stringify({
           organizationId,
           dateRange,
-          services
+          services,
         }),
       });
 
@@ -66,19 +76,25 @@ export default function AnalyticsIncidentMetrics({ organizationId, dateRange, se
     }
   };
 
-  const formatDuration = (minutes) => {
+  const formatDuration = minutes => {
     if (minutes < 60) return `${Math.round(minutes)}m`;
-    if (minutes < 1440) return `${Math.round(minutes / 60)}h ${Math.round(minutes % 60)}m`;
+    if (minutes < 1440)
+      return `${Math.round(minutes / 60)}h ${Math.round(minutes % 60)}m`;
     return `${Math.round(minutes / 1440)}d ${Math.round((minutes % 1440) / 60)}h`;
   };
 
-  const getSeverityColor = (severity) => {
+  const getSeverityColor = severity => {
     switch (severity) {
-      case 'critical': return 'error';
-      case 'high': return 'warning';
-      case 'medium': return 'info';
-      case 'low': return 'success';
-      default: return 'default';
+      case 'critical':
+        return 'error';
+      case 'high':
+        return 'warning';
+      case 'medium':
+        return 'info';
+      case 'low':
+        return 'success';
+      default:
+        return 'default';
     }
   };
 
@@ -100,9 +116,15 @@ export default function AnalyticsIncidentMetrics({ organizationId, dateRange, se
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <Box
+                sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}
+              >
                 <BugReport color="error" />
-                <Typography variant="h6" fontSize="0.875rem" color="text.secondary">
+                <Typography
+                  variant="h6"
+                  fontSize="0.875rem"
+                  color="text.secondary"
+                >
                   Total Incidents
                 </Typography>
               </Box>
@@ -119,9 +141,15 @@ export default function AnalyticsIncidentMetrics({ organizationId, dateRange, se
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <Box
+                sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}
+              >
                 <Timer color="warning" />
-                <Typography variant="h6" fontSize="0.875rem" color="text.secondary">
+                <Typography
+                  variant="h6"
+                  fontSize="0.875rem"
+                  color="text.secondary"
+                >
                   MTTR
                 </Typography>
               </Box>
@@ -138,9 +166,15 @@ export default function AnalyticsIncidentMetrics({ organizationId, dateRange, se
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <Box
+                sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}
+              >
                 <Schedule color="info" />
-                <Typography variant="h6" fontSize="0.875rem" color="text.secondary">
+                <Typography
+                  variant="h6"
+                  fontSize="0.875rem"
+                  color="text.secondary"
+                >
                   MTTA
                 </Typography>
               </Box>
@@ -157,14 +191,35 @@ export default function AnalyticsIncidentMetrics({ organizationId, dateRange, se
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
-              <Typography variant="h6" fontSize="0.875rem" color="text.secondary" gutterBottom>
+              <Typography
+                variant="h6"
+                fontSize="0.875rem"
+                color="text.secondary"
+                gutterBottom
+              >
                 By Severity
               </Typography>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                <Chip label={`Critical: ${data.summary.severity.critical}`} color="error" size="small" />
-                <Chip label={`High: ${data.summary.severity.high}`} color="warning" size="small" />
-                <Chip label={`Medium: ${data.summary.severity.medium}`} color="info" size="small" />
-                <Chip label={`Low: ${data.summary.severity.low}`} color="success" size="small" />
+                <Chip
+                  label={`Critical: ${data.summary.severity.critical}`}
+                  color="error"
+                  size="small"
+                />
+                <Chip
+                  label={`High: ${data.summary.severity.high}`}
+                  color="warning"
+                  size="small"
+                />
+                <Chip
+                  label={`Medium: ${data.summary.severity.medium}`}
+                  color="info"
+                  size="small"
+                />
+                <Chip
+                  label={`Low: ${data.summary.severity.low}`}
+                  color="success"
+                  size="small"
+                />
               </Box>
             </CardContent>
           </Card>
@@ -202,20 +257,22 @@ export default function AnalyticsIncidentMetrics({ organizationId, dateRange, se
                     <TableRow key={index}>
                       <TableCell>{incident.title}</TableCell>
                       <TableCell>
-                        <Chip 
-                          label={incident.severity} 
-                          color={getSeverityColor(incident.severity)} 
-                          size="small" 
+                        <Chip
+                          label={incident.severity}
+                          color={getSeverityColor(incident.severity)}
+                          size="small"
                         />
                       </TableCell>
                       <TableCell>
-                        <Chip 
-                          label={incident.status} 
-                          variant="outlined" 
-                          size="small" 
+                        <Chip
+                          label={incident.status}
+                          variant="outlined"
+                          size="small"
                         />
                       </TableCell>
-                      <TableCell>{new Date(incident.created_at).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        {new Date(incident.created_at).toLocaleDateString()}
+                      </TableCell>
                       <TableCell>{formatDuration(incident.duration)}</TableCell>
                     </TableRow>
                   ))

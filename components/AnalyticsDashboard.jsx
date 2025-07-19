@@ -21,7 +21,7 @@ import {
   Menu,
   MenuList,
   ListItemText,
-  MenuItem as MenuItemMui
+  MenuItem as MenuItemMui,
 } from '@mui/material';
 import {
   TrendingUp,
@@ -31,7 +31,7 @@ import {
   Error,
   Download,
   Refresh,
-  MoreVert
+  MoreVert,
 } from '@mui/icons-material';
 import AnalyticsOverviewCards from './AnalyticsOverviewCards';
 import AnalyticsUptimeChart from './AnalyticsUptimeChart';
@@ -61,7 +61,7 @@ export default function AnalyticsDashboard({ organizationId }) {
     { value: '1d', label: 'Last 24 hours' },
     { value: '7d', label: 'Last 7 days' },
     { value: '30d', label: 'Last 30 days' },
-    { value: '90d', label: 'Last 90 days' }
+    { value: '90d', label: 'Last 90 days' },
   ];
 
   useEffect(() => {
@@ -73,7 +73,9 @@ export default function AnalyticsDashboard({ organizationId }) {
   const loadServices = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/services?organizationId=${organizationId}`);
+      const response = await fetch(
+        `/api/services?organizationId=${organizationId}`
+      );
       if (response.ok) {
         const data = await response.json();
         setServices(data);
@@ -91,9 +93,9 @@ export default function AnalyticsDashboard({ organizationId }) {
     loadServices();
   };
 
-  const handleExportReport = async (format) => {
+  const handleExportReport = async format => {
     setExportMenuAnchor(null);
-    
+
     try {
       const response = await fetch('/api/analytics/export', {
         method: 'POST',
@@ -104,7 +106,7 @@ export default function AnalyticsDashboard({ organizationId }) {
           organizationId,
           dateRange,
           services: selectedServices,
-          format
+          format,
         }),
       });
 
@@ -126,11 +128,11 @@ export default function AnalyticsDashboard({ organizationId }) {
 
   const tabs = [
     'Overview',
-    'Uptime Analysis', 
+    'Uptime Analysis',
     'Performance',
     'Incidents',
     'Service Comparison',
-    'Health Score'
+    'Health Score',
   ];
 
   if (loading) {
@@ -154,10 +156,10 @@ export default function AnalyticsDashboard({ organizationId }) {
               <InputLabel>Date Range</InputLabel>
               <Select
                 value={dateRange}
-                onChange={(e) => setDateRange(e.target.value)}
+                onChange={e => setDateRange(e.target.value)}
                 label="Date Range"
               >
-                {dateRangeOptions.map((option) => (
+                {dateRangeOptions.map(option => (
                   <MenuItem key={option.value} value={option.value}>
                     {option.label}
                   </MenuItem>
@@ -165,18 +167,18 @@ export default function AnalyticsDashboard({ organizationId }) {
               </Select>
             </FormControl>
           </Grid>
-          
+
           <Grid item xs={12} sm={6} md={4}>
             <FormControl fullWidth size="small">
               <InputLabel>Services</InputLabel>
               <Select
                 multiple
                 value={selectedServices}
-                onChange={(e) => setSelectedServices(e.target.value)}
+                onChange={e => setSelectedServices(e.target.value)}
                 label="Services"
-                renderValue={(selected) => (
+                renderValue={selected => (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {selected.slice(0, 2).map((value) => {
+                    {selected.slice(0, 2).map(value => {
                       const service = services.find(s => s.id === value);
                       return (
                         <Chip
@@ -196,7 +198,7 @@ export default function AnalyticsDashboard({ organizationId }) {
                   </Box>
                 )}
               >
-                {services.map((service) => (
+                {services.map(service => (
                   <MenuItem key={service.id} value={service.id}>
                     <ListItemText primary={service.name} />
                   </MenuItem>
@@ -221,14 +223,14 @@ export default function AnalyticsDashboard({ organizationId }) {
               >
                 Refresh
               </Button>
-              
+
               <IconButton
                 size="small"
-                onClick={(e) => setExportMenuAnchor(e.currentTarget)}
+                onClick={e => setExportMenuAnchor(e.currentTarget)}
               >
                 <MoreVert />
               </IconButton>
-              
+
               <Menu
                 anchorEl={exportMenuAnchor}
                 open={Boolean(exportMenuAnchor)}

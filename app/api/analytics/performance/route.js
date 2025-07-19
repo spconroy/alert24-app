@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/db-supabase';
+import { db } from '@/lib/db-supabase';
 import { NextResponse } from 'next/server';
 
 export async function POST(request) {
@@ -14,8 +14,8 @@ export async function POST(request) {
           fastestResponse: 0,
           slowestResponse: 0,
           p95ResponseTime: 0,
-          p99ResponseTime: 0
-        }
+          p99ResponseTime: 0,
+        },
       });
     }
 
@@ -25,7 +25,8 @@ export async function POST(request) {
       .select('monitoring_check_id')
       .in('service_id', services);
 
-    const checkIds = monitoringChecks?.map(check => check.monitoring_check_id) || [];
+    const checkIds =
+      monitoringChecks?.map(check => check.monitoring_check_id) || [];
 
     if (checkIds.length === 0) {
       return NextResponse.json({
@@ -36,8 +37,8 @@ export async function POST(request) {
           fastestResponse: 0,
           slowestResponse: 0,
           p95ResponseTime: 0,
-          p99ResponseTime: 0
-        }
+          p99ResponseTime: 0,
+        },
       });
     }
 
@@ -45,11 +46,20 @@ export async function POST(request) {
     const endDate = new Date();
     const startDate = new Date();
     switch (dateRange) {
-      case '1d': startDate.setDate(endDate.getDate() - 1); break;
-      case '7d': startDate.setDate(endDate.getDate() - 7); break;
-      case '30d': startDate.setDate(endDate.getDate() - 30); break;
-      case '90d': startDate.setDate(endDate.getDate() - 90); break;
-      default: startDate.setDate(endDate.getDate() - 7);
+      case '1d':
+        startDate.setDate(endDate.getDate() - 1);
+        break;
+      case '7d':
+        startDate.setDate(endDate.getDate() - 7);
+        break;
+      case '30d':
+        startDate.setDate(endDate.getDate() - 30);
+        break;
+      case '90d':
+        startDate.setDate(endDate.getDate() - 90);
+        break;
+      default:
+        startDate.setDate(endDate.getDate() - 7);
     }
 
     // Get check results for response time analysis
@@ -63,15 +73,17 @@ export async function POST(request) {
 
     // Process timeline data
     const timeline = processResponseTimeTimeline(checkResults || [], dateRange);
-    
+
     // Calculate summary metrics
     const summary = calculateResponseTimeSummary(checkResults || []);
 
     return NextResponse.json({ timeline, summary });
-
   } catch (error) {
     console.error('Error in analytics performance:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -82,7 +94,7 @@ function processResponseTimeTimeline(results, dateRange) {
 
   results.forEach(result => {
     if (!result.response_time) return;
-    
+
     const date = new Date(result.created_at);
     let key;
 
@@ -110,23 +122,24 @@ function processResponseTimeTimeline(results, dateRange) {
 
   const timeline = Array.from(groupedResults.values()).map(group => {
     const avgResponseTime = Math.round(
-      group.responseTimes.reduce((sum, rt) => sum + rt, 0) / group.responseTimes.length
+      group.responseTimes.reduce((sum, rt) => sum + rt, 0) /
+        group.responseTimes.length
     );
-    
+
     let label;
     if (dateRange === '1d') {
       label = new Date(group.date).getHours() + ':00';
     } else {
-      label = new Date(group.date).toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric' 
+      label = new Date(group.date).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
       });
     }
 
     return {
       label,
       value: avgResponseTime,
-      date: group.date
+      date: group.date,
     };
   });
 
@@ -141,7 +154,7 @@ function calculateResponseTimeSummary(results) {
       fastestResponse: 0,
       slowestResponse: 0,
       p95ResponseTime: 0,
-      p99ResponseTime: 0
+      p99ResponseTime: 0,
     };
   }
 
@@ -157,7 +170,7 @@ function calculateResponseTimeSummary(results) {
       fastestResponse: 0,
       slowestResponse: 0,
       p95ResponseTime: 0,
-      p99ResponseTime: 0
+      p99ResponseTime: 0,
     };
   }
 
@@ -175,8 +188,12 @@ function calculateResponseTimeSummary(results) {
 
   // Calculate trend (simplified - compare first half vs second half)
   const midPoint = Math.floor(responseTimes.length / 2);
-  const firstHalfAvg = responseTimes.slice(0, midPoint).reduce((sum, rt) => sum + rt, 0) / midPoint;
-  const secondHalfAvg = responseTimes.slice(midPoint).reduce((sum, rt) => sum + rt, 0) / (responseTimes.length - midPoint);
+  const firstHalfAvg =
+    responseTimes.slice(0, midPoint).reduce((sum, rt) => sum + rt, 0) /
+    midPoint;
+  const secondHalfAvg =
+    responseTimes.slice(midPoint).reduce((sum, rt) => sum + rt, 0) /
+    (responseTimes.length - midPoint);
   const trend = Math.round(secondHalfAvg - firstHalfAvg);
 
   return {
@@ -185,6 +202,6 @@ function calculateResponseTimeSummary(results) {
     fastestResponse,
     slowestResponse,
     p95ResponseTime,
-    p99ResponseTime
+    p99ResponseTime,
   };
 }

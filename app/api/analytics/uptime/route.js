@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/db-supabase';
+import { db } from '@/lib/db-supabase';
 import { NextResponse } from 'next/server';
 
 export async function POST(request) {
@@ -6,7 +6,10 @@ export async function POST(request) {
     const { organizationId, dateRange, services } = await request.json();
 
     if (!organizationId) {
-      return NextResponse.json({ error: 'Organization ID is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Organization ID is required' },
+        { status: 400 }
+      );
     }
 
     if (!services || services.length === 0) {
@@ -18,8 +21,8 @@ export async function POST(request) {
           trend: 0,
           bestDay: '',
           worstDay: '',
-          totalDowntime: 0
-        }
+          totalDowntime: 0,
+        },
       });
     }
 
@@ -64,7 +67,10 @@ export async function POST(request) {
 
     if (checksError) {
       console.error('Error fetching monitoring checks:', checksError);
-      return NextResponse.json({ error: 'Failed to fetch monitoring data' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to fetch monitoring data' },
+        { status: 500 }
+      );
     }
 
     const checkIds = monitoringChecks.map(check => check.monitoring_check_id);
@@ -78,8 +84,8 @@ export async function POST(request) {
           trend: 0,
           bestDay: '',
           worstDay: '',
-          totalDowntime: 0
-        }
+          totalDowntime: 0,
+        },
       });
     }
 
@@ -105,27 +111,36 @@ export async function POST(request) {
       .lte('date_hour', previousEndDate.toISOString());
 
     if (previousStatsError) {
-      console.error('Error fetching previous monitoring statistics:', previousStatsError);
+      console.error(
+        'Error fetching previous monitoring statistics:',
+        previousStatsError
+      );
     }
 
     // Process timeline data
     const timeline = processTimelineData(stats || [], dateRange);
-    
+
     // Process heatmap data (for last 7 days only)
     const heatmap = dateRange === '7d' ? processHeatmapData(stats || []) : [];
-    
+
     // Calculate summary metrics
-    const summary = calculateSummary(stats || [], previousStats || [], timeline);
+    const summary = calculateSummary(
+      stats || [],
+      previousStats || [],
+      timeline
+    );
 
     return NextResponse.json({
       timeline,
       heatmap,
-      summary
+      summary,
     });
-
   } catch (error) {
     console.error('Error in analytics uptime:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -161,7 +176,7 @@ function processTimelineData(stats, dateRange) {
       groupedStats.set(key, {
         totalChecks: 0,
         successfulChecks: 0,
-        date: key
+        date: key,
       });
     }
 
@@ -172,22 +187,25 @@ function processTimelineData(stats, dateRange) {
 
   // Convert to timeline format
   const timeline = Array.from(groupedStats.values()).map(group => {
-    const uptimePercentage = group.totalChecks > 0 ? (group.successfulChecks / group.totalChecks) * 100 : 100;
-    
+    const uptimePercentage =
+      group.totalChecks > 0
+        ? (group.successfulChecks / group.totalChecks) * 100
+        : 100;
+
     let label;
     if (dateRange === '1d') {
       label = new Date(group.date).getHours() + ':00';
     } else {
-      label = new Date(group.date).toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric' 
+      label = new Date(group.date).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
       });
     }
 
     return {
       label,
       value: uptimePercentage,
-      date: group.date
+      date: group.date,
     };
   });
 
@@ -195,9 +213,14 @@ function processTimelineData(stats, dateRange) {
 }
 
 function processHeatmapData(stats) {
-  if (!stats || stats.length === 0) return Array(7).fill().map(() => Array(24).fill(100));
+  if (!stats || stats.length === 0)
+    return Array(7)
+      .fill()
+      .map(() => Array(24).fill(100));
 
-  const heatmapData = Array(7).fill().map(() => Array(24).fill(null));
+  const heatmapData = Array(7)
+    .fill()
+    .map(() => Array(24).fill(null));
   const now = new Date();
 
   stats.forEach(stat => {
@@ -207,32 +230,50 @@ function processHeatmapData(stats) {
     const hour = date.getHours();
 
     if (daysFromNow >= 0 && daysFromNow < 7) {
-      const uptimePercentage = stat.total_checks > 0 ? (stat.successful_checks / stat.total_checks) * 100 : 100;
-      
+      const uptimePercentage =
+        stat.total_checks > 0
+          ? (stat.successful_checks / stat.total_checks) * 100
+          : 100;
+
       if (heatmapData[dayOfWeek][hour] === null) {
         heatmapData[dayOfWeek][hour] = uptimePercentage;
       } else {
         // Average if multiple checks in same hour
-        heatmapData[dayOfWeek][hour] = (heatmapData[dayOfWeek][hour] + uptimePercentage) / 2;
+        heatmapData[dayOfWeek][hour] =
+          (heatmapData[dayOfWeek][hour] + uptimePercentage) / 2;
       }
     }
   });
 
   // Fill null values with 100% (no data = assumed up)
-  return heatmapData.map(day => 
-    day.map(hour => hour !== null ? hour : 100)
-  );
+  return heatmapData.map(day => day.map(hour => (hour !== null ? hour : 100)));
 }
 
 function calculateSummary(currentStats, previousStats, timeline) {
-  const totalChecks = currentStats.reduce((sum, stat) => sum + (stat.total_checks || 0), 0);
-  const successfulChecks = currentStats.reduce((sum, stat) => sum + (stat.successful_checks || 0), 0);
-  const averageUptime = totalChecks > 0 ? (successfulChecks / totalChecks) * 100 : 99.9;
+  const totalChecks = currentStats.reduce(
+    (sum, stat) => sum + (stat.total_checks || 0),
+    0
+  );
+  const successfulChecks = currentStats.reduce(
+    (sum, stat) => sum + (stat.successful_checks || 0),
+    0
+  );
+  const averageUptime =
+    totalChecks > 0 ? (successfulChecks / totalChecks) * 100 : 99.9;
 
   // Calculate previous period uptime for trend
-  const previousTotalChecks = previousStats.reduce((sum, stat) => sum + (stat.total_checks || 0), 0);
-  const previousSuccessfulChecks = previousStats.reduce((sum, stat) => sum + (stat.successful_checks || 0), 0);
-  const previousAverageUptime = previousTotalChecks > 0 ? (previousSuccessfulChecks / previousTotalChecks) * 100 : 99.9;
+  const previousTotalChecks = previousStats.reduce(
+    (sum, stat) => sum + (stat.total_checks || 0),
+    0
+  );
+  const previousSuccessfulChecks = previousStats.reduce(
+    (sum, stat) => sum + (stat.successful_checks || 0),
+    0
+  );
+  const previousAverageUptime =
+    previousTotalChecks > 0
+      ? (previousSuccessfulChecks / previousTotalChecks) * 100
+      : 99.9;
   const trend = averageUptime - previousAverageUptime;
 
   // Find best and worst days
@@ -254,7 +295,10 @@ function calculateSummary(currentStats, previousStats, timeline) {
 
   // Calculate total downtime in minutes
   const totalDowntime = currentStats.reduce((sum, stat) => {
-    const uptimePercentage = stat.total_checks > 0 ? (stat.successful_checks / stat.total_checks) * 100 : 100;
+    const uptimePercentage =
+      stat.total_checks > 0
+        ? (stat.successful_checks / stat.total_checks) * 100
+        : 100;
     const downtimePercentage = 100 - uptimePercentage;
     // Assume each stat represents 1 hour, so downtime is percentage of 60 minutes
     return sum + (downtimePercentage / 100) * 60;
@@ -265,6 +309,6 @@ function calculateSummary(currentStats, previousStats, timeline) {
     trend,
     bestDay,
     worstDay,
-    totalDowntime
+    totalDowntime,
   };
 }

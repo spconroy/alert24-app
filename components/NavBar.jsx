@@ -416,7 +416,7 @@ export default function NavBar() {
               >
                 On-Call
               </Button>
-              
+
               {/* Analytics */}
               <Button
                 component={Link}
