@@ -5,7 +5,7 @@ import path from 'path';
 
 const db = new SupabaseClient();
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 export async function POST() {
   try {
