@@ -20,6 +20,8 @@ import {
   Security as SecurityIcon,
   Storage as StorageIcon,
   HealthAndSafety as HealthIcon,
+  MonitorHeart as MonitorIcon,
+  Settings as SettingsIcon,
 } from '@mui/icons-material';
 
 export default function DebugPage() {
@@ -89,6 +91,18 @@ export default function DebugPage() {
       icon: <StorageIcon />,
     },
     {
+      name: 'Environment Variables',
+      description: 'Check if all required environment variables are set',
+      endpoint: '/api/debug-env',
+      icon: <SettingsIcon />,
+    },
+    {
+      name: 'Monitoring Checks',
+      description: 'Test monitoring checks API and database connection',
+      endpoint: '/api/monitoring',
+      icon: <MonitorIcon />,
+    },
+    {
       name: 'Status Page Health Check',
       description: 'Test external status page APIs for monitoring health',
       endpoint: '/api/debug/status-page-health?quick=true',
@@ -109,6 +123,52 @@ export default function DebugPage() {
         <Alert severity="info" sx={{ mb: 4 }}>
           This page helps diagnose authentication, monitoring, and external service health issues.
         </Alert>
+
+        <Card sx={{ mb: 4 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Quick Links
+            </Typography>
+            <Box display="flex" flex="wrap" gap={2}>
+              <Button
+                variant="outlined"
+                href="/monitoring"
+                target="_blank"
+                rel="noopener noreferrer"
+                startIcon={<MonitorIcon />}
+              >
+                Monitoring Dashboard
+              </Button>
+              <Button
+                variant="outlined"
+                href="/api/debug-env"
+                target="_blank"
+                rel="noopener noreferrer"
+                startIcon={<SettingsIcon />}
+              >
+                Environment Check
+              </Button>
+              <Button
+                variant="outlined"
+                href="/api/monitoring"
+                target="_blank"
+                rel="noopener noreferrer"
+                startIcon={<StorageIcon />}
+              >
+                Monitoring API
+              </Button>
+              <Button
+                variant="outlined"
+                href="/api/auth/debug"
+                target="_blank"
+                rel="noopener noreferrer"
+                startIcon={<SecurityIcon />}
+              >
+                Auth Debug
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
 
         <Box display="grid" gap={3}>
           {tests.map(test => (
