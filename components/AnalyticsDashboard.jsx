@@ -78,11 +78,16 @@ export default function AnalyticsDashboard({ organizationId }) {
       );
       if (response.ok) {
         const data = await response.json();
-        setServices(data);
-        setSelectedServices(data.slice(0, 5).map(s => s.id)); // Select first 5 by default
+        // Handle the API response structure correctly
+        const servicesArray = data.services || data || [];
+        setServices(servicesArray);
+        setSelectedServices(servicesArray.slice(0, 5).map(s => s.id)); // Select first 5 by default
       }
     } catch (error) {
       console.error('Error loading services:', error);
+      // Set empty arrays on error to prevent further exceptions
+      setServices([]);
+      setSelectedServices([]);
     } finally {
       setLoading(false);
     }
@@ -178,17 +183,20 @@ export default function AnalyticsDashboard({ organizationId }) {
                 label="Services"
                 renderValue={selected => (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {selected.slice(0, 2).map(value => {
-                      const service = services.find(s => s.id === value);
-                      return (
-                        <Chip
-                          key={value}
-                          label={service?.name || value}
-                          size="small"
-                        />
-                      );
-                    })}
-                    {selected.length > 2 && (
+                    {Array.isArray(selected) &&
+                      selected.slice(0, 2).map(value => {
+                        const service = Array.isArray(services)
+                          ? services.find(s => s?.id === value)
+                          : null;
+                        return (
+                          <Chip
+                            key={value || Math.random()}
+                            label={service?.name || value || 'Unknown Service'}
+                            size="small"
+                          />
+                        );
+                      })}
+                    {Array.isArray(selected) && selected.length > 2 && (
                       <Chip
                         label={`+${selected.length - 2} more`}
                         size="small"
@@ -198,11 +206,17 @@ export default function AnalyticsDashboard({ organizationId }) {
                   </Box>
                 )}
               >
-                {services.map(service => (
-                  <MenuItem key={service.id} value={service.id}>
-                    <ListItemText primary={service.name} />
-                  </MenuItem>
-                ))}
+                {Array.isArray(services) &&
+                  services.map(service => (
+                    <MenuItem
+                      key={service?.id || Math.random()}
+                      value={service?.id}
+                    >
+                      <ListItemText
+                        primary={service?.name || 'Unnamed Service'}
+                      />
+                    </MenuItem>
+                  ))}
               </Select>
             </FormControl>
           </Grid>
