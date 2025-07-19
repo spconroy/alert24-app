@@ -54,9 +54,30 @@ export async function GET(req) {
       monitoringChecks = [];
     }
 
+    // Debug: Check STATUS_PAGE_PROVIDERS availability
+    console.log(
+      '🔧 STATUS_PAGE_PROVIDERS available in API:',
+      !!STATUS_PAGE_PROVIDERS
+    );
+    console.log(
+      '🔧 STATUS_PAGE_PROVIDERS keys:',
+      Object.keys(STATUS_PAGE_PROVIDERS || {})
+    );
+
     // Transform the data to match expected format
     const formattedChecks = (monitoringChecks || []).map(check => {
       let status_page_url = null;
+
+      // Debug: Log each check transformation
+      if (check.check_type === 'status_page') {
+        console.log('🎯 Processing status page check:', {
+          name: check.name,
+          check_type: check.check_type,
+          has_status_page_config: !!check.status_page_config,
+          provider: check.status_page_config?.provider,
+          STATUS_PAGE_PROVIDERS_available: !!STATUS_PAGE_PROVIDERS,
+        });
+      }
 
       // For status page checks, populate the URL based on provider
       if (
@@ -65,8 +86,14 @@ export async function GET(req) {
       ) {
         const provider = check.status_page_config.provider;
         const providerConfig = STATUS_PAGE_PROVIDERS[provider];
+        console.log('🔗 Provider lookup:', {
+          provider,
+          providerConfig: !!providerConfig,
+          providerUrl: providerConfig?.url,
+        });
         if (providerConfig) {
           status_page_url = providerConfig.url;
+          console.log('✅ Setting status_page_url:', status_page_url);
         }
       }
 
@@ -84,6 +111,9 @@ export async function GET(req) {
     const statusPageChecks = formattedChecks.filter(
       check => check.check_type === 'status_page'
     );
+    console.log('🔍 Total checks returned:', formattedChecks.length);
+    console.log('🔍 Status page checks found:', statusPageChecks.length);
+
     if (statusPageChecks.length > 0) {
       console.log(
         '🔍 Status page checks in API response:',
@@ -92,6 +122,7 @@ export async function GET(req) {
           check_type: check.check_type,
           has_status_page_config: !!check.status_page_config,
           status_page_config: check.status_page_config,
+          status_page_url: check.status_page_url, // ← This is the key field!
         }))
       );
     }
