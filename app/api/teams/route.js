@@ -26,25 +26,31 @@ export async function GET(request) {
     const organizationId = searchParams.get('organizationId');
 
     if (!organizationId) {
-      return NextResponse.json({ error: 'Organization ID required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Organization ID required' },
+        { status: 400 }
+      );
     }
 
     // Verify user has access to this organization
-    const userOrgs = await db.getUserOrganizations(user.id);
+    const userOrgs = await db.getOrganizations(user.id);
     const hasAccess = userOrgs.some(org => org.id === organizationId);
     if (!hasAccess) {
-      return NextResponse.json({ error: 'Access denied to organization' }, { status: 403 });
+      return NextResponse.json(
+        { error: 'Access denied to organization' },
+        { status: 403 }
+      );
     }
 
     const teams = await adminDb.getTeamGroups(organizationId);
-    
+
     // Get memberships for each team
     const teamsWithMembers = await Promise.all(
-      teams.map(async (team) => {
+      teams.map(async team => {
         const memberships = await adminDb.getTeamMemberships(team.id);
         return {
           ...team,
-          members: memberships
+          members: memberships,
         };
       })
     );
@@ -52,7 +58,10 @@ export async function GET(request) {
     return NextResponse.json(teamsWithMembers);
   } catch (error) {
     console.error('Error fetching teams:', error);
-    return NextResponse.json({ error: 'Failed to fetch teams' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch teams' },
+      { status: 500 }
+    );
   }
 }
 
@@ -74,14 +83,20 @@ export async function POST(request) {
     const { name, description, color, organizationId, teamLeadId } = body;
 
     if (!name || !organizationId) {
-      return NextResponse.json({ error: 'Name and organization ID required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Name and organization ID required' },
+        { status: 400 }
+      );
     }
 
     // Verify user has access to this organization
-    const userOrgs = await db.getUserOrganizations(user.id);
+    const userOrgs = await db.getOrganizations(user.id);
     const hasAccess = userOrgs.some(org => org.id === organizationId);
     if (!hasAccess) {
-      return NextResponse.json({ error: 'Access denied to organization' }, { status: 403 });
+      return NextResponse.json(
+        { error: 'Access denied to organization' },
+        { status: 403 }
+      );
     }
 
     const teamData = {
@@ -90,13 +105,16 @@ export async function POST(request) {
       color: color || '#0066CC',
       organization_id: organizationId,
       team_lead_id: teamLeadId || null,
-      is_active: true
+      is_active: true,
     };
 
     const team = await adminDb.createTeamGroup(teamData);
     return NextResponse.json(team, { status: 201 });
   } catch (error) {
     console.error('Error creating team:', error);
-    return NextResponse.json({ error: 'Failed to create team' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to create team' },
+      { status: 500 }
+    );
   }
 }
