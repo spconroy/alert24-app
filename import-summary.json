@@ -1,0 +1,11 @@
+{
+  "timestamp": "2025-07-19T01:25:37.582Z",
+  "organization": "TestOrg1",
+  "summary": {
+    "total_compatible": 46,
+    "imported": 0,
+    "skipped": 0,
+    "errors": 46
+  },
+  "imported_services": []
+}

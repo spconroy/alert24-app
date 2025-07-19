@@ -9,6 +9,13 @@ export const runtime = 'edge';
 
 export async function GET(req) {
   try {
+    console.log('🔍 Monitoring API GET - Environment check:', {
+      hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      runtime: process.env.NODE_ENV,
+      userAgent: req.headers.get('user-agent')?.substring(0, 50)
+    });
+
     const session = await auth();
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -22,7 +29,19 @@ export async function GET(req) {
     const offset = parseInt(searchParams.get('offset')) || 0;
 
     // Get user
-    const user = await db.getUserByEmail(session.user.email);
+    let user;
+    try {
+      user = await db.getUserByEmail(session.user.email);
+      console.log('🔍 User lookup result:', { userFound: !!user, email: session.user.email });
+    } catch (dbError) {
+      console.error('🔥 Database connection error in getUserByEmail:', dbError);
+      return NextResponse.json({ 
+        error: 'Database connection failed', 
+        details: dbError.message,
+        code: dbError.code 
+      }, { status: 500 });
+    }
+    
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }

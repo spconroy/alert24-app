@@ -27,6 +27,7 @@
     "@sendgrid/mail": "^8.1.5",
     "@supabase/supabase-js": "^2.51.0",
     "dayjs": "^1.11.13",
+    "dotenv": "^17.2.0",
     "next": "14.2.30",
     "next-auth": "^5.0.0-beta.29",
     "pg": "^8.16.3",

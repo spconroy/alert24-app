@@ -1,0 +1,282 @@
+{
+  "timestamp": "2025-07-19T01:31:19.929Z",
+  "organization": "TestOrg1",
+  "summary": {
+    "total_compatible": 46,
+    "monitoring_checks_created": 45,
+    "already_monitored": 1,
+    "errors": 0
+  },
+  "monitored_services": [
+    {
+      "name": "Oracle Cloud Infrastructure",
+      "status_page_url": "https://ocistatus.oraclecloud.com/",
+      "api_endpoint": "https://ocistatus.oraclecloud.com/api/v2/status.json",
+      "check_name": "Oracle Cloud Infrastructure Status Page API"
+    },
+    {
+      "name": "Linode",
+      "status_page_url": "https://status.linode.com/",
+      "api_endpoint": "https://status.linode.com/api/v2/status.json",
+      "check_name": "Linode Status Page API"
+    },
+    {
+      "name": "Cloudways",
+      "status_page_url": "https://status.cloudways.com/",
+      "api_endpoint": "https://status.cloudways.com/api/v2/status.json",
+      "check_name": "Cloudways Status Page API"
+    },
+    {
+      "name": "Digitalocean",
+      "status_page_url": "https://status.digitalocean.com/",
+      "api_endpoint": "https://status.digitalocean.com/api/v2/status.json",
+      "check_name": "Digitalocean Status Page API"
+    },
+    {
+      "name": "Kinsta",
+      "status_page_url": "https://status.kinsta.com/",
+      "api_endpoint": "https://status.kinsta.com/api/v2/status.json",
+      "check_name": "Kinsta Status Page API"
+    },
+    {
+      "name": "Netlify",
+      "status_page_url": "https://www.netlifystatus.com/",
+      "api_endpoint": "https://www.netlifystatus.com/api/v2/status.json",
+      "check_name": "Netlify Status Page API"
+    },
+    {
+      "name": "Scaleway",
+      "status_page_url": "https://status.scaleway.com/",
+      "api_endpoint": "https://status.scaleway.com/api/v2/status.json",
+      "check_name": "Scaleway Status Page API"
+    },
+    {
+      "name": "Upcloud",
+      "status_page_url": "https://status.upcloud.com/",
+      "api_endpoint": "https://status.upcloud.com/api/v2/status.json",
+      "check_name": "Upcloud Status Page API"
+    },
+    {
+      "name": "Vercel",
+      "status_page_url": "https://www.vercel-status.com/",
+      "api_endpoint": "https://www.vercel-status.com/api/v2/status.json",
+      "check_name": "Vercel Status Page API"
+    },
+    {
+      "name": "Cloudflare",
+      "status_page_url": "https://www.cloudflarestatus.com/",
+      "api_endpoint": "https://www.cloudflarestatus.com/api/v2/status.json",
+      "check_name": "Cloudflare Status Page API"
+    },
+    {
+      "name": "Sendgrid",
+      "status_page_url": "https://status.sendgrid.com/",
+      "api_endpoint": "https://status.sendgrid.com/api/v2/status.json",
+      "check_name": "Sendgrid Status Page API"
+    },
+    {
+      "name": "Mailgun",
+      "status_page_url": "https://status.mailgun.com/",
+      "api_endpoint": "https://status.mailgun.com/api/v2/status.json",
+      "check_name": "Mailgun Status Page API"
+    },
+    {
+      "name": "Zoom",
+      "status_page_url": "https://status.zoom.us/",
+      "api_endpoint": "https://status.zoom.us/api/v2/status.json",
+      "check_name": "Zoom Status Page API"
+    },
+    {
+      "name": "Twilio",
+      "status_page_url": "https://status.twilio.com/",
+      "api_endpoint": "https://status.twilio.com/api/v2/status.json",
+      "check_name": "Twilio Status Page API"
+    },
+    {
+      "name": "Coinbase",
+      "status_page_url": "https://status.coinbase.com/",
+      "api_endpoint": "https://status.coinbase.com/api/v2/status.json",
+      "check_name": "Coinbase Status Page API"
+    },
+    {
+      "name": "Plaid",
+      "status_page_url": "https://status.plaid.com/",
+      "api_endpoint": "https://status.plaid.com/api/v2/status.json",
+      "check_name": "Plaid Status Page API"
+    },
+    {
+      "name": "Square",
+      "status_page_url": "https://www.issquareup.com/us/en/status",
+      "api_endpoint": "https://www.issquareup.com/api/v2/status.json",
+      "check_name": "Square Status Page API"
+    },
+    {
+      "name": "Klarna",
+      "status_page_url": "https://status.klarna.com/",
+      "api_endpoint": "https://status.klarna.com/api/v2/status.json",
+      "check_name": "Klarna Status Page API"
+    },
+    {
+      "name": "Robinhood",
+      "status_page_url": "https://status.robinhood.com/",
+      "api_endpoint": "https://status.robinhood.com/api/v2/status.json",
+      "check_name": "Robinhood Status Page API"
+    },
+    {
+      "name": "GitHub",
+      "status_page_url": "https://www.githubstatus.com/",
+      "api_endpoint": "https://www.githubstatus.com/api/v2/status.json",
+      "check_name": "GitHub Status Page API"
+    },
+    {
+      "name": "Atlassian",
+      "status_page_url": "https://status.atlassian.com/",
+      "api_endpoint": "https://status.atlassian.com/api/v2/status.json",
+      "check_name": "Atlassian Status Page API"
+    },
+    {
+      "name": "Bitbucket",
+      "status_page_url": "https://bitbucket.status.atlassian.com/",
+      "api_endpoint": "https://bitbucket.status.atlassian.com/api/v2/status.json",
+      "check_name": "Bitbucket Status Page API"
+    },
+    {
+      "name": "Bigcommerce",
+      "status_page_url": "https://status.bigcommerce.com/",
+      "api_endpoint": "https://status.bigcommerce.com/api/v2/status.json",
+      "check_name": "Bigcommerce Status Page API"
+    },
+    {
+      "name": "Hubspot",
+      "status_page_url": "https://status.hubspot.com/",
+      "api_endpoint": "https://status.hubspot.com/api/v2/status.json",
+      "check_name": "Hubspot Status Page API"
+    },
+    {
+      "name": "Dropbox",
+      "status_page_url": "https://status.dropbox.com/",
+      "api_endpoint": "https://status.dropbox.com/api/v2/status.json",
+      "check_name": "Dropbox Status Page API"
+    },
+    {
+      "name": "Netsuite",
+      "status_page_url": "https://status.netsuite.com/",
+      "api_endpoint": "https://status.netsuite.com/api/v2/status.json",
+      "check_name": "Netsuite Status Page API"
+    },
+    {
+      "name": "Box",
+      "status_page_url": "https://status.box.com/",
+      "api_endpoint": "https://status.box.com/api/v2/status.json",
+      "check_name": "Box Status Page API"
+    },
+    {
+      "name": "Reddit",
+      "status_page_url": "https://www.redditstatus.com/",
+      "api_endpoint": "https://www.redditstatus.com/api/v2/status.json",
+      "check_name": "Reddit Status Page API"
+    },
+    {
+      "name": "Monday",
+      "status_page_url": "https://status.monday.com/",
+      "api_endpoint": "https://status.monday.com/api/v2/status.json",
+      "check_name": "Monday Status Page API"
+    },
+    {
+      "name": "Asana",
+      "status_page_url": "https://status.asana.com/",
+      "api_endpoint": "https://status.asana.com/api/v2/status.json",
+      "check_name": "Asana Status Page API"
+    },
+    {
+      "name": "Trello",
+      "status_page_url": "https://trello.status.atlassian.com/",
+      "api_endpoint": "https://trello.status.atlassian.com/api/v2/status.json",
+      "check_name": "Trello Status Page API"
+    },
+    {
+      "name": "Airtable",
+      "status_page_url": "https://status.airtable.com/",
+      "api_endpoint": "https://status.airtable.com/api/v2/status.json",
+      "check_name": "Airtable Status Page API"
+    },
+    {
+      "name": "Miro",
+      "status_page_url": "https://status.miro.com/",
+      "api_endpoint": "https://status.miro.com/api/v2/status.json",
+      "check_name": "Miro Status Page API"
+    },
+    {
+      "name": "Taskade",
+      "status_page_url": "https://status.taskade.com/",
+      "api_endpoint": "https://status.taskade.com/api/v2/status.json",
+      "check_name": "Taskade Status Page API"
+    },
+    {
+      "name": "Duo",
+      "status_page_url": "https://status.duo.com/",
+      "api_endpoint": "https://status.duo.com/api/v2/status.json",
+      "check_name": "Duo Status Page API"
+    },
+    {
+      "name": "Sumsub",
+      "status_page_url": "https://status.sumsub.com/",
+      "api_endpoint": "https://status.sumsub.com/api/v2/status.json",
+      "check_name": "Sumsub Status Page API"
+    },
+    {
+      "name": "Appsflyer",
+      "status_page_url": "https://status.appsflyer.com/",
+      "api_endpoint": "https://status.appsflyer.com/api/v2/status.json",
+      "check_name": "Appsflyer Status Page API"
+    },
+    {
+      "name": "Amplitude",
+      "status_page_url": "https://status.amplitude.com/",
+      "api_endpoint": "https://status.amplitude.com/api/v2/status.json",
+      "check_name": "Amplitude Status Page API"
+    },
+    {
+      "name": "Tailscale",
+      "status_page_url": "https://status.tailscale.com/",
+      "api_endpoint": "https://status.tailscale.com/api/v2/status.json",
+      "check_name": "Tailscale Status Page API"
+    },
+    {
+      "name": "Datadoghq",
+      "status_page_url": "https://status.datadoghq.com/",
+      "api_endpoint": "https://status.datadoghq.com/api/v2/status.json",
+      "check_name": "Datadoghq Status Page API"
+    },
+    {
+      "name": "Crowdin",
+      "status_page_url": "https://status.crowdin.com/",
+      "api_endpoint": "https://status.crowdin.com/api/v2/status.json",
+      "check_name": "Crowdin Status Page API"
+    },
+    {
+      "name": "Discord",
+      "status_page_url": "https://discordstatus.com/",
+      "api_endpoint": "https://discordstatus.com/api/v2/status.json",
+      "check_name": "Discord Status Page API"
+    },
+    {
+      "name": "GitHub",
+      "status_page_url": "https://www.githubstatus.com/api",
+      "api_endpoint": "https://www.githubstatus.com/api/v2/status.json",
+      "check_name": "GitHub Status Page API"
+    },
+    {
+      "name": "Grammarly",
+      "status_page_url": "https://status.grammarly.com/",
+      "api_endpoint": "https://status.grammarly.com/api/v2/status.json",
+      "check_name": "Grammarly Status Page API"
+    },
+    {
+      "name": "Openai",
+      "status_page_url": "https://status.openai.com/",
+      "api_endpoint": "https://status.openai.com/api/v2/status.json",
+      "check_name": "Openai Status Page API"
+    }
+  ]
+}

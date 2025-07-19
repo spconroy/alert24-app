@@ -1,0 +1,799 @@
+{
+  "timestamp": "2025-07-19T01:34:45.214Z",
+  "summary": {
+    "total": 46,
+    "healthy": 39,
+    "degraded": 7,
+    "failed": 0,
+    "healthPercentage": 84.8
+  },
+  "performance": {
+    "averageResponseTime": 497,
+    "minResponseTime": 216,
+    "maxResponseTime": 1217
+  },
+  "results": [
+    {
+      "service": "Oracle Cloud Infrastructure",
+      "url": "https://ocistatus.oraclecloud.com/",
+      "apiUrl": "https://ocistatus.oraclecloud.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 258,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "Normal Performance",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Linode",
+      "url": "https://status.linode.com/",
+      "apiUrl": "https://status.linode.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 372,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "minor",
+        "statusDescription": "Minor Service Outage",
+        "components": [],
+        "isHealthy": false,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Cloudways",
+      "url": "https://status.cloudways.com/",
+      "apiUrl": "https://status.cloudways.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 462,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Digitalocean",
+      "url": "https://status.digitalocean.com/",
+      "apiUrl": "https://status.digitalocean.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 407,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Kinsta",
+      "url": "https://status.kinsta.com/",
+      "apiUrl": "https://status.kinsta.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 531,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "maintenance",
+        "statusDescription": "Service Under Maintenance",
+        "components": [],
+        "isHealthy": false,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Netlify",
+      "url": "https://www.netlifystatus.com/",
+      "apiUrl": "https://www.netlifystatus.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 556,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Scaleway",
+      "url": "https://status.scaleway.com/",
+      "apiUrl": "https://status.scaleway.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 898,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "minor",
+        "statusDescription": "Partially Degraded Service",
+        "components": [],
+        "isHealthy": false,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Upcloud",
+      "url": "https://status.upcloud.com/",
+      "apiUrl": "https://status.upcloud.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 656,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Vercel",
+      "url": "https://www.vercel-status.com/",
+      "apiUrl": "https://www.vercel-status.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 397,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Cloudflare",
+      "url": "https://www.cloudflarestatus.com/",
+      "apiUrl": "https://www.cloudflarestatus.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 373,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "minor",
+        "statusDescription": "Minor Service Outage",
+        "components": [],
+        "isHealthy": false,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Sendgrid",
+      "url": "https://status.sendgrid.com/",
+      "apiUrl": "https://status.sendgrid.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 240,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Mailgun",
+      "url": "https://status.mailgun.com/",
+      "apiUrl": "https://status.mailgun.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 455,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Zoom",
+      "url": "https://status.zoom.us/",
+      "apiUrl": "https://status.zoom.us/api/v2/status.json",
+      "success": true,
+      "responseTime": 460,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "maintenance",
+        "statusDescription": "Service Under Maintenance",
+        "components": [],
+        "isHealthy": false,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Twilio",
+      "url": "https://status.twilio.com/",
+      "apiUrl": "https://status.twilio.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 508,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "minor",
+        "statusDescription": "Partially Degraded Service",
+        "components": [],
+        "isHealthy": false,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Coinbase",
+      "url": "https://status.coinbase.com/",
+      "apiUrl": "https://status.coinbase.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 422,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "minor",
+        "statusDescription": "Partially Degraded Service",
+        "components": [],
+        "isHealthy": false,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Plaid",
+      "url": "https://status.plaid.com/",
+      "apiUrl": "https://status.plaid.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 591,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Square",
+      "url": "https://www.issquareup.com/us/en/status",
+      "apiUrl": "https://www.issquareup.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 216,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Klarna",
+      "url": "https://status.klarna.com/",
+      "apiUrl": "https://status.klarna.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 419,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Robinhood",
+      "url": "https://status.robinhood.com/",
+      "apiUrl": "https://status.robinhood.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 461,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "GitHub",
+      "url": "https://www.githubstatus.com/",
+      "apiUrl": "https://www.githubstatus.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 396,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Atlassian",
+      "url": "https://status.atlassian.com/",
+      "apiUrl": "https://status.atlassian.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 531,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Bitbucket",
+      "url": "https://bitbucket.status.atlassian.com/",
+      "apiUrl": "https://bitbucket.status.atlassian.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 531,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Bigcommerce",
+      "url": "https://status.bigcommerce.com/",
+      "apiUrl": "https://status.bigcommerce.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 635,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Hubspot",
+      "url": "https://status.hubspot.com/",
+      "apiUrl": "https://status.hubspot.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 566,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Dropbox",
+      "url": "https://status.dropbox.com/",
+      "apiUrl": "https://status.dropbox.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 299,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Netsuite",
+      "url": "https://status.netsuite.com/",
+      "apiUrl": "https://status.netsuite.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 386,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Box",
+      "url": "https://status.box.com/",
+      "apiUrl": "https://status.box.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 361,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Reddit",
+      "url": "https://www.redditstatus.com/",
+      "apiUrl": "https://www.redditstatus.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 473,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Monday",
+      "url": "https://status.monday.com/",
+      "apiUrl": "https://status.monday.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 462,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Asana",
+      "url": "https://status.asana.com/",
+      "apiUrl": "https://status.asana.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 531,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Trello",
+      "url": "https://trello.status.atlassian.com/",
+      "apiUrl": "https://trello.status.atlassian.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 630,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Airtable",
+      "url": "https://status.airtable.com/",
+      "apiUrl": "https://status.airtable.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 568,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Miro",
+      "url": "https://status.miro.com/",
+      "apiUrl": "https://status.miro.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 1217,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Taskade",
+      "url": "https://status.taskade.com/",
+      "apiUrl": "https://status.taskade.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 397,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Duo",
+      "url": "https://status.duo.com/",
+      "apiUrl": "https://status.duo.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 470,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Sumsub",
+      "url": "https://status.sumsub.com/",
+      "apiUrl": "https://status.sumsub.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 558,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Appsflyer",
+      "url": "https://status.appsflyer.com/",
+      "apiUrl": "https://status.appsflyer.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 597,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Amplitude",
+      "url": "https://status.amplitude.com/",
+      "apiUrl": "https://status.amplitude.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 642,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Tailscale",
+      "url": "https://status.tailscale.com/",
+      "apiUrl": "https://status.tailscale.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 547,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Datadoghq",
+      "url": "https://status.datadoghq.com/",
+      "apiUrl": "https://status.datadoghq.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 730,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Crowdin",
+      "url": "https://status.crowdin.com/",
+      "apiUrl": "https://status.crowdin.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 405,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Discord",
+      "url": "https://discordstatus.com/",
+      "apiUrl": "https://discordstatus.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 477,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "GitHub",
+      "url": "https://www.githubstatus.com/api",
+      "apiUrl": "https://www.githubstatus.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 289,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Grammarly",
+      "url": "https://status.grammarly.com/",
+      "apiUrl": "https://status.grammarly.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 513,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Openai",
+      "url": "https://status.openai.com/",
+      "apiUrl": "https://status.openai.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 390,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    },
+    {
+      "service": "Udemy",
+      "url": "https://status.udemy.com/",
+      "apiUrl": "https://status.udemy.com/api/v2/status.json",
+      "success": true,
+      "responseTime": 573,
+      "statusCode": 200,
+      "error": null,
+      "statusInfo": {
+        "parsed": true,
+        "overallStatus": "none",
+        "statusDescription": "All Systems Operational",
+        "components": [],
+        "isHealthy": true,
+        "hasComponents": false
+      }
+    }
+  ]
+}
