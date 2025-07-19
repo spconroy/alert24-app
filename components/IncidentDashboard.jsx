@@ -230,21 +230,45 @@ export default function IncidentDashboard() {
 
       {/* Header */}
       <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={4}
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: { xs: 'flex-start', sm: 'center' },
+          mb: 4,
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: { xs: 2, sm: 0 },
+        }}
       >
-        <Box>
-          <Typography variant="h4" component="h1" gutterBottom>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography
+            variant="h4"
+            component="h1"
+            gutterBottom
+            sx={{
+              fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' },
+              lineHeight: { xs: 1.2, sm: 1.167 },
+            }}
+          >
             Incident Management Dashboard
           </Typography>
-          <Typography variant="body1" color="text.secondary">
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+          >
             Monitor incidents, services, and team status across your
             organization
           </Typography>
         </Box>
-        <Box display="flex" gap={2} alignItems="center">
+        <Box
+          sx={{
+            display: 'flex',
+            gap: { xs: 1, sm: 2 },
+            alignItems: 'center',
+            flexDirection: { xs: 'column', sm: 'row' },
+            width: { xs: '100%', sm: 'auto' },
+          }}
+        >
           <Tooltip title="Refresh Dashboard">
             <IconButton onClick={fetchDashboardData} color="primary">
               <RefreshIcon />
@@ -308,29 +332,38 @@ export default function IncidentDashboard() {
       {/* Status Overview Cards */}
       <Box sx={{ mb: 4 }}>
         {/* Section Headers */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            mb: 2,
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: { xs: 1, sm: 0 },
+          }}
+        >
           <Typography
             variant="h6"
             color="text.secondary"
-            sx={{ fontWeight: 500 }}
+            sx={{ fontWeight: 500, fontSize: { xs: '1rem', sm: '1.25rem' } }}
           >
             🔧 System Health
           </Typography>
           <Typography
             variant="h6"
             color="text.secondary"
-            sx={{ fontWeight: 500 }}
+            sx={{ fontWeight: 500, fontSize: { xs: '1rem', sm: '1.25rem' } }}
           >
             🚨 Incident Response
           </Typography>
         </Box>
 
-        <Grid container spacing={3}>
+        <Grid container spacing={{ xs: 2, sm: 3 }}>
           {/* System Health Cards */}
           {/* Overall System Status */}
           <Grid
             item
             xs={12}
+            sm={6}
             md={3}
             sx={{
               '& .MuiCard-root': {
@@ -382,6 +415,7 @@ export default function IncidentDashboard() {
           <Grid
             item
             xs={12}
+            sm={6}
             md={3}
             sx={{
               '& .MuiCard-root': {
@@ -432,6 +466,7 @@ export default function IncidentDashboard() {
           <Grid
             item
             xs={12}
+            sm={6}
             md={3}
             sx={{
               '& .MuiCard-root': {
@@ -570,6 +605,7 @@ export default function IncidentDashboard() {
           <Grid
             item
             xs={12}
+            sm={6}
             md={3}
             sx={{
               '& .MuiCard-root': {
@@ -690,19 +726,35 @@ export default function IncidentDashboard() {
       </Box>
 
       {/* Main Content Grid */}
-      <Grid container spacing={3}>
+      <Grid container spacing={{ xs: 2, sm: 3 }}>
         {/* Recent Incidents */}
-        <Grid item xs={12} lg={8}>
+        <Grid item xs={12} md={8}>
           <Card>
             <CardContent>
               <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-                mb={2}
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: { xs: 'flex-start', sm: 'center' },
+                  mb: 2,
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  gap: { xs: 1, sm: 0 },
+                }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Typography variant="h6">Recent Incidents</Typography>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: { xs: 1, sm: 2 },
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <Typography
+                    variant="h6"
+                    sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}
+                  >
+                    Recent Incidents
+                  </Typography>
                   {incidents.length > 0 && (
                     <Chip
                       label={`${activeIncidents.length} active`}
@@ -712,7 +764,13 @@ export default function IncidentDashboard() {
                     />
                   )}
                 </Box>
-                <Box sx={{ display: 'flex', gap: 1 }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    gap: 1,
+                    width: { xs: '100%', sm: 'auto' },
+                  }}
+                >
                   <Button
                     component={Link}
                     href="/incidents/new"
@@ -720,6 +778,7 @@ export default function IncidentDashboard() {
                     size="small"
                     startIcon={<AddIcon />}
                     color="error"
+                    sx={{ flex: { xs: 1, sm: 'none' } }}
                   >
                     Create
                   </Button>
@@ -728,6 +787,7 @@ export default function IncidentDashboard() {
                     href="/incidents"
                     variant="outlined"
                     size="small"
+                    sx={{ flex: { xs: 1, sm: 'none' } }}
                   >
                     View All
                   </Button>
@@ -738,7 +798,17 @@ export default function IncidentDashboard() {
               {incidents.length > 0 && (
                 <Box sx={{ mb: 2 }}>
                   <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                    <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        gap: { xs: 1, sm: 2 },
+                        overflowX: 'auto',
+                        pb: 1,
+                        '&::-webkit-scrollbar': { display: 'none' },
+                        msOverflowStyle: 'none',
+                        scrollbarWidth: 'none',
+                      }}
+                    >
                       <Button
                         size="small"
                         variant="text"
@@ -749,6 +819,8 @@ export default function IncidentDashboard() {
                           borderRadius: 0,
                           color: 'primary.main',
                           fontWeight: 600,
+                          fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                          whiteSpace: 'nowrap',
                         }}
                       >
                         All ({incidents.length})
@@ -757,7 +829,11 @@ export default function IncidentDashboard() {
                         size="small"
                         variant="text"
                         color="inherit"
-                        sx={{ minWidth: 'auto' }}
+                        sx={{
+                          minWidth: 'auto',
+                          fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                          whiteSpace: 'nowrap',
+                        }}
                       >
                         Active ({activeIncidents.length})
                       </Button>
@@ -765,7 +841,11 @@ export default function IncidentDashboard() {
                         size="small"
                         variant="text"
                         color="inherit"
-                        sx={{ minWidth: 'auto' }}
+                        sx={{
+                          minWidth: 'auto',
+                          fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                          whiteSpace: 'nowrap',
+                        }}
                       >
                         Resolved ({incidents.length - activeIncidents.length})
                       </Button>
@@ -992,7 +1072,7 @@ export default function IncidentDashboard() {
         </Grid>
 
         {/* On-Call Schedule & Quick Actions */}
-        <Grid item xs={12} lg={4}>
+        <Grid item xs={12} md={4}>
           {/* Current On-Call */}
           <Card sx={{ mb: 3 }}>
             <CardContent>
@@ -1198,9 +1278,16 @@ export default function IncidentDashboard() {
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   mb: 1,
+                  flexWrap: 'wrap',
+                  gap: 1,
                 }}
               >
-                <Typography variant="h6">Quick Actions</Typography>
+                <Typography
+                  variant="h6"
+                  sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}
+                >
+                  Quick Actions
+                </Typography>
                 {/* Setup progress indicator */}
                 <Tooltip title="Setup completion progress">
                   <Chip
