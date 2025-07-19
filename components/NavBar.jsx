@@ -197,6 +197,76 @@ export default function NavBar() {
           Alert24
         </Typography>
 
+        {/* User Profile Section in Drawer */}
+        {session && (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+              mb: 2,
+              p: 2,
+              backgroundColor: 'grey.50',
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
+            <Box sx={{ position: 'relative' }}>
+              <Avatar
+                src={session.user?.image}
+                sx={{
+                  width: 40,
+                  height: 40,
+                  border: session.user?.image
+                    ? '2px solid rgba(76, 175, 80, 0.3)'
+                    : 'none',
+                }}
+              >
+                {session.user?.name?.charAt(0)}
+              </Avatar>
+              {session.user?.image && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    bottom: -2,
+                    right: -2,
+                    backgroundColor: 'success.main',
+                    borderRadius: '50%',
+                    width: 14,
+                    height: 14,
+                    border: '1px solid white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 8,
+                      height: 8,
+                      backgroundColor: 'white',
+                      borderRadius: '50%',
+                    }}
+                  />
+                </Box>
+              )}
+            </Box>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                {session.user?.name?.split(' ')[0]}
+              </Typography>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: 'block' }}
+              >
+                {session.user?.image ? 'Google Profile' : 'Default Avatar'}
+              </Typography>
+            </Box>
+          </Box>
+        )}
+
         {/* Organization Selector in Drawer */}
         {organizations.length > 0 && (
           <FormControl fullWidth sx={{ mb: 2 }}>
@@ -449,7 +519,11 @@ export default function NavBar() {
                 <Box
                   sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 1 }}
                 >
-                  <Tooltip title="Profile">
+                  <Tooltip
+                    title={
+                      session.user?.image ? 'Profile (Google Photo)' : 'Profile'
+                    }
+                  >
                     <Button
                       component={Link}
                       href="/profile"
@@ -467,12 +541,46 @@ export default function NavBar() {
                       <Box
                         sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
                       >
-                        <Avatar
-                          src={session.user?.image}
-                          sx={{ width: 32, height: 32 }}
-                        >
-                          {session.user?.name?.charAt(0)}
-                        </Avatar>
+                        <Box sx={{ position: 'relative' }}>
+                          <Avatar
+                            src={session.user?.image}
+                            sx={{
+                              width: 32,
+                              height: 32,
+                              border: session.user?.image
+                                ? '2px solid rgba(76, 175, 80, 0.3)'
+                                : 'none',
+                            }}
+                          >
+                            {session.user?.name?.charAt(0)}
+                          </Avatar>
+                          {session.user?.image && (
+                            <Box
+                              sx={{
+                                position: 'absolute',
+                                bottom: -2,
+                                right: -2,
+                                backgroundColor: 'success.main',
+                                borderRadius: '50%',
+                                width: 12,
+                                height: 12,
+                                border: '1px solid white',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <Box
+                                sx={{
+                                  width: 6,
+                                  height: 6,
+                                  backgroundColor: 'white',
+                                  borderRadius: '50%',
+                                }}
+                              />
+                            </Box>
+                          )}
+                        </Box>
                         {!isMobile && (
                           <Typography
                             variant="body2"

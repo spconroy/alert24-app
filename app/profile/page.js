@@ -15,9 +15,7 @@ import {
   Chip,
   CircularProgress,
 } from '@mui/material';
-import {
-  Security as SecurityIcon,
-} from '@mui/icons-material';
+import { Security as SecurityIcon } from '@mui/icons-material';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import UserProfileForm from '@/components/UserProfileForm';
 
@@ -70,7 +68,7 @@ export default function ProfilePage() {
     }
   };
 
-  const handleSave = async (formData) => {
+  const handleSave = async formData => {
     setError('');
     setSuccess('');
 
@@ -145,11 +143,49 @@ export default function ProfilePage() {
         <Grid item xs={12} md={4}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
-              <Avatar
-                src={session.user?.image}
-                alt={profileData.name}
-                sx={{ width: 120, height: 120, mx: 'auto', mb: 2 }}
-              />
+              <Box
+                sx={{ position: 'relative', display: 'inline-block', mb: 2 }}
+              >
+                <Avatar
+                  src={session.user?.image}
+                  alt={profileData.name}
+                  sx={{
+                    width: 120,
+                    height: 120,
+                    mx: 'auto',
+                    border: '4px solid',
+                    borderColor: session.user?.image
+                      ? 'primary.main'
+                      : 'grey.300',
+                    boxShadow: session.user?.image
+                      ? '0 4px 20px rgba(25, 118, 210, 0.3)'
+                      : 'none',
+                  }}
+                >
+                  {!session.user?.image && (profileData.name?.charAt(0) || '?')}
+                </Avatar>
+                {session.user?.image && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      bottom: 0,
+                      right: 0,
+                      backgroundColor: 'success.main',
+                      color: 'white',
+                      borderRadius: '50%',
+                      width: 24,
+                      height: 24,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '12px',
+                      border: '2px solid white',
+                    }}
+                  >
+                    ✓
+                  </Box>
+                )}
+              </Box>
               <Typography variant="h6" gutterBottom>
                 {profileData.name || 'User'}
               </Typography>
@@ -157,11 +193,48 @@ export default function ProfilePage() {
                 label="Account Active"
                 color="success"
                 size="small"
-                sx={{ mb: 2 }}
+                sx={{ mb: 1 }}
               />
+              <Box sx={{ mb: 2 }}>
+                {session.user?.image ? (
+                  <Chip
+                    label="Google Profile Photo"
+                    color="primary"
+                    size="small"
+                    sx={{
+                      backgroundColor: 'primary.main',
+                      color: 'white',
+                      fontWeight: 500,
+                    }}
+                  />
+                ) : (
+                  <Chip
+                    label="Default Avatar"
+                    color="default"
+                    size="small"
+                    sx={{
+                      backgroundColor: 'grey.200',
+                      color: 'text.secondary',
+                    }}
+                  />
+                )}
+              </Box>
               <Typography variant="body2" color="text.secondary">
-                Signed in via Google OAuth
+                {session.user?.image
+                  ? 'Your Google account profile photo is displayed'
+                  : 'Signed in via Google OAuth'}
               </Typography>
+              {!session.user?.image && (
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  display="block"
+                  sx={{ mt: 1 }}
+                >
+                  To see your Google profile photo, make sure your Google
+                  account has a profile picture set
+                </Typography>
+              )}
             </CardContent>
           </Card>
         </Grid>
