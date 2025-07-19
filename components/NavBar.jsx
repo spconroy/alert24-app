@@ -1,6 +1,10 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useOrganization, useSession } from '@/contexts/OrganizationContext';
+
+// Material UI Components
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
@@ -20,6 +24,14 @@ import IconButton from '@mui/material/IconButton';
 import Divider from '@mui/material/Divider';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
+import Drawer from '@mui/material/Drawer';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemButton from '@mui/material/ListItemButton';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { useTheme } from '@mui/material/styles';
+
+// Material UI Icons
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -30,25 +42,32 @@ import PeopleIcon from '@mui/icons-material/People';
 import PublicIcon from '@mui/icons-material/Public';
 import EscalatorWarningIcon from '@mui/icons-material/EscalatorWarning';
 import SettingsIcon from '@mui/icons-material/Settings';
-import HelpIcon from '@mui/icons-material/Help';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import PaymentIcon from '@mui/icons-material/Payment';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
-import { usePathname } from 'next/navigation';
-import { useOrganization, useSession } from '@/contexts/OrganizationContext';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import BusinessIcon from '@mui/icons-material/Business';
+import LogoutIcon from '@mui/icons-material/Logout';
+import PersonIcon from '@mui/icons-material/Person';
 
 export default function NavBar() {
   const pathname = usePathname();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { data: session, status } = useSession();
   const { selectedOrganization, organizations, loading, switchOrganization } =
     useOrganization();
 
   const [defaultOrganizationId, setDefaultOrganizationId] = useState(null);
   const [settingDefault, setSettingDefault] = useState(false);
-  const [anchorEl, setAnchorEl] = useState(null);
+
+  // Menu states
   const [incidentMenuAnchor, setIncidentMenuAnchor] = useState(null);
   const [monitoringMenuAnchor, setMonitoringMenuAnchor] = useState(null);
+  const [toolsMenuAnchor, setToolsMenuAnchor] = useState(null);
+  const [orgMenuAnchor, setOrgMenuAnchor] = useState(null);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   // Fetch default organization when session is available
   useEffect(() => {
@@ -76,11 +95,6 @@ export default function NavBar() {
 
     setSettingDefault(true);
     try {
-      console.log('🌟 Setting default organization:', {
-        organizationId,
-        isDefault,
-      });
-
       const response = await fetch('/api/user/default-organization', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -90,12 +104,7 @@ export default function NavBar() {
       });
 
       if (response.ok) {
-        const result = await response.json();
-        console.log('✅ Default organization response:', result);
         setDefaultOrganizationId(isDefault ? organizationId : null);
-      } else {
-        const error = await response.json();
-        console.error('❌ Failed to set default organization:', error);
       }
     } catch (error) {
       console.error('❌ Error setting default organization:', error);
@@ -108,12 +117,10 @@ export default function NavBar() {
     switchOrganization(organizationId);
   };
 
-  // Custom sign in function
   const handleSignIn = () => {
     window.location.href = '/api/auth/google/signin';
   };
 
-  // Custom sign out function
   const handleSignOut = async () => {
     try {
       await fetch('/api/auth/signout', { method: 'POST' });
@@ -123,190 +130,401 @@ export default function NavBar() {
     }
   };
 
-  // Handle menu operations
-  const handleIncidentMenuOpen = event => {
+  // Menu handlers
+  const handleIncidentMenuOpen = event =>
     setIncidentMenuAnchor(event.currentTarget);
-  };
-
-  const handleMonitoringMenuOpen = event => {
+  const handleMonitoringMenuOpen = event =>
     setMonitoringMenuAnchor(event.currentTarget);
-  };
+  const handleToolsMenuOpen = event => setToolsMenuAnchor(event.currentTarget);
+  const handleOrgMenuOpen = event => setOrgMenuAnchor(event.currentTarget);
 
   const handleMenuClose = () => {
     setIncidentMenuAnchor(null);
     setMonitoringMenuAnchor(null);
+    setToolsMenuAnchor(null);
+    setOrgMenuAnchor(null);
   };
 
-  // Show loading state only when session status is loading AND organizations are loading
+  const toggleMobileDrawer = () => {
+    setMobileDrawerOpen(!mobileDrawerOpen);
+  };
+
+  // Navigation items for mobile drawer
+  const navigationItems = [
+    { label: 'Dashboard', href: '/', icon: <DashboardIcon /> },
+    { label: 'Incidents', href: '/incidents', icon: <WarningIcon /> },
+    { label: 'Monitoring', href: '/monitoring', icon: <MonitorIcon /> },
+    { label: 'Analytics', href: '/analytics', icon: <AnalyticsIcon /> },
+    { label: 'Status Pages', href: '/status-pages', icon: <PublicIcon /> },
+    { label: 'Teams', href: '/teams', icon: <PeopleIcon /> },
+    { label: 'On-Call', href: '/on-call', icon: <PeopleIcon /> },
+    {
+      label: 'Escalation Policies',
+      href: '/escalation-policies',
+      icon: <EscalatorWarningIcon />,
+    },
+  ];
+
+  // Show loading state
   if (status === 'loading' || (status === 'authenticated' && loading)) {
     return (
       <AppBar position="static">
         <Toolbar>
-          <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-            <Typography
-              variant="h6"
-              component="div"
-              sx={{
-                flexGrow: 1,
-                cursor: 'pointer',
-                '&:hover': {
-                  opacity: 0.8,
-                },
-              }}
-            >
-              Alert24
-            </Typography>
-          </Link>
-          <CircularProgress size={24} color="inherit" />
-          <Typography variant="body2" sx={{ ml: 2 }}>
-            Loading...
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+            Alert24
           </Typography>
+          <CircularProgress size={20} color="inherit" />
         </Toolbar>
       </AppBar>
     );
   }
 
-  return (
-    <AppBar position="static">
-      <Toolbar>
-        <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <Typography
-            variant="h6"
-            component="div"
-            sx={{
-              flexGrow: 1,
-              cursor: 'pointer',
-              '&:hover': {
-                opacity: 0.8,
-              },
-            }}
-          >
-            Alert24
-          </Typography>
-        </Link>
+  // Mobile Drawer Component
+  const MobileDrawer = (
+    <Drawer
+      anchor="left"
+      open={mobileDrawerOpen}
+      onClose={toggleMobileDrawer}
+      sx={{
+        '& .MuiDrawer-paper': {
+          width: 280,
+          boxSizing: 'border-box',
+        },
+      }}
+    >
+      <Box sx={{ p: 2 }}>
+        <Typography variant="h6" sx={{ mb: 2 }}>
+          Alert24
+        </Typography>
 
-        {status === 'authenticated' && session ? (
-          <>
-            {/* Organization Selector with Enhanced Features */}
-            {organizations.length > 0 && (
-              <FormControl sx={{ mr: 2, minWidth: 220 }}>
-                <InputLabel
-                  id="organization-select-label"
-                  sx={{ color: 'white' }}
+        {/* Organization Selector in Drawer */}
+        {organizations.length > 0 && (
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel>Organization</InputLabel>
+            <Select
+              value={selectedOrganization?.id || ''}
+              onChange={e => handleOrganizationChange(e.target.value)}
+              label="Organization"
+              size="small"
+            >
+              {organizations.map(org => (
+                <MenuItem key={org.id} value={org.id}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {defaultOrganizationId === org.id && (
+                      <StarIcon sx={{ fontSize: 16, color: '#FFD700' }} />
+                    )}
+                    {org.name}
+                  </Box>
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )}
+      </Box>
+
+      <Divider />
+
+      <List>
+        {navigationItems.map(item => (
+          <ListItem key={item.label} disablePadding>
+            <ListItemButton
+              component={Link}
+              href={item.href}
+              onClick={toggleMobileDrawer}
+              selected={
+                pathname === item.href || pathname.startsWith(item.href + '/')
+              }
+            >
+              <ListItemIcon>{item.icon}</ListItemIcon>
+              <ListItemText primary={item.label} />
+            </ListItemButton>
+          </ListItem>
+        ))}
+      </List>
+
+      <Divider />
+
+      <List>
+        <ListItem disablePadding>
+          <ListItemButton
+            component={Link}
+            href="/settings"
+            onClick={toggleMobileDrawer}
+          >
+            <ListItemIcon>
+              <SettingsIcon />
+            </ListItemIcon>
+            <ListItemText primary="Settings" />
+          </ListItemButton>
+        </ListItem>
+        <ListItem disablePadding>
+          <ListItemButton
+            component={Link}
+            href="/billing"
+            onClick={toggleMobileDrawer}
+          >
+            <ListItemIcon>
+              <PaymentIcon />
+            </ListItemIcon>
+            <ListItemText primary="Billing" />
+          </ListItemButton>
+        </ListItem>
+        {(process.env.NODE_ENV === 'development' ||
+          session?.user?.email?.endsWith('@inventivehq.com')) && (
+          <ListItem disablePadding>
+            <ListItemButton
+              component={Link}
+              href="/debug"
+              onClick={toggleMobileDrawer}
+            >
+              <ListItemIcon>
+                <BugReportIcon />
+              </ListItemIcon>
+              <ListItemText primary="Debug" />
+            </ListItemButton>
+          </ListItem>
+        )}
+      </List>
+    </Drawer>
+  );
+
+  return (
+    <>
+      <AppBar position="static" elevation={1}>
+        <Toolbar sx={{ minHeight: { xs: 56, sm: 64 } }}>
+          {/* Logo */}
+          <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Typography
+              variant="h6"
+              component="div"
+              sx={{
+                fontWeight: 600,
+                cursor: 'pointer',
+                '&:hover': { opacity: 0.8 },
+                mr: { xs: 1, md: 4 },
+              }}
+            >
+              Alert24
+            </Typography>
+          </Link>
+
+          {/* Spacer */}
+          <Box sx={{ flexGrow: 1 }} />
+
+          {status === 'authenticated' && session ? (
+            <>
+              {/* Desktop Navigation */}
+              {!isMobile && (
+                <Box
+                  sx={{ display: 'flex', alignItems: 'center', gap: 1, mr: 3 }}
                 >
-                  Organization
-                </InputLabel>
-                <Select
-                  labelId="organization-select-label"
-                  value={selectedOrganization?.id || ''}
-                  onChange={e => handleOrganizationChange(e.target.value)}
-                  label="Organization"
-                  size="small"
-                  sx={{
-                    color: 'white',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'rgba(255,255,255,0.3)',
-                    },
-                    '& .MuiSvgIcon-root': { color: 'white' },
-                    '& .MuiInputLabel-root': { color: 'white' },
-                  }}
-                  renderValue={selected => {
-                    const org = organizations.find(o => o.id === selected);
-                    return (
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                      >
-                        {defaultOrganizationId === selected && (
-                          <StarIcon sx={{ fontSize: 16, color: '#FFD700' }} />
-                        )}
-                        {org?.name || 'Select Organization'}
-                      </Box>
-                    );
-                  }}
-                >
-                  {organizations.map(org => (
-                    <MenuItem key={org.id} value={org.id}>
-                      <Box
+                  {/* Organization Selector - Compact */}
+                  {organizations.length > 0 && (
+                    <Tooltip title="Switch Organization">
+                      <Button
+                        onClick={handleOrgMenuOpen}
+                        color="inherit"
+                        startIcon={<BusinessIcon />}
+                        endIcon={<KeyboardArrowDownIcon />}
                         sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          width: '100%',
+                          textTransform: 'none',
+                          maxWidth: 160,
+                          '& .MuiButton-startIcon': { mr: 0.5 },
                         }}
                       >
                         <Box
-                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                          sx={{
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
                         >
-                          {org.name}
+                          {selectedOrganization?.name || 'Select Org'}
                         </Box>
-                        <FormControlLabel
-                          control={
-                            <Checkbox
-                              checked={defaultOrganizationId === org.id}
-                              onChange={e => {
-                                e.stopPropagation();
-                                handleSetDefault(org.id, e.target.checked);
-                              }}
-                              icon={<StarBorderIcon />}
-                              checkedIcon={
-                                <StarIcon sx={{ color: '#FFD700' }} />
-                              }
-                              size="small"
-                              disabled={settingDefault}
-                            />
-                          }
-                          label=""
-                          sx={{ margin: 0 }}
-                          onClick={e => e.stopPropagation()}
-                        />
+                      </Button>
+                    </Tooltip>
+                  )}
+
+                  {/* Primary Navigation */}
+                  <Button
+                    component={Link}
+                    href="/"
+                    color="inherit"
+                    startIcon={<DashboardIcon />}
+                    sx={{
+                      backgroundColor:
+                        pathname === '/'
+                          ? 'rgba(255,255,255,0.1)'
+                          : 'transparent',
+                      '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
+                    }}
+                  >
+                    Dashboard
+                  </Button>
+
+                  <Button
+                    color="inherit"
+                    startIcon={<WarningIcon />}
+                    endIcon={<KeyboardArrowDownIcon />}
+                    onClick={handleIncidentMenuOpen}
+                    sx={{
+                      backgroundColor:
+                        pathname.startsWith('/incidents') ||
+                        pathname.startsWith('/on-call') ||
+                        pathname.startsWith('/escalation-policies') ||
+                        pathname.startsWith('/teams')
+                          ? 'rgba(255,255,255,0.1)'
+                          : 'transparent',
+                      '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
+                    }}
+                  >
+                    Incidents
+                  </Button>
+
+                  <Button
+                    color="inherit"
+                    startIcon={<MonitorIcon />}
+                    endIcon={<KeyboardArrowDownIcon />}
+                    onClick={handleMonitoringMenuOpen}
+                    sx={{
+                      backgroundColor:
+                        pathname.startsWith('/monitoring') ||
+                        pathname.startsWith('/status-pages')
+                          ? 'rgba(255,255,255,0.1)'
+                          : 'transparent',
+                      '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
+                    }}
+                  >
+                    Monitoring
+                  </Button>
+
+                  <Button
+                    component={Link}
+                    href="/analytics"
+                    color="inherit"
+                    startIcon={<AnalyticsIcon />}
+                    sx={{
+                      backgroundColor: pathname.startsWith('/analytics')
+                        ? 'rgba(255,255,255,0.1)'
+                        : 'transparent',
+                      '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
+                    }}
+                  >
+                    Analytics
+                  </Button>
+                </Box>
+              )}
+
+              {/* User Section */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {/* Mobile Menu Button */}
+                {isMobile && (
+                  <IconButton color="inherit" onClick={toggleMobileDrawer}>
+                    <MenuIcon />
+                  </IconButton>
+                )}
+
+                {/* Tools Menu (Desktop Only) */}
+                {!isMobile && (
+                  <Tooltip title="Tools & Settings">
+                    <IconButton color="inherit" onClick={handleToolsMenuOpen}>
+                      <MoreVertIcon />
+                    </IconButton>
+                  </Tooltip>
+                )}
+
+                {/* User Profile */}
+                <Box
+                  sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 1 }}
+                >
+                  <Avatar
+                    src={session.user?.image}
+                    sx={{ width: 32, height: 32 }}
+                  >
+                    {session.user?.name?.charAt(0)}
+                  </Avatar>
+                  {!isMobile && (
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        maxWidth: 100,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {session.user?.name?.split(' ')[0]}
+                    </Typography>
+                  )}
+                  <Tooltip title="Sign out">
+                    <IconButton
+                      color="inherit"
+                      onClick={handleSignOut}
+                      size="small"
+                    >
+                      <LogoutIcon />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              </Box>
+
+              {/* Organization Menu */}
+              <Menu
+                anchorEl={orgMenuAnchor}
+                open={Boolean(orgMenuAnchor)}
+                onClose={handleMenuClose}
+                PaperProps={{ sx: { minWidth: 220 } }}
+              >
+                {organizations.map(org => (
+                  <MenuItem
+                    key={org.id}
+                    onClick={() => {
+                      handleOrganizationChange(org.id);
+                      handleMenuClose();
+                    }}
+                    selected={selectedOrganization?.id === org.id}
+                  >
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        width: '100%',
+                      }}
+                    >
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
+                        <BusinessIcon fontSize="small" />
+                        {org.name}
                       </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            )}
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={defaultOrganizationId === org.id}
+                            onChange={e => {
+                              e.stopPropagation();
+                              handleSetDefault(org.id, e.target.checked);
+                            }}
+                            icon={<StarBorderIcon />}
+                            checkedIcon={<StarIcon sx={{ color: '#FFD700' }} />}
+                            size="small"
+                            disabled={settingDefault}
+                          />
+                        }
+                        label=""
+                        sx={{ margin: 0 }}
+                        onClick={e => e.stopPropagation()}
+                      />
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Menu>
 
-            {/* Enhanced Navigation Menu with Dropdowns */}
-            <Box sx={{ display: 'flex', gap: 1, mr: 2 }}>
-              {/* Dashboard */}
-              <Button
-                component={Link}
-                href="/"
-                color="inherit"
-                startIcon={<DashboardIcon />}
-                sx={{
-                  backgroundColor:
-                    pathname === '/' ? 'rgba(255,255,255,0.1)' : 'transparent',
-                  '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
-                }}
-              >
-                Dashboard
-              </Button>
-
-              {/* Incidents Dropdown */}
-              <Button
-                color="inherit"
-                startIcon={<WarningIcon />}
-                endIcon={<KeyboardArrowDownIcon />}
-                onClick={handleIncidentMenuOpen}
-                sx={{
-                  backgroundColor:
-                    pathname.startsWith('/incidents') ||
-                    pathname.startsWith('/on-call') ||
-                    pathname.startsWith('/escalation-policies') ||
-                    pathname.startsWith('/teams')
-                      ? 'rgba(255,255,255,0.1)'
-                      : 'transparent',
-                  '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
-                }}
-              >
-                Incidents
-              </Button>
+              {/* Incidents Menu */}
               <Menu
                 anchorEl={incidentMenuAnchor}
                 open={Boolean(incidentMenuAnchor)}
                 onClose={handleMenuClose}
-                MenuListProps={{ 'aria-labelledby': 'incidents-button' }}
               >
                 <MenuItem
                   component={Link}
@@ -361,26 +579,11 @@ export default function NavBar() {
                 </MenuItem>
               </Menu>
 
-              {/* Monitoring Dropdown */}
-              <Button
-                color="inherit"
-                startIcon={<MonitorIcon />}
-                endIcon={<KeyboardArrowDownIcon />}
-                onClick={handleMonitoringMenuOpen}
-                sx={{
-                  backgroundColor: pathname.startsWith('/monitoring')
-                    ? 'rgba(255,255,255,0.1)'
-                    : 'transparent',
-                  '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
-                }}
-              >
-                Monitoring
-              </Button>
+              {/* Monitoring Menu */}
               <Menu
                 anchorEl={monitoringMenuAnchor}
                 open={Boolean(monitoringMenuAnchor)}
                 onClose={handleMenuClose}
-                MenuListProps={{ 'aria-labelledby': 'monitoring-button' }}
               >
                 <MenuItem
                   component={Link}
@@ -415,114 +618,65 @@ export default function NavBar() {
                 </MenuItem>
               </Menu>
 
-              {/* Analytics */}
-              <Button
-                component={Link}
-                href="/analytics"
-                color="inherit"
-                startIcon={<AnalyticsIcon />}
-                sx={{
-                  backgroundColor: pathname.startsWith('/analytics')
-                    ? 'rgba(255,255,255,0.1)'
-                    : 'transparent',
-                  '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
-                }}
+              {/* Tools Menu */}
+              <Menu
+                anchorEl={toolsMenuAnchor}
+                open={Boolean(toolsMenuAnchor)}
+                onClose={handleMenuClose}
               >
-                Analytics
-              </Button>
-            </Box>
-
-            {/* Enhanced User Menu */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              {/* Settings Icon */}
-              <Tooltip title="Settings">
-                <IconButton
+                <MenuItem
                   component={Link}
                   href="/settings"
-                  color="inherit"
-                  size="small"
+                  onClick={handleMenuClose}
                 >
-                  <SettingsIcon />
-                </IconButton>
-              </Tooltip>
-
-              {/* Billing Icon */}
-              <Tooltip title="Billing">
-                <IconButton
+                  <ListItemIcon>
+                    <SettingsIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>Settings</ListItemText>
+                </MenuItem>
+                <MenuItem
                   component={Link}
                   href="/billing"
-                  color="inherit"
-                  size="small"
+                  onClick={handleMenuClose}
                 >
-                  <PaymentIcon />
-                </IconButton>
-              </Tooltip>
+                  <ListItemIcon>
+                    <PaymentIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>Billing</ListItemText>
+                </MenuItem>
+                {(process.env.NODE_ENV === 'development' ||
+                  session?.user?.email?.endsWith('@inventivehq.com')) && (
+                  <>
+                    <Divider />
+                    <MenuItem
+                      component={Link}
+                      href="/debug"
+                      onClick={handleMenuClose}
+                    >
+                      <ListItemIcon>
+                        <BugReportIcon fontSize="small" />
+                      </ListItemIcon>
+                      <ListItemText>Debug</ListItemText>
+                    </MenuItem>
+                  </>
+                )}
+              </Menu>
+            </>
+          ) : (
+            <Button
+              color="primary"
+              variant="contained"
+              size="small"
+              onClick={handleSignIn}
+            >
+              Sign in
+            </Button>
+          )}
+        </Toolbar>
+      </AppBar>
 
-              {/* Debug Icon (Development or inventivehq.com email) */}
-              {(process.env.NODE_ENV === 'development' ||
-                session.user?.email?.endsWith('@inventivehq.com')) && (
-                <Tooltip title="Debug">
-                  <IconButton
-                    component={Link}
-                    href="/debug"
-                    color="inherit"
-                    size="small"
-                  >
-                    <BugReportIcon />
-                  </IconButton>
-                </Tooltip>
-              )}
-
-              {/* User Profile Section */}
-              <Box
-                sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 1 }}
-              >
-                <Avatar
-                  src={session.user?.image}
-                  sx={{ width: 32, height: 32 }}
-                >
-                  {session.user?.name?.charAt(0)}
-                </Avatar>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    maxWidth: 120,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  {session.user?.name}
-                </Typography>
-                <Button
-                  color="inherit"
-                  variant="outlined"
-                  size="small"
-                  onClick={handleSignOut}
-                  sx={{
-                    borderColor: 'rgba(255,255,255,0.3)',
-                    '&:hover': {
-                      borderColor: 'rgba(255,255,255,0.5)',
-                      backgroundColor: 'rgba(255,255,255,0.1)',
-                    },
-                    ml: 1,
-                  }}
-                >
-                  Sign out
-                </Button>
-              </Box>
-            </Box>
-          </>
-        ) : (
-          <Button
-            color="primary"
-            variant="contained"
-            size="small"
-            onClick={handleSignIn}
-          >
-            Sign in
-          </Button>
-        )}
-      </Toolbar>
-    </AppBar>
+      {/* Mobile Drawer */}
+      {MobileDrawer}
+    </>
   );
 }
