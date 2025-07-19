@@ -124,6 +124,18 @@ export async function POST(request) {
 
     console.log('🏗️ Creating team:', { name, organizationId });
 
+    // Validate required fields
+    if (!name || !organizationId) {
+      console.log('❌ Missing required fields:', {
+        name: !!name,
+        organizationId: !!organizationId,
+      });
+      return NextResponse.json(
+        { error: 'Team name and organization ID are required' },
+        { status: 400 }
+      );
+    }
+
     // Verify user has access to this organization
     const userOrgs = await db.getOrganizations(user.id);
     const hasAccess = userOrgs.some(org => org.id === organizationId);
@@ -139,20 +151,49 @@ export async function POST(request) {
     }
 
     // Create the team
-    const newTeam = await db.createTeamGroup({
-      name,
-      description,
-      color: color || '#0066CC',
-      organizationId,
-      teamLeadId,
-    });
+    try {
+      console.log('🏗️ Attempting to create team with data:', {
+        name,
+        description,
+        color: color || '#0066CC',
+        organization_id: organizationId,
+        team_lead_id: teamLeadId || null,
+        is_active: true,
+      });
 
-    console.log('✅ Team created successfully:', newTeam);
-    return NextResponse.json(newTeam);
+      const newTeam = await db.createTeamGroup({
+        name,
+        description,
+        color: color || '#0066CC',
+        organization_id: organizationId,
+        team_lead_id: teamLeadId || null,
+        is_active: true,
+      });
+
+      console.log('✅ Team created successfully:', newTeam);
+      return NextResponse.json(newTeam);
+    } catch (createError) {
+      console.error('❌ Team creation failed:', {
+        error: createError.message,
+        code: createError.code,
+        details: createError.details,
+        hint: createError.hint,
+        name: createError.name,
+      });
+
+      return NextResponse.json(
+        {
+          error: 'Failed to create team',
+          details: createError.message,
+          code: createError.code,
+        },
+        { status: 500 }
+      );
+    }
   } catch (error) {
-    console.error('❌ Error creating team:', error);
+    console.error('❌ Error in teams API:', error);
     return NextResponse.json(
-      { error: 'Failed to create team', details: error.message },
+      { error: 'Internal server error', details: error.message },
       { status: 500 }
     );
   }
