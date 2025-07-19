@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { supabase } from '@/lib/db-supabase';
+import { db } from '@/lib/db-supabase';
+
+export const runtime = 'edge';
 
 export async function GET(request) {
   try {
@@ -18,7 +20,7 @@ export async function GET(request) {
     }
 
     // Check if user belongs to organization
-    const { data: membership } = await supabase
+    const { data: membership } = await db.client
       .from('organization_members')
       .select('role')
       .eq('organization_id', organizationId)
@@ -51,7 +53,7 @@ export async function GET(request) {
     }
 
     // Get overall stats
-    const { data: overallStats, error: overallError } = await supabase
+    const { data: overallStats, error: overallError } = await db.client
       .from('email_notifications')
       .select('status, email_type, priority, attempts')
       .eq('organization_id', organizationId)
@@ -124,7 +126,7 @@ export async function GET(request) {
     }, {});
 
     // Get hourly breakdown for the time range
-    const { data: hourlyData, error: hourlyError } = await supabase
+    const { data: hourlyData, error: hourlyError } = await db.client
       .from('email_notifications')
       .select('created_at, status')
       .eq('organization_id', organizationId)

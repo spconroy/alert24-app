@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { supabase } from '@/lib/db-supabase';
+import { db } from '@/lib/db-supabase';
+
+export const runtime = 'edge';
 
 export async function GET(request) {
   try {
@@ -21,7 +23,7 @@ export async function GET(request) {
     }
 
     // Check if user belongs to organization
-    const { data: membership } = await supabase
+    const { data: membership } = await db.client
       .from('organization_members')
       .select('role')
       .eq('organization_id', organizationId)
@@ -33,7 +35,7 @@ export async function GET(request) {
     }
 
     // Build query
-    let query = supabase
+    let query = db.client
       .from('email_notifications')
       .select(`
         id,
@@ -69,7 +71,7 @@ export async function GET(request) {
     }
 
     // Get total count for pagination
-    let countQuery = supabase
+    let countQuery = db.client
       .from('email_notifications')
       .select('id', { count: 'exact', head: true })
       .eq('organization_id', organizationId);
@@ -114,7 +116,7 @@ export async function POST(request) {
     }
 
     // Check if user belongs to organization and has permission to send notifications
-    const { data: membership } = await supabase
+    const { data: membership } = await db.client
       .from('organization_members')
       .select('role')
       .eq('organization_id', organizationId)

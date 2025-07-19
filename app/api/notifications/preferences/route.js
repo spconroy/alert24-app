@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { supabase } from '@/lib/db-supabase';
+import { db } from '@/lib/db-supabase';
+
+export const runtime = 'edge';
 
 export async function GET(request) {
   try {
@@ -10,7 +12,7 @@ export async function GET(request) {
     }
 
     // Get user's notification preferences
-    let { data: preferences } = await supabase
+    let { data: preferences } = await db.client
       .from('notification_preferences')
       .select('*')
       .eq('user_id', session.user.id)
@@ -28,7 +30,7 @@ export async function GET(request) {
         updated_at: new Date().toISOString(),
       };
 
-      const { data: newPreferences, error } = await supabase
+      const { data: newPreferences, error } = await db.client
         .from('notification_preferences')
         .insert(defaultPreferences)
         .select()
@@ -75,7 +77,7 @@ export async function PUT(request) {
     }
 
     // Update preferences
-    const { data: updatedPreferences, error } = await supabase
+    const { data: updatedPreferences, error } = await db.client
       .from('notification_preferences')
       .upsert({
         user_id: session.user.id,
