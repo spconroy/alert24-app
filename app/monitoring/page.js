@@ -199,6 +199,12 @@ export default function MonitoringPage() {
             status_page_config: check.status_page_config,
           }))
         );
+
+        console.log('🔍 Full raw API response:', data);
+        console.log(
+          '🔍 First status page check full object:',
+          statusPageChecks[0]
+        );
       }
 
       setMonitoringChecks(checks);
