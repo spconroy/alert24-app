@@ -49,13 +49,6 @@ import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
 export default function MonitoringPage() {
-  // Debug: Check if STATUS_PAGE_PROVIDERS is imported correctly
-  console.log(
-    'STATUS_PAGE_PROVIDERS imported:',
-    !!STATUS_PAGE_PROVIDERS,
-    Object.keys(STATUS_PAGE_PROVIDERS || {})
-  );
-
   const [monitoringChecks, setMonitoringChecks] = useState([]);
   const [activeIncidents, setActiveIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
