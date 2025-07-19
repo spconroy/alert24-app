@@ -1,0 +1,185 @@
+# Status Page Monitoring Import (2025-07-19)
+# 📊 45 monitoring checks created for API-compatible status pages
+# Status pages being monitored are marked with 📊 [MONITORING]
+
+# Status Page Monitoring Import (2025-07-19)
+# 📊 0 monitoring checks created for API-compatible status pages
+# Status pages being monitored are marked with 📊 [MONITORING]
+
+# Status Page Monitoring Import (2025-07-19)
+# 📊 0 monitoring checks created for API-compatible status pages
+# Status pages being monitored are marked with 📊 [MONITORING]
+
+
+
+
+
+✅ Cloud Providers
+✅ Amazon Web Services (AWS): https://status.aws.amazon.com/
+✅ Google Cloud Platform (GCP): https://status.cloud.google.com/
+✅ Microsoft Azure: https://status.azure.com/en-us/status
+IBM Cloud: https://cloud.ibm.com/status
+Oracle Cloud Infrastructure (OCI): https://ocistatus.oraclecloud.com/
+Alibaba Cloud: https://status.alibabacloud.com/
+Linode: https://status.linode.com/
+Vultr: https://status.vultr.com/
+OVHcloud: https://status.ovhcloud.com/
+Hetzner Online: https://status.hetzner.com/
+Hostinger: https://status.hostinger.com/
+Kinsta: https://status.kinsta.com/
+Cloudways: https://status.cloudways.com/
+Rackspace: https://status.rackspace.com/
+Scaleway: https://status.scaleway.com/
+UpCloud: https://status.upcloud.com/
+Yandex.Cloud: https://status.yandex.cloud/
+Oracle Cloud: https://ocistatus.oraclecloud.com/
+✅ Netlify: https://www.netlifystatus.com/
+✅ Vercel: https://www.vercel-status.com/
+✅ DigitalOcean: https://status.digitalocean.com/
+DomaiNesia: https://status.domainesia.com/
+
+✅ CDN & DNS
+✅ Cloudflare: https://www.cloudflarestatus.com/
+Akamai: https://www.akamai.com/us/en/resources/system-status.jsp
+✅ Fastly: https://status.fastly.com/
+Amazon Route 53: https://health.aws.amazon.com/health/status
+Google DNS: https://status.cloud.google.com/ (see Networking)
+
+✅ Email & Communication
+✅ SendGrid: https://status.sendgrid.com/
+Mailgun: https://status.mailgun.com/
+Postmark: https://status.postmarkapp.com/
+Amazon SES: https://status.aws.amazon.com/
+Outlook/Office 365: https://status.office365.com/
+Zoom: https://status.zoom.us/
+✅ Slack: https://status.slack.com/
+Microsoft Teams: https://status.office365.com/
+RingCentral: https://status.ringcentral.com/
+✅ Twilio: https://status.twilio.com/
+Webex: https://status.webex.com/
+
+✅ Payments & Finance
+✅ Stripe: https://status.stripe.com/
+✅ PayPal: https://www.paypal-status.com/
+Square: https://www.issquareup.com/us/en/status
+Adyen: https://status.adyen.com/
+Plaid: https://status.plaid.com/
+Coinbase: https://status.coinbase.com/
+Robinhood: https://status.robinhood.com/
+Klarna: https://status.klarna.com/
+Revolut: https://status.revolut.com/
+QuickBase: https://status.quickbase.com/
+
+✅ Developer Platforms & APIs
+✅ GitHub: https://www.githubstatus.com/
+GitLab: https://status.gitlab.com/
+Bitbucket: https://bitbucket.status.atlassian.com/
+Atlassian (Jira, Confluence, Trello): https://status.atlassian.com/
+✅ Heroku: https://status.heroku.com/
+✅ Vercel: https://www.vercel-status.com/
+✅ Netlify: https://www.netlifystatus.com/
+✅ Supabase: https://status.supabase.com/
+
+✅ E-commerce & SaaS
+✅ Shopify: https://status.shopify.com/
+BigCommerce: https://status.bigcommerce.com/
+Magento Commerce Cloud: https://status.magento.cloud/
+Salesforce: https://status.salesforce.com/
+Salesforce Trust: https://trust.salesforce.com/
+HubSpot: https://status.hubspot.com/
+✅ Zendesk: https://status.zendesk.com/
+NetSuite: https://status.netsuite.com/
+
+✅ Storage & File Sharing
+Dropbox: https://status.dropbox.com/
+Box: https://status.box.com/
+Google Drive: https://www.google.com/appsstatus
+OneDrive: https://portal.office.com/servicestatus
+
+✅ Social Media
+Twitter/X: https://status.twitterstat.us/
+Facebook Business: https://status.business.facebook.com/
+Instagram: https://status.fb.com/ (Meta status)
+LinkedIn: https://status.linkedin.com/
+Pinterest: https://status.pinterest.com/
+Reddit: https://www.redditstatus.com/
+Bluesky: https://status.bsky.app/
+Vkontakte: https://status.vk.com/
+
+✅ Streaming & Entertainment
+YouTube: https://www.google.com/appsstatus#hl=en&v=status
+Twitch: https://status.twitch.tv/
+Spotify: https://status.spotify.dev/
+Netflix: https://help.netflix.com/en/is-netflix-down
+
+✅ CRM & Productivity
+✅ Zoom: https://status.zoom.us/
+Asana: https://status.asana.com/
+Monday.com: https://status.monday.com/
+ClickUp: https://status.clickup.com/
+Trello: https://trello.status.atlassian.com/
+Notion: https://www.notionstatus.com/
+Airtable: https://status.airtable.com/
+Miro: https://status.miro.com/
+Calendly: https://status.calendly.com/
+Linear: https://status.linear.app/
+Lucidchart: https://status.lucidchart.com/
+Taskade: https://status.taskade.com/
+HiBob: https://status.hibob.com/
+Humanity: https://status.humanity.com/
+
+✅ Security & Identity
+Okta: https://status.okta.com/
+Duo Security: https://status.duo.com/
+Auth0: https://status.auth0.com/
+Cloudflare: https://www.cloudflarestatus.com/
+Sumsub: https://status.sumsub.com/
+Tailscale: https://status.tailscale.com/
+
+✅ Other Popular Services
+Apple Developer System Status: https://developer.apple.com/system-status/
+Apple Support System Status: https://support.apple.com/systemstatus
+Amplitude: https://status.amplitude.com/
+AppsFlyer: https://status.appsflyer.com/
+BambooHR: https://status.bamboohr.com/
+BigQuery: https://status.cloud.google.com/
+Crowdin: https://status.crowdin.com/
+Datadog: https://status.datadoghq.com/
+Designmodo: https://status.designmodo.com/
+✅ Discord: https://discordstatus.com/
+Facebook Platform: https://metastatus.com/
+✅ Fastly: https://status.fastly.com/
+GitHub Status API: https://www.githubstatus.com/api
+Google Ads: https://ads.google.com/status
+Google Search: https://status.search.google.com/
+Google Workspace: https://www.google.com/appsstatus
+Grammarly: https://status.grammarly.com/
+Jitterbit: https://status.jitterbit.com/
+Mail.ru Cloud: https://status.mail.ru/
+Microsoft Advertisement: https://status.ads.microsoft.com/
+Microsoft Office365: https://portal.office.com/servicestatus
+Odoo: https://status.odoo.com/
+✅ OpenAI: https://status.openai.com/
+Pinterest: https://status.pinterest.com/
+Rackspace: https://status.rackspace.com/
+Repetiti: https://status.repetiti.com/
+Sematext: https://status.sematext.com/
+Skype: https://support.skype.com/en/status/
+Slack: https://status.slack.com/
+Squadcast: https://status.squadcast.com/
+Steam (Unofficial): https://steamstat.us/
+Sony PlayStation: https://status.playstation.com/
+Trakt: https://status.trakt.tv/
+Twitter API: https://api.twitterstat.us/
+Udemy: https://status.udemy.com/
+WebGazer: https://status.webgazer.io/
+Wikimedia: https://status.wikimedia.org/
+Wikipedia Frontend Monitoring: https://grafana.wikimedia.org/d/000000607/frontend-2-0-graphs
+Zendesk: https://status.zendesk.com/
+Zoom Cloud: https://status.zoom.us/
+
+✅ Gaming & Entertainment
+Xbox Live: https://support.xbox.com/en-US/xbox-live-status
+Sony PlayStation: https://status.playstation.com/
+Steam: https://steamstat.us/
+WP Engine: https://wpenginestatus.com/
