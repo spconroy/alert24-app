@@ -701,16 +701,79 @@ export default function IncidentDashboard() {
                 alignItems="center"
                 mb={2}
               >
-                <Typography variant="h6">Recent Incidents</Typography>
-                <Button
-                  component={Link}
-                  href="/incidents"
-                  variant="outlined"
-                  size="small"
-                >
-                  View All
-                </Button>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography variant="h6">Recent Incidents</Typography>
+                  {incidents.length > 0 && (
+                    <Chip
+                      label={`${activeIncidents.length} active`}
+                      color={activeIncidents.length > 0 ? 'error' : 'success'}
+                      size="small"
+                      variant="outlined"
+                    />
+                  )}
+                </Box>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button
+                    component={Link}
+                    href="/incidents/new"
+                    variant="contained"
+                    size="small"
+                    startIcon={<AddIcon />}
+                    color="error"
+                  >
+                    Create
+                  </Button>
+                  <Button
+                    component={Link}
+                    href="/incidents"
+                    variant="outlined"
+                    size="small"
+                  >
+                    View All
+                  </Button>
+                </Box>
               </Box>
+
+              {/* Filter tabs */}
+              {incidents.length > 0 && (
+                <Box sx={{ mb: 2 }}>
+                  <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                      <Button
+                        size="small"
+                        variant="text"
+                        sx={{
+                          minWidth: 'auto',
+                          borderBottom: 2,
+                          borderColor: 'primary.main',
+                          borderRadius: 0,
+                          color: 'primary.main',
+                          fontWeight: 600,
+                        }}
+                      >
+                        All ({incidents.length})
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="text"
+                        color="inherit"
+                        sx={{ minWidth: 'auto' }}
+                      >
+                        Active ({activeIncidents.length})
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="text"
+                        color="inherit"
+                        sx={{ minWidth: 'auto' }}
+                      >
+                        Resolved ({incidents.length - activeIncidents.length})
+                      </Button>
+                    </Box>
+                  </Box>
+                </Box>
+              )}
+
               <Divider sx={{ mb: 2 }} />
 
               {incidents.length === 0 ? (
@@ -766,47 +829,163 @@ export default function IncidentDashboard() {
                   </Box>
                 </Box>
               ) : (
-                incidents.slice(0, 5).map(incident => (
-                  <Box
-                    key={incident.id}
-                    sx={{ mb: 2, pb: 2, borderBottom: '1px solid #f0f0f0' }}
-                  >
+                <Box>
+                  {incidents.slice(0, 5).map((incident, index) => (
                     <Box
-                      display="flex"
-                      justifyContent="space-between"
-                      alignItems="flex-start"
-                      mb={1}
+                      key={incident.id}
+                      sx={{
+                        mb: 2,
+                        p: 2,
+                        borderRadius: 2,
+                        border: '1px solid',
+                        borderColor:
+                          incident.status === 'open' ? 'error.200' : 'grey.200',
+                        backgroundColor:
+                          incident.status === 'open' ? 'error.50' : 'grey.50',
+                        '&:hover': {
+                          boxShadow: 2,
+                          transform: 'translateY(-1px)',
+                        },
+                        transition: 'all 0.2s ease-in-out',
+                      }}
                     >
-                      <Typography variant="subtitle1" fontWeight="medium">
-                        <Link
+                      {/* Header with title and status */}
+                      <Box
+                        display="flex"
+                        justifyContent="space-between"
+                        alignItems="flex-start"
+                        mb={1}
+                      >
+                        <Box sx={{ flex: 1, mr: 2 }}>
+                          <Typography
+                            variant="subtitle1"
+                            fontWeight="600"
+                            sx={{
+                              color:
+                                incident.status === 'open'
+                                  ? 'error.main'
+                                  : 'text.primary',
+                              '&:hover': { textDecoration: 'underline' },
+                            }}
+                          >
+                            <Link
+                              href={`/incidents/${incident.id}`}
+                              style={{
+                                textDecoration: 'none',
+                                color: 'inherit',
+                              }}
+                            >
+                              #{incident.id} {incident.title}
+                            </Link>
+                          </Typography>
+                        </Box>
+                        <Box display="flex" gap={0.5} alignItems="center">
+                          {/* Priority indicator */}
+                          <Box
+                            sx={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: '50%',
+                              backgroundColor:
+                                incident.severity === 'critical'
+                                  ? '#f44336'
+                                  : incident.severity === 'high'
+                                    ? '#ff9800'
+                                    : incident.severity === 'medium'
+                                      ? '#ffeb3b'
+                                      : '#4caf50',
+                            }}
+                          />
+                          <Chip
+                            label={incident.severity}
+                            color={getIncidentSeverityColor(incident.severity)}
+                            size="small"
+                            variant="filled"
+                            sx={{ fontSize: '0.7rem', height: 20 }}
+                          />
+                          <Chip
+                            label={incident.status}
+                            color={getIncidentStatusColor(incident.status)}
+                            size="small"
+                            variant="outlined"
+                            sx={{ fontSize: '0.7rem', height: 20 }}
+                          />
+                        </Box>
+                      </Box>
+
+                      {/* Incident details */}
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          mb: 1,
+                        }}
+                      >
+                        <Typography variant="body2" color="text.secondary">
+                          {incident.organization_name} •{' '}
+                          {incident.assigned_to_name || 'Unassigned'}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          <NoSSR fallback="Loading...">
+                            {new Date(incident.created_at).toLocaleDateString()}
+                          </NoSSR>
+                        </Typography>
+                      </Box>
+
+                      {/* Action buttons */}
+                      <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                        <Button
+                          component={Link}
                           href={`/incidents/${incident.id}`}
-                          style={{ textDecoration: 'none', color: 'inherit' }}
+                          size="small"
+                          variant="outlined"
+                          sx={{ flex: 1, fontSize: '0.75rem' }}
                         >
-                          {incident.title}
-                        </Link>
-                      </Typography>
-                      <Box display="flex" gap={1}>
-                        <Chip
-                          label={incident.severity}
-                          color={getIncidentSeverityColor(incident.severity)}
-                          size="small"
-                        />
-                        <Chip
-                          label={incident.status}
-                          color={getIncidentStatusColor(incident.status)}
-                          size="small"
-                        />
+                          View Details
+                        </Button>
+                        {incident.status === 'open' && (
+                          <Button
+                            component={Link}
+                            href={`/incidents/${incident.id}/edit`}
+                            size="small"
+                            variant="contained"
+                            color={
+                              incident.severity === 'critical'
+                                ? 'error'
+                                : 'primary'
+                            }
+                            sx={{ fontSize: '0.75rem' }}
+                          >
+                            {incident.severity === 'critical'
+                              ? 'Urgent'
+                              : 'Update'}
+                          </Button>
+                        )}
+                        <Tooltip title="Quick actions">
+                          <IconButton size="small" color="primary">
+                            ⚡
+                          </IconButton>
+                        </Tooltip>
                       </Box>
                     </Box>
-                    <Typography variant="body2" color="text.secondary">
-                      {incident.organization_name} •{' '}
-                      {incident.assigned_to_name || 'Unassigned'} •{' '}
-                      <NoSSR fallback="Loading...">
-                        {new Date(incident.created_at).toLocaleDateString()}
-                      </NoSSR>
-                    </Typography>
-                  </Box>
-                ))
+                  ))}
+
+                  {/* Show more link if there are more incidents */}
+                  {incidents.length > 5 && (
+                    <Box sx={{ textAlign: 'center', mt: 2 }}>
+                      <Button
+                        component={Link}
+                        href="/incidents"
+                        variant="text"
+                        size="small"
+                        sx={{ color: 'text.secondary' }}
+                      >
+                        +{incidents.length - 5} more incidents
+                      </Button>
+                    </Box>
+                  )}
+                </Box>
               )}
             </CardContent>
           </Card>
