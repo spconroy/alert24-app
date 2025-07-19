@@ -25,7 +25,9 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import EscalatorWarningIcon from '@mui/icons-material/EscalatorWarning';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import Link from 'next/link';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useOrganization } from '@/contexts/OrganizationContext';
@@ -152,15 +154,18 @@ export default function EscalationPoliciesPage() {
                 <RefreshIcon />
               </IconButton>
             </Tooltip>
-            <Button
-              component={Link}
-              href="/escalation-policies/new"
-              variant="contained"
-              startIcon={<AddIcon />}
-              color="primary"
-            >
-              Create Policy
-            </Button>
+            {/* Only show header create button when policies exist */}
+            {escalationPolicies.length > 0 && (
+              <Button
+                component={Link}
+                href="/escalation-policies/new"
+                variant="contained"
+                startIcon={<AddIcon />}
+                color="primary"
+              >
+                Create Policy
+              </Button>
+            )}
           </Box>
         </Box>
 
@@ -182,124 +187,246 @@ export default function EscalationPoliciesPage() {
             <CircularProgress />
           </Box>
         ) : escalationPolicies.length === 0 ? (
-          <Card>
-            <CardContent sx={{ textAlign: 'center', py: 6 }}>
-              <EscalatorWarningIcon
-                sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }}
+          <Card
+            sx={{
+              backgroundColor: 'grey.50',
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 3,
+            }}
+          >
+            <CardContent sx={{ textAlign: 'center', py: 6, px: 4 }}>
+              <AccountTreeIcon
+                sx={{ fontSize: 64, color: 'primary.main', mb: 2 }}
               />
-              <Typography variant="h6" gutterBottom>
-                No Escalation Policies Found
+              <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
+                No Escalation Policies Yet
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Create your first escalation policy to automatically escalate
-                incidents when they're not resolved in time.
-              </Typography>
-              <Button
-                component={Link}
-                href="/escalation-policies/new"
-                variant="contained"
-                startIcon={<AddIcon />}
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                sx={{ mb: 2, maxWidth: 600, mx: 'auto' }}
               >
-                Create First Policy
-              </Button>
+                <strong>
+                  Escalation policies help you route unresolved incidents to the
+                  right people
+                </strong>
+                —automatically escalating based on time or severity. They ensure
+                no critical issue goes unnoticed.
+              </Typography>
+
+              {/* Info box with example */}
+              <Box
+                sx={{
+                  backgroundColor: 'info.50',
+                  border: '1px solid',
+                  borderColor: 'info.200',
+                  borderRadius: 2,
+                  p: 2,
+                  mb: 3,
+                  maxWidth: 500,
+                  mx: 'auto',
+                  textAlign: 'left',
+                }}
+              >
+                <Typography variant="subtitle2" color="info.main" gutterBottom>
+                  💡 Example Policy:
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  1. Notify on-call engineer immediately
+                  <br />
+                  2. Escalate to team lead after 15 minutes
+                  <br />
+                  3. Escalate to manager after 1 hour
+                </Typography>
+              </Box>
+
+              {/* Action buttons */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  gap: 2,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <Button
+                  component={Link}
+                  href="/escalation-policies/new"
+                  variant="contained"
+                  size="large"
+                  startIcon={<AddIcon />}
+                  sx={{ px: 4 }}
+                >
+                  Create Your First Policy
+                </Button>
+                <Button
+                  component={Link}
+                  href="/escalation-policies/new?template=recommended"
+                  variant="outlined"
+                  size="large"
+                  startIcon={<AutoAwesomeIcon />}
+                  sx={{ px: 3 }}
+                >
+                  Use Recommended Template
+                </Button>
+              </Box>
+
+              {/* Help link */}
+              <Box sx={{ mt: 3 }}>
+                <Button
+                  startIcon={<HelpOutlineIcon />}
+                  size="small"
+                  color="info"
+                  sx={{ textTransform: 'none' }}
+                >
+                  What is an Escalation Policy?
+                </Button>
+              </Box>
+
+              {/* Tip */}
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: 'block', mt: 2, fontStyle: 'italic' }}
+              >
+                💡 Tip: You can assign multiple steps to an escalation policy to
+                ensure incidents are never missed.
+              </Typography>
             </CardContent>
           </Card>
         ) : (
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Description</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Escalation Steps</TableCell>
-                  <TableCell>Created</TableCell>
-                  <TableCell align="right">Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {escalationPolicies.map(policy => (
-                  <TableRow key={policy.id} hover>
-                    <TableCell>
-                      <Typography variant="subtitle2" fontWeight="medium">
-                        {policy.name}
-                      </Typography>
+          <Box>
+            {/* Help tip for existing policies */}
+            <Alert
+              severity="info"
+              sx={{ mb: 3, display: { xs: 'none', md: 'flex' } }}
+            >
+              <Typography variant="body2">
+                <strong>💡 Pro tip:</strong> You can create multiple escalation
+                policies for different types of incidents (critical vs. low
+                priority) and assign them to specific services or teams.
+              </Typography>
+            </Alert>
+
+            <TableContainer
+              component={Paper}
+              sx={{
+                overflowX: 'auto',
+                '& .MuiTable-root': {
+                  minWidth: { xs: 650, md: 'auto' },
+                },
+              }}
+            >
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Name</TableCell>
+                    <TableCell
+                      sx={{ display: { xs: 'none', sm: 'table-cell' } }}
+                    >
+                      Description
                     </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {policy.description || 'No description'}
-                      </Typography>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Steps</TableCell>
+                    <TableCell
+                      sx={{ display: { xs: 'none', md: 'table-cell' } }}
+                    >
+                      Created
                     </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={getStatusLabel(policy.is_active)}
-                        color={getStatusColor(policy.is_active)}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {policy.escalation_rules?.length || 0} step(s)
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {formatDateTime(policy.created_at)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Box display="flex" gap={1} justifyContent="flex-end">
-                        <Tooltip title="View Details">
-                          <IconButton
-                            component={Link}
-                            href={`/escalation-policies/${policy.id}`}
-                            size="small"
-                          >
-                            <VisibilityIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Edit">
-                          <IconButton
-                            component={Link}
-                            href={`/escalation-policies/${policy.id}/edit`}
-                            size="small"
-                          >
-                            <EditIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Delete">
-                          <IconButton
-                            onClick={() => handleDelete(policy.id)}
-                            size="small"
-                            color="error"
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
-                    </TableCell>
+                    <TableCell align="right">Actions</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {escalationPolicies.map(policy => (
+                    <TableRow key={policy.id} hover>
+                      <TableCell>
+                        <Typography variant="subtitle2" fontWeight="medium">
+                          {policy.name}
+                        </Typography>
+                      </TableCell>
+                      <TableCell
+                        sx={{ display: { xs: 'none', sm: 'table-cell' } }}
+                      >
+                        <Typography variant="body2" color="text.secondary">
+                          {policy.description || 'No description'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={getStatusLabel(policy.is_active)}
+                          color={getStatusColor(policy.is_active)}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {policy.escalation_rules?.length || 0} step(s)
+                        </Typography>
+                      </TableCell>
+                      <TableCell
+                        sx={{ display: { xs: 'none', md: 'table-cell' } }}
+                      >
+                        <Typography variant="body2" color="text.secondary">
+                          {formatDateTime(policy.created_at)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Box display="flex" gap={1} justifyContent="flex-end">
+                          <Tooltip title="View Details">
+                            <IconButton
+                              component={Link}
+                              href={`/escalation-policies/${policy.id}`}
+                              size="small"
+                            >
+                              <VisibilityIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Edit">
+                            <IconButton
+                              component={Link}
+                              href={`/escalation-policies/${policy.id}/edit`}
+                              size="small"
+                            >
+                              <EditIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Delete">
+                            <IconButton
+                              onClick={() => handleDelete(policy.id)}
+                              size="small"
+                              color="error"
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
         )}
 
-        {/* Floating Action Button for mobile */}
-        <Fab
-          color="primary"
-          aria-label="add"
-          component={Link}
-          href="/escalation-policies/new"
-          sx={{
-            position: 'fixed',
-            bottom: 16,
-            right: 16,
-            display: { xs: 'flex', sm: 'none' },
-          }}
-        >
-          <AddIcon />
-        </Fab>
+        {/* Floating Action Button for mobile - only when policies exist */}
+        {escalationPolicies.length > 0 && (
+          <Fab
+            color="primary"
+            aria-label="add"
+            component={Link}
+            href="/escalation-policies/new"
+            sx={{
+              position: 'fixed',
+              bottom: 16,
+              right: 16,
+              display: { xs: 'flex', sm: 'none' },
+            }}
+          >
+            <AddIcon />
+          </Fab>
+        )}
       </Box>
     </ProtectedRoute>
   );
