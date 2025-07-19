@@ -7,7 +7,7 @@ This directory contains SQL schema files to transform the existing Alert24 SaaS 
 ### Schema Update Files (Execute in Order)
 
 1. **`01_incident_management_schema.sql`** - Core incident management tables
-2. **`02_monitoring_system_schema.sql`** - Monitoring and alerting infrastructure  
+2. **`02_monitoring_system_schema.sql`** - Monitoring and alerting infrastructure
 3. **`03_enhanced_user_management.sql`** - User roles and notification preferences
 4. **`04_status_page_enhancements.sql`** - Status page incident integration
 5. **`05_database_functions.sql`** - Automated functions and triggers
@@ -17,6 +17,7 @@ This directory contains SQL schema files to transform the existing Alert24 SaaS 
 ## 📋 Execution Instructions
 
 ### Prerequisites
+
 - Supabase project with database access
 - Admin access to Supabase dashboard
 - Existing Alert24 SaaS schema (organizations, users, status pages, etc.)
@@ -26,20 +27,23 @@ This directory contains SQL schema files to transform the existing Alert24 SaaS 
 **IMPORTANT: Do NOT use direct PostgreSQL connections. Use Supabase dashboard only.**
 
 #### Method 1: Supabase SQL Editor (Recommended)
+
 1. Open your Supabase project dashboard
-2. Navigate to "SQL Editor" 
+2. Navigate to "SQL Editor"
 3. Execute schema files in order by copying and pasting each file
 4. Run each file individually to catch any errors
 
 #### Method 2: Supabase CLI (Alternative)
+
 ```bash
 # If you have Supabase CLI installed
 supabase db push
 ```
 
 ### Files to Execute in Order:
+
 1. Copy and paste `01_incident_management_schema.sql` into Supabase SQL Editor
-2. Copy and paste `02_monitoring_system_schema.sql` into Supabase SQL Editor  
+2. Copy and paste `02_monitoring_system_schema.sql` into Supabase SQL Editor
 3. Copy and paste `03_enhanced_user_management.sql` into Supabase SQL Editor
 4. Copy and paste `04_status_page_enhancements.sql` into Supabase SQL Editor
 5. Copy and paste `05_database_functions.sql` into Supabase SQL Editor
@@ -49,15 +53,17 @@ supabase db push
 ## 🔧 What Each File Does
 
 ### 01_incident_management_schema.sql
+
 - **Purpose**: Core incident management functionality
 - **Creates**: incidents, incident_updates, escalation_policies, notification_rules, on_call_schedules, incident_escalations tables
-- **Key Features**: 
+- **Key Features**:
   - Incident severity and status tracking
   - Escalation policy engine
   - On-call schedule management
   - Timeline and update tracking
 
 ### 02_monitoring_system_schema.sql
+
 - **Purpose**: Monitoring and alerting infrastructure
 - **Creates**: monitoring_locations, monitoring_checks, check_results, check_schedules, monitoring_alerts, monitoring_statistics tables
 - **Key Features**:
@@ -68,6 +74,7 @@ supabase db push
   - Statistical tracking and reporting
 
 ### 03_enhanced_user_management.sql
+
 - **Purpose**: Extended user management for incident response
 - **Extends**: users, organization_members tables
 - **Creates**: user_contact_methods, user_notification_preferences, notification_history, team_groups, team_memberships, user_activity_log tables
@@ -79,6 +86,7 @@ supabase db push
   - Activity auditing
 
 ### 04_status_page_enhancements.sql
+
 - **Purpose**: Integration of status pages with incident management
 - **Extends**: status_pages, status_page_components, subscribers tables
 - **Creates**: status_page_incidents, component_status_history, uptime_calculations, subscriber_notifications, status_page_analytics, status_page_maintenance_windows tables
@@ -90,6 +98,7 @@ supabase db push
   - Maintenance window scheduling
 
 ### 05_database_functions.sql
+
 - **Purpose**: Automated processes and business logic
 - **Creates**: 15+ PostgreSQL functions and triggers
 - **Key Features**:
@@ -101,6 +110,7 @@ supabase db push
   - Data cleanup and maintenance
 
 ### 06_indexes_and_constraints.sql
+
 - **Purpose**: Performance optimization and data integrity
 - **Creates**: 50+ indexes, constraints, and materialized views
 - **Key Features**:
@@ -112,6 +122,7 @@ supabase db push
   - Schema integrity validation
 
 ### status-page-checks.sql (NEW)
+
 - **Purpose**: Cloud provider status page monitoring
 - **Creates**: status_page_config column and related functions
 - **Key Features**:
@@ -125,9 +136,9 @@ supabase db push
 
 ```sql
 -- 1. Verify all tables exist
-SELECT table_name 
-FROM information_schema.tables 
-WHERE table_schema = 'public' 
+SELECT table_name
+FROM information_schema.tables
+WHERE table_schema = 'public'
 ORDER BY table_name;
 
 -- 2. Check schema integrity
@@ -135,7 +146,7 @@ SELECT * FROM validate_schema_integrity();
 
 -- 3. Test basic functionality
 -- Create a test incident
-INSERT INTO incidents (organization_id, title, description, created_by) 
+INSERT INTO incidents (organization_id, title, description, created_by)
 VALUES (
     (SELECT id FROM organizations LIMIT 1),
     'Test Incident',
@@ -150,14 +161,16 @@ SELECT COUNT(*) FROM user_activity_log WHERE activity_type = 'incident_status_ch
 ## 📊 Schema Overview
 
 ### New Tables Added: 26+
+
 - Core Incident Management: 6 tables
-- Monitoring System: 6 tables  
+- Monitoring System: 6 tables
 - Enhanced User Management: 6 tables
 - Status Page Enhancements: 6 tables
 - Status Page Monitoring: 1 table (enhanced)
 - Utility/Logging: 2 tables
 
 ### Enhanced Existing Tables: 4
+
 - users (incident management columns)
 - organization_members (permission columns)
 - status_pages (incident integration columns)
@@ -165,6 +178,7 @@ SELECT COUNT(*) FROM user_activity_log WHERE activity_type = 'incident_status_ch
 - subscribers (notification preference columns)
 
 ### Functions Created: 15+
+
 - Incident auto-creation and resolution
 - Escalation processing
 - On-call scheduling
@@ -172,6 +186,7 @@ SELECT COUNT(*) FROM user_activity_log WHERE activity_type = 'incident_status_ch
 - Data cleanup and maintenance
 
 ### Indexes Added: 50+
+
 - Performance indexes for complex queries
 - JSON field indexes (GIN)
 - Partial indexes for active records
@@ -180,6 +195,7 @@ SELECT COUNT(*) FROM user_activity_log WHERE activity_type = 'incident_status_ch
 ## 🚀 Post-Migration Tasks
 
 ### 1. Set Up Supabase Edge Functions
+
 ```sql
 -- Schedule these functions to run periodically via Supabase Edge Functions
 SELECT process_pending_escalations();        -- Every 1 minute
@@ -190,18 +206,21 @@ SELECT refresh_monitoring_statistics();      -- Daily
 ```
 
 ### 2. Configure Monitoring Locations
+
 ```sql
 -- Verify monitoring locations were created
 SELECT * FROM monitoring_locations;
 ```
 
 ### 3. Update Application Configuration
+
 - Configure Supabase RLS policies
 - Set up Supabase real-time subscriptions
 - Configure email templates for notifications
 - Set up monitoring check scheduling
 
 ### 4. Data Migration (if needed)
+
 ```sql
 -- If you have existing incidents or monitoring data to migrate
 -- Add custom migration scripts here
@@ -210,17 +229,20 @@ SELECT * FROM monitoring_locations;
 ## 🔒 Security Considerations
 
 ### Row Level Security (RLS)
+
 - All organization-scoped tables have RLS policies
 - Users can only access data from their organizations
 - User-specific data is isolated per user
 - Configured via Supabase dashboard
 
 ### Permissions
+
 - All tables granted appropriate permissions via Supabase
 - Functions executable by authenticated users
 - Materialized views readable by authenticated users
 
 ### Data Protection
+
 - Sensitive data (phone numbers, etc.) properly constrained
 - Email validation in contact methods
 - Audit logging for all user activities
@@ -228,17 +250,20 @@ SELECT * FROM monitoring_locations;
 ## 📈 Performance Considerations
 
 ### Materialized Views
+
 - `incident_statistics` - Daily incident metrics
 - `monitoring_check_statistics` - Daily monitoring metrics
 - Refresh periodically for up-to-date analytics
 
 ### Indexes
+
 - All foreign keys indexed
 - Common query patterns optimized
 - JSON fields indexed with GIN indexes
 - Partial indexes for active records only
 
 ### Data Retention
+
 - Check results: 30 days
 - Notification history: 90 days
 - User activity logs: 180 days
@@ -265,6 +290,7 @@ SELECT * FROM monitoring_locations;
    - Verify all dependencies are installed
 
 ### Rollback Strategy
+
 - Each file includes `IF NOT EXISTS` clauses for safety
 - Most operations are additive and safe to retry
 - Supabase provides database backups automatically
@@ -272,6 +298,7 @@ SELECT * FROM monitoring_locations;
 ## 📞 Support
 
 For issues with schema updates:
+
 1. Check Supabase logs for specific error messages
 2. Verify all prerequisites are met
 3. Ensure proper execution order

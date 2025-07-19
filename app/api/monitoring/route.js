@@ -15,7 +15,7 @@ export async function GET(req) {
       runtime: process.env.NODE_ENV,
       userAgent: req.headers.get('user-agent')?.substring(0, 50),
       hasNextAuthSecret: !!process.env.NEXTAUTH_SECRET,
-      cookies: req.headers.get('cookie')?.length || 0
+      cookies: req.headers.get('cookie')?.length || 0,
     });
 
     // Use custom session manager instead of NextAuth
@@ -29,29 +29,35 @@ export async function GET(req) {
         hasEmail: !!session?.user?.email,
         email: session?.user?.email,
         sessionKeys: session ? Object.keys(session) : [],
-        userKeys: session?.user ? Object.keys(session.user) : []
+        userKeys: session?.user ? Object.keys(session.user) : [],
       });
     } catch (sessionError) {
       console.error('🔥 Session error:', sessionError);
-      return NextResponse.json({ 
-        error: 'Session verification failed', 
-        details: sessionError.message,
-        code: 'SESSION_ERROR'
-      }, { status: 401 });
+      return NextResponse.json(
+        {
+          error: 'Session verification failed',
+          details: sessionError.message,
+          code: 'SESSION_ERROR',
+        },
+        { status: 401 }
+      );
     }
 
     if (!session || !session.user?.email) {
       console.log('❌ No valid session found');
-      return NextResponse.json({ 
-        error: 'Unauthorized - No valid session',
-        debug: {
-          hasSession: !!session,
-          hasUser: !!session?.user,
-          hasEmail: !!session?.user?.email,
-          cookieCount: req.headers.get('cookie')?.length || 0,
-          authSystem: 'custom-session-manager'
-        }
-      }, { status: 401 });
+      return NextResponse.json(
+        {
+          error: 'Unauthorized - No valid session',
+          debug: {
+            hasSession: !!session,
+            hasUser: !!session?.user,
+            hasEmail: !!session?.user?.email,
+            cookieCount: req.headers.get('cookie')?.length || 0,
+            authSystem: 'custom-session-manager',
+          },
+        },
+        { status: 401 }
+      );
     }
 
     const { searchParams } = new URL(req.url);
@@ -65,16 +71,22 @@ export async function GET(req) {
     let user;
     try {
       user = await db.getUserByEmail(session.user.email);
-      console.log('🔍 User lookup result:', { userFound: !!user, email: session.user.email });
+      console.log('🔍 User lookup result:', {
+        userFound: !!user,
+        email: session.user.email,
+      });
     } catch (dbError) {
       console.error('🔥 Database connection error in getUserByEmail:', dbError);
-      return NextResponse.json({ 
-        error: 'Database connection failed', 
-        details: dbError.message,
-        code: dbError.code 
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: 'Database connection failed',
+          details: dbError.message,
+          code: dbError.code,
+        },
+        { status: 500 }
+      );
     }
-    
+
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
@@ -199,7 +211,8 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const session = await auth();
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(req);
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -318,7 +331,8 @@ export async function POST(req) {
 
 export async function PUT(req) {
   try {
-    const session = await auth();
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(req);
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -367,7 +381,8 @@ export async function PUT(req) {
 
 export async function DELETE(req) {
   try {
-    const session = await auth();
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(req);
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

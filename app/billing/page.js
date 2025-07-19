@@ -122,7 +122,9 @@ export default function BillingPage() {
   const fetchBillingInfo = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/billing?organization_id=${selectedOrganization.id}`);
+      const response = await fetch(
+        `/api/billing?organization_id=${selectedOrganization.id}`
+      );
       if (response.ok) {
         const data = await response.json();
         setCurrentPlan(data.subscription);
@@ -135,7 +137,7 @@ export default function BillingPage() {
     }
   };
 
-  const handleUpgrade = (plan) => {
+  const handleUpgrade = plan => {
     setSelectedPlan(plan);
     setUpgradeDialogOpen(true);
   };
@@ -183,7 +185,12 @@ export default function BillingPage() {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="400px"
+      >
         <CircularProgress />
       </Box>
     );
@@ -198,12 +205,23 @@ export default function BillingPage() {
       {/* Current Plan Info */}
       <Card sx={{ mb: 4 }}>
         <CardContent>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+            mb={2}
+          >
             <Typography variant="h6">Current Plan</Typography>
             <Chip
               label={currentPlanInfo.name}
               color={currentPlanInfo.id === 'free' ? 'default' : 'primary'}
-              icon={currentPlanInfo.id === 'enterprise' ? <BusinessIcon /> : <StarIcon />}
+              icon={
+                currentPlanInfo.id === 'enterprise' ? (
+                  <BusinessIcon />
+                ) : (
+                  <StarIcon />
+                )
+              }
             />
           </Box>
           <Typography variant="body2" color="text.secondary" gutterBottom>
@@ -224,7 +242,10 @@ export default function BillingPage() {
               </Typography>
               {currentPlan.current_period_end && (
                 <Typography variant="body2" color="text.secondary">
-                  Current period ends: {new Date(currentPlan.current_period_end).toLocaleDateString()}
+                  Current period ends:{' '}
+                  {new Date(
+                    currentPlan.current_period_end
+                  ).toLocaleDateString()}
                 </Typography>
               )}
             </Box>
@@ -247,7 +268,7 @@ export default function BillingPage() {
         Choose Your Plan
       </Typography>
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        {pricingPlans.map((plan) => (
+        {pricingPlans.map(plan => (
           <Grid item xs={12} md={4} key={plan.id}>
             <Card
               sx={{
@@ -279,7 +300,11 @@ export default function BillingPage() {
                   <Typography variant="h4" color="primary">
                     ${plan.price}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ ml: 1 }}
+                  >
                     {plan.billing}
                   </Typography>
                 </Box>
@@ -303,22 +328,26 @@ export default function BillingPage() {
               </CardContent>
               <CardActions sx={{ p: 2 }}>
                 <Button
-                  variant={plan.id === currentPlanInfo.id ? 'outlined' : 'contained'}
+                  variant={
+                    plan.id === currentPlanInfo.id ? 'outlined' : 'contained'
+                  }
                   color="primary"
                   fullWidth
                   disabled={plan.id === currentPlanInfo.id}
                   onClick={() => handleUpgrade(plan)}
                   startIcon={<CreditCardIcon />}
                 >
-                  {plan.id === currentPlanInfo.id ? 'Current Plan' : 
-                   plan.price === 0 ? 'Downgrade' : 'Upgrade'}
+                  {plan.id === currentPlanInfo.id
+                    ? 'Current Plan'
+                    : plan.price === 0
+                      ? 'Downgrade'
+                      : 'Upgrade'}
                 </Button>
               </CardActions>
             </Card>
           </Grid>
         ))}
       </Grid>
-
 
       {/* Upgrade Confirmation Dialog */}
       <Dialog
@@ -327,9 +356,7 @@ export default function BillingPage() {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>
-          Upgrade to {selectedPlan?.name}
-        </DialogTitle>
+        <DialogTitle>Upgrade to {selectedPlan?.name}</DialogTitle>
         <DialogContent>
           <Typography paragraph>
             Are you sure you want to upgrade to the {selectedPlan?.name} plan?
@@ -349,9 +376,7 @@ export default function BillingPage() {
           </Alert>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setUpgradeDialogOpen(false)}>
-            Cancel
-          </Button>
+          <Button onClick={() => setUpgradeDialogOpen(false)}>Cancel</Button>
           <Button
             onClick={handleConfirmUpgrade}
             variant="contained"

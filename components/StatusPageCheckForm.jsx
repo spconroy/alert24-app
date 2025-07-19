@@ -15,7 +15,7 @@ import {
   Card,
   CardContent,
   Divider,
-  FormHelperText
+  FormHelperText,
 } from '@mui/material';
 import { CheckCircle, Error, Warning } from '@mui/icons-material';
 import { useOrganization } from '@/contexts/OrganizationContext';
@@ -31,7 +31,7 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
     check_interval_seconds: 300,
     linked_service_id: '',
     failure_behavior: 'match_status', // 'match_status', 'always_degraded', 'always_down'
-    failure_message: ''
+    failure_message: '',
   });
   const [availableServices, setAvailableServices] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -47,11 +47,20 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
     }
 
     try {
-      console.log('Loading services for organization:', selectedOrganization.id);
-      const response = await fetch(`/api/services?organization_id=${selectedOrganization.id}`);
-      
+      console.log(
+        'Loading services for organization:',
+        selectedOrganization.id
+      );
+      const response = await fetch(
+        `/api/services?organization_id=${selectedOrganization.id}`
+      );
+
       if (!response.ok) {
-        console.error('Services API request failed:', response.status, response.statusText);
+        console.error(
+          'Services API request failed:',
+          response.status,
+          response.statusText
+        );
         const errorData = await response.json();
         console.error('Error details:', errorData);
         setAvailableServices([]);
@@ -60,7 +69,7 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
 
       const data = await response.json();
       console.log('Services API response:', data);
-      
+
       if (data.success) {
         console.log('Setting available services:', data.services || []);
         setAvailableServices(data.services || []);
@@ -88,20 +97,22 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
-    
+
     // Auto-generate name if not manually set
     if (field === 'provider' || field === 'service') {
       const provider = field === 'provider' ? value : formData.provider;
       const service = field === 'service' ? value : formData.service;
-      
+
       if (provider && service && !formData.name) {
         const providerName = provider.toUpperCase();
-        const serviceName = service.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        const serviceName = service
+          .replace(/-/g, ' ')
+          .replace(/\b\w/g, l => l.toUpperCase());
         setFormData(prev => ({
           ...prev,
-          name: `${providerName} - ${serviceName}`
+          name: `${providerName} - ${serviceName}`,
         }));
       }
     }
@@ -115,7 +126,7 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
 
     setLoading(true);
     setError('');
-    
+
     try {
       const response = await fetch('/api/status-page-scraper', {
         method: 'POST',
@@ -126,12 +137,12 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
           provider: formData.provider,
           service: formData.service,
           regions: formData.regions,
-          action: 'scrape'
-        })
+          action: 'scrape',
+        }),
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         setPreviewData(data.result);
       } else {
@@ -144,9 +155,9 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
-    
+
     if (!formData.name || !formData.provider || !formData.service) {
       setError('Please fill in all required fields');
       return;
@@ -175,8 +186,8 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
           service: formData.service,
           regions: formData.regions,
           failure_behavior: formData.failure_behavior,
-          failure_message: formData.failure_message
-        }
+          failure_message: formData.failure_message,
+        },
       };
 
       const response = await fetch('/api/monitoring', {
@@ -184,11 +195,11 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(checkConfig)
+        body: JSON.stringify(checkConfig),
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         onSuccess(data.monitoring_check);
       } else {
@@ -201,7 +212,7 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
     }
   };
 
-  const getStatusIcon = (status) => {
+  const getStatusIcon = status => {
     switch (status) {
       case 'up':
         return <CheckCircle color="success" />;
@@ -233,9 +244,11 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
             selectedProvider={formData.provider}
             selectedService={formData.service}
             selectedRegions={formData.regions}
-            onProviderChange={(provider) => handleInputChange('provider', provider)}
-            onServiceChange={(service) => handleInputChange('service', service)}
-            onRegionsChange={(regions) => handleInputChange('regions', regions)}
+            onProviderChange={provider =>
+              handleInputChange('provider', provider)
+            }
+            onServiceChange={service => handleInputChange('service', service)}
+            onRegionsChange={regions => handleInputChange('regions', regions)}
           />
 
           <Divider sx={{ my: 3 }} />
@@ -251,7 +264,7 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
                 fullWidth
                 label="Check Name"
                 value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
+                onChange={e => handleInputChange('name', e.target.value)}
                 required
                 helperText="A descriptive name for this status page check"
               />
@@ -262,7 +275,9 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
                 <InputLabel>Check Interval</InputLabel>
                 <Select
                   value={formData.check_interval_seconds}
-                  onChange={(e) => handleInputChange('check_interval_seconds', e.target.value)}
+                  onChange={e =>
+                    handleInputChange('check_interval_seconds', e.target.value)
+                  }
                   label="Check Interval"
                 >
                   <MenuItem value={60}>1 minute</MenuItem>
@@ -271,7 +286,9 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
                   <MenuItem value={1800}>30 minutes</MenuItem>
                   <MenuItem value={3600}>1 hour</MenuItem>
                 </Select>
-                <FormHelperText>How often to check the status page</FormHelperText>
+                <FormHelperText>
+                  How often to check the status page
+                </FormHelperText>
               </FormControl>
             </Grid>
 
@@ -280,14 +297,16 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
                 <InputLabel>Link to Service (Optional)</InputLabel>
                 <Select
                   value={formData.linked_service_id}
-                  onChange={(e) => handleInputChange('linked_service_id', e.target.value)}
+                  onChange={e =>
+                    handleInputChange('linked_service_id', e.target.value)
+                  }
                   label="Link to Service (Optional)"
                 >
                   <MenuItem value="">None</MenuItem>
                   {availableServices.length === 0 ? (
                     <MenuItem disabled>No services available</MenuItem>
                   ) : (
-                    availableServices.map((service) => (
+                    availableServices.map(service => (
                       <MenuItem key={service.id} value={service.id}>
                         {service.name}
                       </MenuItem>
@@ -295,8 +314,8 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
                   )}
                 </Select>
                 <FormHelperText>
-                  {availableServices.length === 0 
-                    ? 'No services available. Create a status page and add services first.' 
+                  {availableServices.length === 0
+                    ? 'No services available. Create a status page and add services first.'
                     : 'Optionally link this check to a service on your status page'}
                 </FormHelperText>
               </FormControl>
@@ -309,8 +328,13 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
                   <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>
                     Failure Behavior
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    Configure how failures in the status page check should affect your linked service
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 2 }}
+                  >
+                    Configure how failures in the status page check should
+                    affect your linked service
                   </Typography>
                 </Grid>
 
@@ -319,7 +343,9 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
                     <InputLabel>When Status Page Shows Issues</InputLabel>
                     <Select
                       value={formData.failure_behavior}
-                      onChange={(e) => handleInputChange('failure_behavior', e.target.value)}
+                      onChange={e =>
+                        handleInputChange('failure_behavior', e.target.value)
+                      }
                       label="When Status Page Shows Issues"
                     >
                       <MenuItem value="match_status">
@@ -333,11 +359,11 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
                       </MenuItem>
                     </Select>
                     <FormHelperText>
-                      {formData.failure_behavior === 'match_status' && 
+                      {formData.failure_behavior === 'match_status' &&
                         'Service will be marked as degraded if provider shows degraded, down if provider shows down'}
-                      {formData.failure_behavior === 'always_degraded' && 
+                      {formData.failure_behavior === 'always_degraded' &&
                         'Service will always be marked as degraded when provider has any issues'}
-                      {formData.failure_behavior === 'always_down' && 
+                      {formData.failure_behavior === 'always_down' &&
                         'Service will always be marked as down when provider has any issues'}
                     </FormHelperText>
                   </FormControl>
@@ -348,7 +374,9 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
                     fullWidth
                     label="Custom Failure Message (Optional)"
                     value={formData.failure_message}
-                    onChange={(e) => handleInputChange('failure_message', e.target.value)}
+                    onChange={e =>
+                      handleInputChange('failure_message', e.target.value)
+                    }
                     placeholder="e.g., Dependent service experiencing issues"
                     helperText="Leave blank to use default message based on provider status"
                     multiline
@@ -367,7 +395,7 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
               <Typography variant="h6" sx={{ mb: 2 }}>
                 Status Preview
               </Typography>
-              
+
               {formData.provider && formData.service && (
                 <Box sx={{ mb: 2 }}>
                   <Button
@@ -383,27 +411,46 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
 
               {previewData && (
                 <Box>
-                  <Box display="flex" alignItems="center" gap={1} sx={{ mb: 2 }}>
+                  <Box
+                    display="flex"
+                    alignItems="center"
+                    gap={1}
+                    sx={{ mb: 2 }}
+                  >
                     {getStatusIcon(previewData.status)}
                     <Typography variant="body1">
-                      {previewData.status.charAt(0).toUpperCase() + previewData.status.slice(1)}
+                      {previewData.status.charAt(0).toUpperCase() +
+                        previewData.status.slice(1)}
                     </Typography>
                   </Box>
-                  
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 1 }}
+                  >
                     Provider: {previewData.provider}
                   </Typography>
-                  
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 1 }}
+                  >
                     Service: {previewData.service}
                   </Typography>
-                  
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 1 }}
+                  >
                     Regions: {previewData.regions.join(', ')}
                   </Typography>
-                  
+
                   <Typography variant="body2" color="text.secondary">
-                    Last Updated: {new Date(previewData.last_updated).toLocaleString()}
+                    Last Updated:{' '}
+                    {new Date(previewData.last_updated).toLocaleString()}
                   </Typography>
                 </Box>
               )}
@@ -414,17 +461,15 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
 
       {/* Action Buttons */}
       <Box sx={{ mt: 3, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-        <Button
-          variant="outlined"
-          onClick={onCancel}
-          disabled={loading}
-        >
+        <Button variant="outlined" onClick={onCancel} disabled={loading}>
           Cancel
         </Button>
         <Button
           type="submit"
           variant="contained"
-          disabled={loading || !formData.name || !formData.provider || !formData.service}
+          disabled={
+            loading || !formData.name || !formData.provider || !formData.service
+          }
         >
           {loading ? 'Creating...' : 'Create Check'}
         </Button>

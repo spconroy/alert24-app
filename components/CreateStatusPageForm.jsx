@@ -11,7 +11,7 @@ import Alert from '@mui/material/Alert';
 import Typography from '@mui/material/Typography';
 
 // Function to generate slug from name
-const generateSlug = (name) => {
+const generateSlug = name => {
   return name
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
@@ -55,7 +55,7 @@ export default function CreateStatusPageForm({ orgId, onSuccess, onCancel }) {
   // Generate the preview URL based on org domain/subdomain
   const getPreviewUrl = () => {
     if (!orgData) return 'your-domain.com/status/' + (slug || 'your-slug');
-    
+
     if (orgData.domain) {
       return `${orgData.domain}/status/${slug || 'your-slug'}`;
     } else if (orgData.subdomain) {
@@ -65,7 +65,7 @@ export default function CreateStatusPageForm({ orgId, onSuccess, onCancel }) {
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
     setError(null);
     if (!name || !slug) {
@@ -86,7 +86,8 @@ export default function CreateStatusPageForm({ orgId, onSuccess, onCancel }) {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to create status page');
+      if (!res.ok)
+        throw new Error(data.error || 'Failed to create status page');
       onSuccess && onSuccess(data.statusPage);
     } catch (err) {
       setError(err.message);
@@ -100,7 +101,11 @@ export default function CreateStatusPageForm({ orgId, onSuccess, onCancel }) {
       <DialogTitle>Create Status Page</DialogTitle>
       <form onSubmit={handleSubmit}>
         <DialogContent>
-          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
           <TextField
             label="Status Page Name"
             value={name}
@@ -114,14 +119,21 @@ export default function CreateStatusPageForm({ orgId, onSuccess, onCancel }) {
           <TextField
             label="URL Slug"
             value={slug}
-            onChange={e => setSlug(e.target.value.replace(/[^a-z0-9-]/gi, '').toLowerCase())}
+            onChange={e =>
+              setSlug(e.target.value.replace(/[^a-z0-9-]/gi, '').toLowerCase())
+            }
             fullWidth
             required
             margin="normal"
             helperText="This will be part of your status page URL (auto-generated from name)"
           />
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 2 }}>
-            Your status page will be available at: <strong>{getPreviewUrl()}</strong>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ mt: 1, mb: 2 }}
+          >
+            Your status page will be available at:{' '}
+            <strong>{getPreviewUrl()}</strong>
           </Typography>
           <TextField
             label="Description"
@@ -145,12 +157,19 @@ export default function CreateStatusPageForm({ orgId, onSuccess, onCancel }) {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={onCancel} disabled={loading}>Cancel</Button>
-          <Button type="submit" variant="contained" color="primary" disabled={loading}>
+          <Button onClick={onCancel} disabled={loading}>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="contained"
+            color="primary"
+            disabled={loading}
+          >
             {loading ? 'Creating...' : 'Create Status Page'}
           </Button>
         </DialogActions>
       </form>
     </Dialog>
   );
-} 
+}

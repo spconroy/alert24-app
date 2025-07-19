@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { SessionManager } from '@/lib/session-manager';
-import { 
-  getStatusPageProviders, 
-  getStatusPageProvider, 
-  getProviderServices, 
-  getServiceRegions 
+import {
+  getStatusPageProviders,
+  getStatusPageProvider,
+  getProviderServices,
+  getServiceRegions,
 } from '@/lib/status-page-providers';
 
 export const runtime = 'edge';
@@ -31,8 +31,8 @@ export async function GET(req) {
           name: p.name,
           description: p.description,
           url: p.url,
-          service_count: p.services.length
-        }))
+          service_count: p.services.length,
+        })),
       });
     }
 
@@ -53,14 +53,14 @@ export async function GET(req) {
           id: providerData.id,
           name: providerData.name,
           description: providerData.description,
-          url: providerData.url
+          url: providerData.url,
         },
         services: services.map(s => ({
           id: s.id,
           name: s.name,
           description: s.description,
-          region_count: s.regions.length
-        }))
+          region_count: s.regions.length,
+        })),
       });
     }
 
@@ -87,24 +87,23 @@ export async function GET(req) {
         success: true,
         provider: {
           id: providerData.id,
-          name: providerData.name
+          name: providerData.name,
         },
         service: {
           id: serviceData.id,
           name: serviceData.name,
-          description: serviceData.description
+          description: serviceData.description,
         },
-        regions: regions
+        regions: regions,
       });
     }
-
   } catch (error) {
     console.error('Error fetching status page providers:', error);
     return NextResponse.json(
       {
         success: false,
         error: 'Failed to fetch status page providers',
-        details: error.message
+        details: error.message,
       },
       { status: 500 }
     );

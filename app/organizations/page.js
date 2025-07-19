@@ -20,14 +20,14 @@ export default function OrganizationsPage() {
     setSelectedOrg(null);
   };
 
-  const handleOrganizationCreated = (organization) => {
+  const handleOrganizationCreated = organization => {
     setMessage(`Organization "${organization.name}" created successfully!`);
     setView('list');
     // Refresh the list by triggering a re-render
     setTimeout(() => setMessage(null), 3000);
   };
 
-  const handleSelectOrganization = (organization) => {
+  const handleSelectOrganization = organization => {
     setSelectedOrg(organization);
     // For now, just show an alert. Later this could navigate to the org dashboard
     alert(`Selected: ${organization.name}`);
@@ -56,4 +56,4 @@ export default function OrganizationsPage() {
       </Container>
     </ProtectedRoute>
   );
-} 
+}

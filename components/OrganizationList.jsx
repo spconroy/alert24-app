@@ -11,7 +11,12 @@ import Typography from '@mui/material/Typography';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DeleteOrganizationModal from './DeleteOrganizationModal';
 
-export default function OrganizationList({ onSelectOrg, onCreateNew, onOrgsLoaded, selectedOrg }) {
+export default function OrganizationList({
+  onSelectOrg,
+  onCreateNew,
+  onOrgsLoaded,
+  selectedOrg,
+}) {
   const [orgs, setOrgs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -51,7 +56,7 @@ export default function OrganizationList({ onSelectOrg, onCreateNew, onOrgsLoade
     setDeleteModalOpen(true);
   };
 
-  const handleSelectChange = (event) => {
+  const handleSelectChange = event => {
     const orgId = event.target.value;
     const selectedOrganization = orgs.find(org => org.id === orgId);
     if (selectedOrganization && onSelectOrg) {
@@ -59,7 +64,7 @@ export default function OrganizationList({ onSelectOrg, onCreateNew, onOrgsLoade
     }
   };
 
-  const handleOrganizationDeleted = (deletedOrg) => {
+  const handleOrganizationDeleted = deletedOrg => {
     // Remove from list and refresh
     setOrgs(prev => prev.filter(org => org.id !== deletedOrg.id));
     // Refresh the full list to be safe
@@ -82,7 +87,12 @@ export default function OrganizationList({ onSelectOrg, onCreateNew, onOrgsLoade
           >
             {orgs.map(org => (
               <MenuItem key={org.id} value={org.id}>
-                <Box display="flex" justifyContent="space-between" alignItems="center" width="100%">
+                <Box
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  width="100%"
+                >
                   <Box>
                     <Typography variant="body1">{org.name}</Typography>
                     {org.role && (
@@ -92,10 +102,10 @@ export default function OrganizationList({ onSelectOrg, onCreateNew, onOrgsLoade
                     )}
                   </Box>
                   {org.role === 'owner' && (
-                    <IconButton 
+                    <IconButton
                       size="small"
                       color="error"
-                      onClick={(e) => handleDeleteClick(org, e)}
+                      onClick={e => handleDeleteClick(org, e)}
                       title="Delete Organization"
                       sx={{ ml: 1 }}
                     >
@@ -107,11 +117,11 @@ export default function OrganizationList({ onSelectOrg, onCreateNew, onOrgsLoade
             ))}
           </Select>
         </FormControl>
-        
+
         {onCreateNew && (
-          <Button 
-            variant="contained" 
-            color="primary" 
+          <Button
+            variant="contained"
+            color="primary"
             onClick={onCreateNew}
             sx={{ whiteSpace: 'nowrap' }}
           >
@@ -119,13 +129,13 @@ export default function OrganizationList({ onSelectOrg, onCreateNew, onOrgsLoade
           </Button>
         )}
       </Box>
-      
+
       {orgs.length === 0 && (
         <Typography color="text.secondary" sx={{ mb: 2 }}>
           No organizations found. Create one to get started.
         </Typography>
       )}
-      
+
       {/* Delete Organization Modal */}
       <DeleteOrganizationModal
         open={deleteModalOpen}
@@ -135,4 +145,4 @@ export default function OrganizationList({ onSelectOrg, onCreateNew, onOrgsLoade
       />
     </Box>
   );
-} 
+}

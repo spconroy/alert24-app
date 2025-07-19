@@ -42,24 +42,29 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 ## Schema Management
 
 ### Schema Updates
+
 All schema changes should be made through:
+
 1. **Supabase Dashboard** - SQL Editor (recommended)
 2. **Supabase CLI** - Database migrations
 3. **Never** use direct PostgreSQL connections
 
 ### Schema Files Location
+
 - `docs/schema-updates/` - Contains all schema update files
 - `docs/database_schema.sql` - Legacy schema file (reference only)
 
 ## Database Operations
 
 ### Supported Operations
+
 - **CRUD Operations**: Via Supabase client methods
 - **Real-time**: Via Supabase subscriptions
 - **Row Level Security**: Configured via Supabase dashboard
 - **Functions**: Via Supabase SQL editor
 
 ### Not Supported
+
 - Direct PostgreSQL connections
 - psql commands
 - pg client usage
@@ -83,6 +88,7 @@ const user = await db.getUserByEmail(session.user.email);
 ## Multi-Tenant Architecture
 
 ### Organization Scoping
+
 All database queries are scoped by organization_id:
 
 ```javascript
@@ -94,6 +100,7 @@ const checks = await db.client
 ```
 
 ### Row Level Security
+
 - All organization-scoped tables have RLS policies
 - Users can only access data from their organizations
 - Configured via Supabase dashboard
@@ -112,11 +119,13 @@ The database contains:
 ## Development Setup
 
 ### Prerequisites
+
 - Supabase account
 - Project created in Supabase dashboard
 - Environment variables configured
 
 ### Setup Steps
+
 1. Create Supabase project
 2. Copy environment variables from Supabase dashboard
 3. Add to `.env.local` file
@@ -124,6 +133,7 @@ The database contains:
 5. Test connection with `/api/test-supabase` endpoint
 
 ### Testing Connection
+
 ```bash
 # Visit in browser to test connection
 http://localhost:3000/api/test-supabase
@@ -141,7 +151,9 @@ http://localhost:3000/api/test-supabase
 ## Migration Notes
 
 ### From PostgreSQL to Supabase
+
 If migrating from direct PostgreSQL:
+
 1. Remove all PostgreSQL connection strings
 2. Remove pg client dependencies
 3. Update all database calls to use Supabase client
@@ -149,7 +161,9 @@ If migrating from direct PostgreSQL:
 5. Test all database operations
 
 ### Legacy Files
+
 The following files are legacy and should not be used:
+
 - `lib/db-postgres.js` - Direct PostgreSQL client
 - `lib/db-http.js` - HTTP database client
 - `lib/db-edge.js` - Edge database client
@@ -158,6 +172,7 @@ The following files are legacy and should not be used:
 ## Support
 
 For database configuration issues:
+
 1. Check Supabase dashboard for errors
 2. Verify environment variables are correct
 3. Test connection with test endpoints

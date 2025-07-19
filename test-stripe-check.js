@@ -19,17 +19,19 @@ async function testStripeCheck() {
         service: 'stripe-api',
         regions: ['global'],
         failure_behavior: 'match_status',
-        failure_message: ''
+        failure_message: '',
       },
       created_by: '00000000-0000-0000-0000-000000000000', // Use a valid UUID format
-      is_active: true
+      is_active: true,
     };
 
-    console.log('Testing Stripe check creation with data:', JSON.stringify(checkData, null, 2));
+    console.log(
+      'Testing Stripe check creation with data:',
+      JSON.stringify(checkData, null, 2)
+    );
 
     const result = await db.createMonitoringCheck(checkData);
     console.log('✅ Success! Created check:', result);
-
   } catch (error) {
     console.error('❌ Error creating check:', error);
     console.error('Error details:', {

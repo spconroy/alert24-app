@@ -15,13 +15,13 @@ import {
   ListItemIcon,
   ListItemText,
   Chip,
-  Alert
+  Alert,
 } from '@mui/material';
 import {
   Help as HelpIcon,
   Close as CloseIcon,
   PlayArrow as StepIcon,
-  Lightbulb as TipIcon
+  Lightbulb as TipIcon,
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -40,15 +40,15 @@ export default function HelpWidget() {
           'Use clear, descriptive titles for incidents',
           'Update status regularly to keep stakeholders informed',
           'Escalate quickly if resolution time exceeds SLA',
-          'Add timeline updates for post-incident reviews'
+          'Add timeline updates for post-incident reviews',
         ],
         guides: [
           { title: 'Creating Incidents', section: 'incidents' },
-          { title: 'Escalation Policies', section: 'escalation' }
-        ]
+          { title: 'Escalation Policies', section: 'escalation' },
+        ],
       };
     }
-    
+
     if (pathname.includes('/monitoring')) {
       return {
         title: '📡 Monitoring Setup Help',
@@ -57,14 +57,12 @@ export default function HelpWidget() {
           'Monitor critical user journeys, not just infrastructure',
           'Use realistic response time thresholds',
           'Set up checks from multiple global locations',
-          'Test your monitoring configuration regularly'
+          'Test your monitoring configuration regularly',
         ],
-        guides: [
-          { title: 'Monitoring Setup', section: 'monitoring' }
-        ]
+        guides: [{ title: 'Monitoring Setup', section: 'monitoring' }],
       };
     }
-    
+
     if (pathname.includes('/on-call')) {
       return {
         title: '👥 On-Call Schedule Help',
@@ -73,47 +71,42 @@ export default function HelpWidget() {
           'Add team members to the rotation using the search dropdown',
           'The first person added will be on-call when schedule starts',
           'Remove and re-add people to change rotation order',
-          'Make sure team members are in your organization first'
+          'Make sure team members are in your organization first',
         ],
-        guides: [
-          { title: 'On-Call Schedules', section: 'on-call' }
-        ]
+        guides: [{ title: 'On-Call Schedules', section: 'on-call' }],
       };
     }
-    
+
     if (pathname.includes('/escalation-policies')) {
       return {
         title: '📈 Escalation Policy Help',
         description: 'Configure automated escalation rules',
         quickTips: [
           'Start with the on-call person, then escalate to managers',
-          'Use realistic timeframes (don\'t escalate too quickly)',
+          "Use realistic timeframes (don't escalate too quickly)",
           'Include multiple contact methods for critical alerts',
-          'Test escalation paths regularly'
+          'Test escalation paths regularly',
         ],
-        guides: [
-          { title: 'Escalation Policies', section: 'escalation' }
-        ]
+        guides: [{ title: 'Escalation Policies', section: 'escalation' }],
       };
     }
-    
+
     if (pathname.includes('/profile')) {
       return {
         title: '👤 Profile Management Help',
-        description: 'Manage your account information and notification preferences',
+        description:
+          'Manage your account information and notification preferences',
         quickTips: [
           'Click "Edit Profile" to modify your information',
           'Add a phone number to enable SMS notifications',
           'Set your timezone for accurate timestamps',
           'Configure notification preferences for optimal alerting',
-          'SMS notifications require a valid phone number format'
+          'SMS notifications require a valid phone number format',
         ],
-        guides: [
-          { title: 'Profile Settings', section: 'profile' }
-        ]
+        guides: [{ title: 'Profile Settings', section: 'profile' }],
       };
     }
-    
+
     // Default help for other pages
     return {
       title: '🚀 Getting Started Help',
@@ -122,12 +115,12 @@ export default function HelpWidget() {
         'Create your first monitoring check to watch your services',
         'Set up an on-call schedule to ensure incident response',
         'Configure escalation policies for automatic notifications',
-        'Build status pages to communicate with your users'
+        'Build status pages to communicate with your users',
       ],
       guides: [
         { title: 'Getting Started', section: 'getting-started' },
-        { title: 'Full Help Center', section: 'all' }
-      ]
+        { title: 'Full Help Center', section: 'all' },
+      ],
     };
   };
 
@@ -146,8 +139,8 @@ export default function HelpWidget() {
           right: 24,
           zIndex: 1000,
           '&:hover': {
-            transform: 'scale(1.1)'
-          }
+            transform: 'scale(1.1)',
+          },
         }}
       >
         <HelpIcon />
@@ -162,16 +155,18 @@ export default function HelpWidget() {
         PaperProps={{
           sx: {
             borderRadius: 2,
-            minHeight: '400px'
-          }
+            minHeight: '400px',
+          },
         }}
       >
-        <DialogTitle sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          pb: 1
-        }}>
+        <DialogTitle
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            pb: 1,
+          }}
+        >
           <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
             {contextualHelp.title}
           </Typography>
@@ -191,7 +186,11 @@ export default function HelpWidget() {
           </Alert>
 
           {/* Quick Tips */}
-          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2 }}>
+          <Typography
+            variant="h6"
+            gutterBottom
+            sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2 }}
+          >
             <TipIcon color="warning" />
             Quick Tips for This Page
           </Typography>
@@ -201,7 +200,7 @@ export default function HelpWidget() {
                 <ListItemIcon>
                   <Chip label={index + 1} size="small" color="primary" />
                 </ListItemIcon>
-                <ListItemText 
+                <ListItemText
                   primary={tip}
                   primaryTypographyProps={{ variant: 'body2' }}
                 />
@@ -210,7 +209,11 @@ export default function HelpWidget() {
           </List>
 
           {/* Related Guides */}
-          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 3 }}>
+          <Typography
+            variant="h6"
+            gutterBottom
+            sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 3 }}
+          >
             <StepIcon color="primary" />
             Related Guides
           </Typography>
@@ -220,7 +223,9 @@ export default function HelpWidget() {
                 key={index}
                 variant="outlined"
                 component={Link}
-                href={guide.section === 'all' ? '/help' : `/help#${guide.section}`}
+                href={
+                  guide.section === 'all' ? '/help' : `/help#${guide.section}`
+                }
                 onClick={() => setOpen(false)}
                 sx={{ justifyContent: 'flex-start' }}
               >
@@ -244,4 +249,4 @@ export default function HelpWidget() {
       </Dialog>
     </>
   );
-} 
+}

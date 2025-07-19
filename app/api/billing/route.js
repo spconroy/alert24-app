@@ -55,29 +55,33 @@ export async function GET(request) {
     }
 
     // Get current usage stats
-    const [teamMembersCount, monitoringChecksCount, activeIncidentsCount, statusPagesCount] =
-      await Promise.all([
-        db.client
-          .from('organization_members')
-          .select('id', { count: 'exact' })
-          .eq('organization_id', organizationId)
-          .eq('is_active', true),
-        db.client
-          .from('monitoring_checks')
-          .select('id', { count: 'exact' })
-          .eq('organization_id', organizationId)
-          .eq('status', 'active'),
-        db.client
-          .from('incidents')
-          .select('id', { count: 'exact' })
-          .eq('organization_id', organizationId)
-          .neq('status', 'resolved'),
-        db.client
-          .from('status_pages')
-          .select('id', { count: 'exact' })
-          .eq('organization_id', organizationId)
-          .is('deleted_at', null),
-      ]);
+    const [
+      teamMembersCount,
+      monitoringChecksCount,
+      activeIncidentsCount,
+      statusPagesCount,
+    ] = await Promise.all([
+      db.client
+        .from('organization_members')
+        .select('id', { count: 'exact' })
+        .eq('organization_id', organizationId)
+        .eq('is_active', true),
+      db.client
+        .from('monitoring_checks')
+        .select('id', { count: 'exact' })
+        .eq('organization_id', organizationId)
+        .eq('status', 'active'),
+      db.client
+        .from('incidents')
+        .select('id', { count: 'exact' })
+        .eq('organization_id', organizationId)
+        .neq('status', 'resolved'),
+      db.client
+        .from('status_pages')
+        .select('id', { count: 'exact' })
+        .eq('organization_id', organizationId)
+        .is('deleted_at', null),
+    ]);
 
     const subscription = {
       plan: organization.subscription_plan,

@@ -611,6 +611,8 @@ async function processServiceUpdate(
 
     // Only update if status actually changed
     if (linkedService.status !== newStatus) {
+      const oldStatus = linkedService.status;
+
       const { error: updateError } = await db.client
         .from('services')
         .update({
@@ -624,7 +626,14 @@ async function processServiceUpdate(
         return null;
       } else {
         console.log(
-          `🔗 Updated linked service ${linkedService.name}: ${linkedService.status} → ${newStatus}`
+          `🔗 Updated linked service ${linkedService.name}: ${oldStatus} → ${newStatus}`
+        );
+
+        // Manually track the status change for SLA calculation
+        await db.trackServiceStatusChange(
+          linkedService.id,
+          newStatus,
+          oldStatus
         );
 
         // Create status update for the service change
@@ -638,7 +647,7 @@ async function processServiceUpdate(
 
         return {
           serviceName: linkedService.name,
-          oldStatus: linkedService.status,
+          oldStatus: oldStatus,
           newStatus: newStatus,
         };
       }

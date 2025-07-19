@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { SessionManager } from '@/lib/session-manager';
-import { 
-  scrapeStatusPage, 
-  scrapeProviderServices, 
-  formatStatusPageCheck 
+import {
+  scrapeStatusPage,
+  scrapeProviderServices,
+  formatStatusPageCheck,
 } from '@/lib/status-page-scraper';
 
 export const runtime = 'edge';
@@ -34,7 +34,7 @@ export async function POST(req) {
           const result = await scrapeStatusPage(provider, service, regions);
           return NextResponse.json({
             success: true,
-            result
+            result,
           });
         } catch (error) {
           console.error(`Error scraping ${provider}/${service}:`, error);
@@ -42,7 +42,7 @@ export async function POST(req) {
             {
               success: false,
               error: 'Failed to scrape status page',
-              details: error.message
+              details: error.message,
             },
             { status: 500 }
           );
@@ -62,15 +62,18 @@ export async function POST(req) {
           const results = await scrapeProviderServices(provider, services);
           return NextResponse.json({
             success: true,
-            results
+            results,
           });
         } catch (error) {
-          console.error(`Error scraping multiple services for ${provider}:`, error);
+          console.error(
+            `Error scraping multiple services for ${provider}:`,
+            error
+          );
           return NextResponse.json(
             {
               success: false,
               error: 'Failed to scrape multiple services',
-              details: error.message
+              details: error.message,
             },
             { status: 500 }
           );
@@ -80,18 +83,26 @@ export async function POST(req) {
         // Format a status page check configuration
         const { check_name } = body;
         try {
-          const checkConfig = formatStatusPageCheck(provider, service, regions, check_name);
+          const checkConfig = formatStatusPageCheck(
+            provider,
+            service,
+            regions,
+            check_name
+          );
           return NextResponse.json({
             success: true,
-            check_config: checkConfig
+            check_config: checkConfig,
           });
         } catch (error) {
-          console.error(`Error formatting check for ${provider}/${service}:`, error);
+          console.error(
+            `Error formatting check for ${provider}/${service}:`,
+            error
+          );
           return NextResponse.json(
             {
               success: false,
               error: 'Failed to format check configuration',
-              details: error.message
+              details: error.message,
             },
             { status: 500 }
           );
@@ -99,18 +110,20 @@ export async function POST(req) {
 
       default:
         return NextResponse.json(
-          { error: 'Invalid action. Use "scrape", "scrape_multiple", or "format_check"' },
+          {
+            error:
+              'Invalid action. Use "scrape", "scrape_multiple", or "format_check"',
+          },
           { status: 400 }
         );
     }
-
   } catch (error) {
     console.error('Error in status page scraper API:', error);
     return NextResponse.json(
       {
         success: false,
         error: 'Internal server error',
-        details: error.message
+        details: error.message,
       },
       { status: 500 }
     );
@@ -142,7 +155,7 @@ export async function GET(req) {
       const result = await scrapeStatusPage(provider, service, regions);
       return NextResponse.json({
         success: true,
-        result
+        result,
       });
     } catch (error) {
       console.error(`Error scraping ${provider}/${service}:`, error);
@@ -150,19 +163,18 @@ export async function GET(req) {
         {
           success: false,
           error: 'Failed to scrape status page',
-          details: error.message
+          details: error.message,
         },
         { status: 500 }
       );
     }
-
   } catch (error) {
     console.error('Error in status page scraper GET API:', error);
     return NextResponse.json(
       {
         success: false,
         error: 'Internal server error',
-        details: error.message
+        details: error.message,
       },
       { status: 500 }
     );

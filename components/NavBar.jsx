@@ -434,7 +434,7 @@ export default function NavBar() {
               </Tooltip>
 
               {/* Debug Icon (Development or inventivehq.com email) */}
-              {(process.env.NODE_ENV === 'development' || 
+              {(process.env.NODE_ENV === 'development' ||
                 session.user?.email?.endsWith('@inventivehq.com')) && (
                 <Tooltip title="Debug">
                   <IconButton

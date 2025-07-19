@@ -70,7 +70,7 @@ async function sendIncidentNotifications(incident, organizationId) {
 }
 
 export const GET = withErrorHandler(async request => {
-  const session = await Auth.requireAuth();
+  const session = await Auth.requireAuth(request);
   const user = await Auth.requireUser(db, session.user.email);
 
   const { searchParams } = new URL(request.url);
@@ -118,7 +118,7 @@ export const GET = withErrorHandler(async request => {
 });
 
 export const POST = withErrorHandler(async request => {
-  const session = await Auth.requireAuth();
+  const session = await Auth.requireAuth(request);
   const user = await Auth.requireUser(db, session.user.email);
 
   const {
@@ -190,7 +190,7 @@ export const POST = withErrorHandler(async request => {
 });
 
 export const PUT = withErrorHandler(async request => {
-  const session = await auth();
+  const session = await Auth.requireAuth(request);
   const user = await Auth.requireUser(db, session.user.email);
 
   const {
@@ -261,7 +261,7 @@ export const PUT = withErrorHandler(async request => {
 });
 
 export const DELETE = withErrorHandler(async request => {
-  const session = await auth();
+  const session = await Auth.requireAuth(request);
   const user = await Auth.requireUser(db, session.user.email);
 
   const { searchParams } = new URL(request.url);

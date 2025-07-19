@@ -310,7 +310,8 @@ export async function DELETE(req, { params }) {
   console.log('🗑️ DELETE API called with params:', params);
 
   try {
-    const session = await auth();
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(req);
     console.log('👤 Session check:', session?.user?.email || 'No session');
 
     if (!session || !session.user?.email) {

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { SessionManager } from '@/lib/session-manager';
+import { emailService } from '@/lib/email-service';
 
 export const runtime = 'edge';
 
@@ -74,17 +75,27 @@ async function sendTestEmail(toEmail, fromEmail, apiKey) {
 export async function POST(req) {
   try {
     const sessionManager = new SessionManager();
-    const session = await sessionManager.getSessionFromRequest(request);
+    const session = await sessionManager.getSessionFromRequest(req);
     const { action, testEmail } = await req.json();
 
     if (action === 'check-config') {
       const config = checkEmailConfig();
+      
+      // Also check SendGrid account status if configured
+      let sendgridStatus = null;
+      if (config.configStatus === 'configured') {
+        sendgridStatus = await emailService.checkSendGridStatus();
+      }
+      
       return NextResponse.json({
         success: true,
         config,
+        sendgridStatus,
         message:
           config.configStatus === 'configured'
-            ? 'Email service is properly configured'
+            ? sendgridStatus?.valid 
+              ? 'Email service is properly configured and SendGrid account is accessible'
+              : `Email service configured but SendGrid error: ${sendgridStatus?.error}`
             : 'Email service configuration incomplete',
       });
     }
@@ -115,11 +126,35 @@ export async function POST(req) {
       }
 
       const targetEmail = testEmail || session.user.email;
-      const result = await sendTestEmail(
-        targetEmail,
-        config.fromEmail,
-        process.env.SENDGRID_API_KEY
-      );
+      
+      // Use the enhanced email service instead of the simple function
+      const result = await emailService.sendEmail({
+        to: targetEmail,
+        subject: 'Alert24 Email Service Test',
+        htmlContent: `
+          <h2>🎉 Email Service Test</h2>
+          <p>This is a test email from Alert24 to verify that email notifications are working correctly.</p>
+          <p><strong>Test Details:</strong></p>
+          <ul>
+            <li>Sent to: ${targetEmail}</li>
+            <li>From: ${config.fromEmail}</li>
+            <li>Timestamp: ${new Date().toISOString()}</li>
+          </ul>
+          <p>If you received this email, your Alert24 email service is configured correctly!</p>
+        `,
+        textContent: `
+Email Service Test
+
+This is a test email from Alert24 to verify that email notifications are working correctly.
+
+Test Details:
+- Sent to: ${targetEmail}
+- From: ${config.fromEmail}
+- Timestamp: ${new Date().toISOString()}
+
+If you received this email, your Alert24 email service is configured correctly!
+        `.trim(),
+      });
 
       return NextResponse.json({
         ...result,

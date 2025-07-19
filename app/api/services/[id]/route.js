@@ -132,6 +132,15 @@ export async function PUT(req, { params }) {
       }
     });
 
+    // Track status change for SLA calculation if status is being updated
+    if (validFields.status && validFields.status !== service.status) {
+      await db.trackServiceStatusChange(
+        serviceId,
+        validFields.status,
+        service.status
+      );
+    }
+
     // Update service with graceful handling of missing columns
     let updatedService;
     try {

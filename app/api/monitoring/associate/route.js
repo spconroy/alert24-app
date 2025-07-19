@@ -25,16 +25,19 @@ function getCheckData(check) {
       linked_service_id: check.linked_service_id,
       name: check.name,
       url: check.target_url,
-      ...check
+      ...check,
     };
   }
-  
+
   // Fall back to parsing JSON from description field (old format)
   try {
     if (check.description && typeof check.description === 'string') {
       const parsed = JSON.parse(check.description);
       return parsed;
-    } else if (check.monitoring_data && typeof check.monitoring_data === 'string') {
+    } else if (
+      check.monitoring_data &&
+      typeof check.monitoring_data === 'string'
+    ) {
       const parsed = JSON.parse(check.monitoring_data);
       return parsed;
     }
@@ -47,7 +50,7 @@ function getCheckData(check) {
 
 // GET - Get associations for monitoring checks
 export const GET = withErrorHandler(async request => {
-  const sessionManager = new SessionManager(); 
+  const sessionManager = new SessionManager();
   const session = await sessionManager.getSessionFromRequest(request);
   const user = await Auth.requireUser(db, session.user.email);
 
@@ -133,7 +136,7 @@ export const GET = withErrorHandler(async request => {
 
 // POST - Create or update association between monitoring check and service
 export const POST = withErrorHandler(async request => {
-  const sessionManager = new SessionManager(); 
+  const sessionManager = new SessionManager();
   const session = await sessionManager.getSessionFromRequest(request);
   const user = await Auth.requireUser(db, session.user.email);
 
@@ -238,7 +241,7 @@ export const POST = withErrorHandler(async request => {
 
 // DELETE - Remove association between monitoring check and service
 export const DELETE = withErrorHandler(async request => {
-  const sessionManager = new SessionManager(); 
+  const sessionManager = new SessionManager();
   const session = await sessionManager.getSessionFromRequest(request);
   const user = await Auth.requireUser(db, session.user.email);
 

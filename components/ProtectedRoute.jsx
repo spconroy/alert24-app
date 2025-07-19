@@ -15,7 +15,12 @@ export default function ProtectedRoute({ children }) {
 
   if (sessionStatus === 'loading') {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="50vh"
+      >
         <CircularProgress />
       </Box>
     );
@@ -26,4 +31,4 @@ export default function ProtectedRoute({ children }) {
   }
 
   return children;
-} 
+}

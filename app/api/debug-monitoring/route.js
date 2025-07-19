@@ -23,7 +23,7 @@ export async function GET() {
       dbConnection = {
         success: false,
         error: dbError.message,
-        code: dbError.code
+        code: dbError.code,
       };
     }
 
@@ -36,11 +36,11 @@ export async function GET() {
         .from('monitoring_checks')
         .select('count')
         .limit(0);
-      
+
       tableAccess = {
         success: !error,
         error: error?.message,
-        code: error?.code
+        code: error?.code,
       };
       console.log('📊 Table access test result:', tableAccess);
     } catch (tableError) {
@@ -48,7 +48,7 @@ export async function GET() {
       tableAccess = {
         success: false,
         error: tableError.message,
-        code: tableError.code
+        code: tableError.code,
       };
     }
 
@@ -60,35 +60,47 @@ export async function GET() {
         hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
         hasSupabaseAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
         hasSupabaseServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-        supabaseUrlPrefix: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30),
+        supabaseUrlPrefix: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(
+          0,
+          30
+        ),
         runtime: 'edge',
       },
       database: dbConnection,
       tableAccess: tableAccess,
       diagnostics: {
-        message: dbConnection?.success ? 
-          'Database connection successful' : 
-          'Database connection failed - check environment variables',
-        nextSteps: dbConnection?.success ? 
-          ['Database is accessible', 'Check authentication in main monitoring API'] :
-          ['Verify NEXT_PUBLIC_SUPABASE_URL is set', 'Verify NEXT_PUBLIC_SUPABASE_ANON_KEY is set', 'Check Cloudflare Pages environment variables']
-      }
+        message: dbConnection?.success
+          ? 'Database connection successful'
+          : 'Database connection failed - check environment variables',
+        nextSteps: dbConnection?.success
+          ? [
+              'Database is accessible',
+              'Check authentication in main monitoring API',
+            ]
+          : [
+              'Verify NEXT_PUBLIC_SUPABASE_URL is set',
+              'Verify NEXT_PUBLIC_SUPABASE_ANON_KEY is set',
+              'Check Cloudflare Pages environment variables',
+            ],
+      },
     });
-
   } catch (error) {
     console.error('🔥 Debug monitoring API error:', error);
-    return NextResponse.json({
-      success: false,
-      error: error.message,
-      code: error.code,
-      timestamp: new Date().toISOString(),
-      environment: {
-        NODE_ENV: process.env.NODE_ENV,
-        hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-        hasSupabaseAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-        hasSupabaseServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-        runtime: 'edge',
-      }
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: error.message,
+        code: error.code,
+        timestamp: new Date().toISOString(),
+        environment: {
+          NODE_ENV: process.env.NODE_ENV,
+          hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+          hasSupabaseAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+          hasSupabaseServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+          runtime: 'edge',
+        },
+      },
+      { status: 500 }
+    );
   }
 }

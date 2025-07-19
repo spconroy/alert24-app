@@ -18,7 +18,10 @@ export async function GET(request) {
     const organizationId = searchParams.get('organization_id');
 
     if (!organizationId) {
-      return NextResponse.json({ error: 'Organization ID required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Organization ID required' },
+        { status: 400 }
+      );
     }
 
     console.log('Testing services API for organization:', organizationId);
@@ -32,7 +35,10 @@ export async function GET(request) {
 
     if (statusError) {
       console.error('Error fetching status pages:', statusError);
-      return NextResponse.json({ error: 'Failed to fetch status pages', details: statusError.message }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to fetch status pages', details: statusError.message },
+        { status: 500 }
+      );
     }
 
     console.log('Found status pages:', statusPages?.length || 0);
@@ -40,21 +46,26 @@ export async function GET(request) {
     // Now let's check for services
     const { data: services, error: servicesError } = await db.client
       .from('services')
-      .select(`
+      .select(
+        `
         *,
         status_pages!inner(
           id,
           name,
           organization_id
         )
-      `)
+      `
+      )
       .eq('status_pages.organization_id', organizationId)
       .is('deleted_at', null)
       .not('name', 'ilike', '[[]MONITORING]%');
 
     if (servicesError) {
       console.error('Error fetching services:', servicesError);
-      return NextResponse.json({ error: 'Failed to fetch services', details: servicesError.message }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to fetch services', details: servicesError.message },
+        { status: 500 }
+      );
     }
 
     console.log('Found services:', services?.length || 0);
@@ -64,9 +75,8 @@ export async function GET(request) {
       organization_id: organizationId,
       status_pages: statusPages || [],
       services: services || [],
-      message: `Found ${statusPages?.length || 0} status pages and ${services?.length || 0} services for organization ${organizationId}`
+      message: `Found ${statusPages?.length || 0} status pages and ${services?.length || 0} services for organization ${organizationId}`,
     });
-
   } catch (error) {
     console.error('Error in test services API:', error);
     return NextResponse.json(

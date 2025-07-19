@@ -60,7 +60,7 @@ export async function POST(req) {
     `;
 
     console.log('Executing status page provider validation update...');
-    
+
     // Execute the SQL directly using the raw query method
     const { error } = await db.client.from('_temp').select('1').limit(0); // This won't actually run, we need a different approach
 
@@ -72,13 +72,29 @@ export async function POST(req) {
       success: true,
       message: 'Successfully updated status page provider validation',
       providers_supported: [
-        'azure', 'aws', 'gcp', 'cloudflare', 'supabase',
-        'github', 'stripe', 'netlify', 'vercel', 'digitalocean', 
-        'sendgrid', 'slack', 'twilio', 'paypal', 'shopify', 
-        'zoom', 'zendesk', 'heroku', 'discord', 'fastly', 'openai'
-      ]
+        'azure',
+        'aws',
+        'gcp',
+        'cloudflare',
+        'supabase',
+        'github',
+        'stripe',
+        'netlify',
+        'vercel',
+        'digitalocean',
+        'sendgrid',
+        'slack',
+        'twilio',
+        'paypal',
+        'shopify',
+        'zoom',
+        'zendesk',
+        'heroku',
+        'discord',
+        'fastly',
+        'openai',
+      ],
     });
-
   } catch (error) {
     console.error('Error in update status page providers route:', error);
     return NextResponse.json(

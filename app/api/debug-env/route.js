@@ -11,7 +11,7 @@ export async function GET() {
       hasSupabaseServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
       supabaseUrlPrefix: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30),
       runtime: 'edge',
-      timestamp: new Date().toISOString()
-    }
+      timestamp: new Date().toISOString(),
+    },
   });
 }

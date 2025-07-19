@@ -104,7 +104,8 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const sessionManager = new SessionManager(); const session = await sessionManager.getSessionFromRequest(req);
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(req);
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -166,7 +167,8 @@ export async function POST(request) {
 
 export async function PUT(request) {
   try {
-    const sessionManager = new SessionManager(); const session = await sessionManager.getSessionFromRequest(req);
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(req);
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -203,7 +205,8 @@ export async function PUT(request) {
 
 export async function DELETE(request) {
   try {
-    const sessionManager = new SessionManager(); const session = await sessionManager.getSessionFromRequest(req);
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(req);
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

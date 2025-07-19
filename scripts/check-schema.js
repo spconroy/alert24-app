@@ -33,14 +33,14 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function checkTables() {
   console.log('🔍 Checking database schema...');
-  
+
   try {
     // Check monitoring_checks table
     const { data: monitoringChecks, error: mcError } = await supabase
       .from('monitoring_checks')
       .select('count(*)')
       .limit(1);
-    
+
     if (mcError) {
       console.error('❌ monitoring_checks table issue:', mcError.message);
     } else {
@@ -52,9 +52,12 @@ async function checkTables() {
       .from('service_monitoring_checks')
       .select('count(*)')
       .limit(1);
-    
+
     if (jError) {
-      console.error('❌ service_monitoring_checks table issue:', jError.message);
+      console.error(
+        '❌ service_monitoring_checks table issue:',
+        jError.message
+      );
     } else {
       console.log('✅ service_monitoring_checks table exists');
     }
@@ -64,7 +67,7 @@ async function checkTables() {
       .from('services')
       .select('count(*)')
       .limit(1);
-    
+
     if (sError) {
       console.error('❌ services table issue:', sError.message);
     } else {
@@ -72,15 +75,19 @@ async function checkTables() {
     }
 
     // Try to get table schema info
-    const { data: tableInfo, error: infoError } = await supabase
-      .rpc('get_table_columns', { table_name: 'service_monitoring_checks' });
-    
+    const { data: tableInfo, error: infoError } = await supabase.rpc(
+      'get_table_columns',
+      { table_name: 'service_monitoring_checks' }
+    );
+
     if (infoError) {
       console.warn('⚠️  Could not get table schema info:', infoError.message);
     } else {
-      console.log('📋 service_monitoring_checks columns:', tableInfo?.map(t => t.column_name));
+      console.log(
+        '📋 service_monitoring_checks columns:',
+        tableInfo?.map(t => t.column_name)
+      );
     }
-
   } catch (error) {
     console.error('❌ Schema check failed:', error);
   }

@@ -1,4 +1,3 @@
-
 import { query, healthCheck, testConnection } from '@/lib/db-http';
 
 export const runtime = 'edge';

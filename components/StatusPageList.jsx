@@ -1,4 +1,9 @@
-import React, { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
+import React, {
+  useEffect,
+  useState,
+  forwardRef,
+  useImperativeHandle,
+} from 'react';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import List from '@mui/material/List';
@@ -14,7 +19,10 @@ import Snackbar from '@mui/material/Snackbar';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
-const StatusPageList = forwardRef(function StatusPageList({ orgId, onSelectStatusPage }, ref) {
+const StatusPageList = forwardRef(function StatusPageList(
+  { orgId, onSelectStatusPage },
+  ref
+) {
   const [statusPages, setStatusPages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -29,7 +37,9 @@ const StatusPageList = forwardRef(function StatusPageList({ orgId, onSelectStatu
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
         console.error('Status pages API error:', errorData);
-        throw new Error(errorData.error || `HTTP ${res.status}: ${res.statusText}`);
+        throw new Error(
+          errorData.error || `HTTP ${res.status}: ${res.statusText}`
+        );
       }
       const data = await res.json();
       console.log('Status pages data:', data);
@@ -48,7 +58,7 @@ const StatusPageList = forwardRef(function StatusPageList({ orgId, onSelectStatu
     if (orgId) fetchStatusPages();
   }, [orgId]);
 
-  const getStatusPageUrl = (statusPage) => {
+  const getStatusPageUrl = statusPage => {
     // For now, we'll use the current domain with the slug
     // In production, this would use the organization's custom domain or subdomain
     const currentDomain = window.location.origin;
@@ -86,14 +96,15 @@ const StatusPageList = forwardRef(function StatusPageList({ orgId, onSelectStatu
       {error && <Alert severity="error">{error}</Alert>}
       {!loading && !error && statusPages.length === 0 && (
         <Typography color="text.secondary">
-          No status pages yet. Click the "Create Status Page" button above to get started.
+          No status pages yet. Click the "Create Status Page" button above to
+          get started.
         </Typography>
       )}
       {!loading && !error && statusPages.length > 0 && (
         <List>
-          {statusPages.map((sp) => (
+          {statusPages.map(sp => (
             <ListItem key={sp.id} divider disablePadding>
-              <ListItemButton 
+              <ListItemButton
                 onClick={() => onSelectStatusPage?.(sp)}
                 sx={{ py: 2, pr: 12 }} // Add right padding for buttons
               >
@@ -101,8 +112,8 @@ const StatusPageList = forwardRef(function StatusPageList({ orgId, onSelectStatu
                   primary={
                     <Box display="flex" alignItems="center" gap={1} mb={0.5}>
                       <Typography variant="body1">{sp.name}</Typography>
-                      <Chip 
-                        label={sp.is_public ? 'Public' : 'Private'} 
+                      <Chip
+                        label={sp.is_public ? 'Public' : 'Private'}
                         size="small"
                         color={sp.is_public ? 'success' : 'default'}
                       />
@@ -111,19 +122,23 @@ const StatusPageList = forwardRef(function StatusPageList({ orgId, onSelectStatu
                   secondary={
                     <Box>
                       {sp.description && (
-                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          gutterBottom
+                        >
                           {sp.description}
                         </Typography>
                       )}
-                      <Typography 
-                        variant="caption" 
-                        color="primary" 
-                        sx={{ 
+                      <Typography
+                        variant="caption"
+                        color="primary"
+                        sx={{
                           fontFamily: 'monospace',
                           backgroundColor: 'rgba(25, 118, 210, 0.08)',
                           padding: '2px 6px',
                           borderRadius: 1,
-                          display: 'inline-block'
+                          display: 'inline-block',
                         }}
                       >
                         {getStatusPageUrl(sp)}
@@ -134,17 +149,17 @@ const StatusPageList = forwardRef(function StatusPageList({ orgId, onSelectStatu
               </ListItemButton>
               <ListItemSecondaryAction>
                 <Box display="flex" gap={0.5}>
-                  <IconButton 
+                  <IconButton
                     size="small"
-                    onClick={(e) => handleCopyUrl(sp, e)}
+                    onClick={e => handleCopyUrl(sp, e)}
                     title="Copy URL"
                     color="primary"
                   >
                     <ContentCopyIcon fontSize="small" />
                   </IconButton>
-                  <IconButton 
+                  <IconButton
                     size="small"
-                    onClick={(e) => handleOpenUrl(sp, e)}
+                    onClick={e => handleOpenUrl(sp, e)}
                     title="Open in new tab"
                     color="primary"
                   >
@@ -156,7 +171,7 @@ const StatusPageList = forwardRef(function StatusPageList({ orgId, onSelectStatu
           ))}
         </List>
       )}
-      
+
       {/* Copy success notification */}
       <Snackbar
         open={copySuccess}
@@ -169,4 +184,4 @@ const StatusPageList = forwardRef(function StatusPageList({ orgId, onSelectStatu
   );
 });
 
-export default StatusPageList; 
+export default StatusPageList;

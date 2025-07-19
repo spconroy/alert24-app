@@ -12,9 +12,9 @@ export async function POST(request) {
   try {
     const body = await request.text();
     const signature = request.headers.get('stripe-signature');
-    
+
     let event;
-    
+
     try {
       // Verify webhook signature
       event = stripe.webhooks.constructEvent(
@@ -24,43 +24,40 @@ export async function POST(request) {
       );
     } catch (err) {
       console.error('Webhook signature verification failed:', err.message);
-      return NextResponse.json(
-        { error: 'Invalid signature' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
     }
-    
+
     console.log('Received Stripe webhook:', event.type);
-    
+
     switch (event.type) {
       case 'customer.subscription.created':
         await handleSubscriptionCreated(event.data.object);
         break;
-        
+
       case 'customer.subscription.updated':
         await handleSubscriptionUpdated(event.data.object);
         break;
-        
+
       case 'customer.subscription.deleted':
         await handleSubscriptionDeleted(event.data.object);
         break;
-        
+
       case 'invoice.payment_succeeded':
         await handlePaymentSucceeded(event.data.object);
         break;
-        
+
       case 'invoice.payment_failed':
         await handlePaymentFailed(event.data.object);
         break;
-        
+
       case 'customer.subscription.trial_will_end':
         await handleTrialWillEnd(event.data.object);
         break;
-        
+
       default:
         console.log('Unhandled webhook event type:', event.type);
     }
-    
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Webhook error:', error);
@@ -79,16 +76,19 @@ async function handleSubscriptionCreated(subscription) {
       .select('*')
       .eq('stripe_customer_id', subscription.customer)
       .single();
-      
+
     if (orgError || !organization) {
-      console.error('Organization not found for customer:', subscription.customer);
+      console.error(
+        'Organization not found for customer:',
+        subscription.customer
+      );
       return;
     }
-    
+
     // Determine plan based on subscription items
     const plan = getPlanFromSubscription(subscription);
     const planLimits = getPlanLimits(plan);
-    
+
     // Update organization
     const { error: updateError } = await db.client
       .from('organizations')
@@ -96,18 +96,22 @@ async function handleSubscriptionCreated(subscription) {
         subscription_plan: plan,
         subscription_status: subscription.status,
         stripe_subscription_id: subscription.id,
-        current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-        current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+        current_period_start: new Date(
+          subscription.current_period_start * 1000
+        ).toISOString(),
+        current_period_end: new Date(
+          subscription.current_period_end * 1000
+        ).toISOString(),
         ...planLimits,
         updated_at: new Date().toISOString(),
       })
       .eq('id', organization.id);
-      
+
     if (updateError) {
       console.error('Error updating organization:', updateError);
       return;
     }
-    
+
     // Record billing history
     await recordBillingHistory(organization.id, {
       previous_plan: organization.subscription_plan,
@@ -116,8 +120,10 @@ async function handleSubscriptionCreated(subscription) {
       amount_cents: subscription.items.data[0]?.price?.unit_amount || 0,
       stripe_subscription_id: subscription.id,
     });
-    
-    console.log(`Subscription created for organization ${organization.name}: ${plan}`);
+
+    console.log(
+      `Subscription created for organization ${organization.name}: ${plan}`
+    );
   } catch (error) {
     console.error('Error handling subscription created:', error);
   }
@@ -131,46 +137,59 @@ async function handleSubscriptionUpdated(subscription) {
       .select('*')
       .eq('stripe_subscription_id', subscription.id)
       .single();
-      
+
     if (orgError || !organization) {
-      console.error('Organization not found for subscription:', subscription.id);
+      console.error(
+        'Organization not found for subscription:',
+        subscription.id
+      );
       return;
     }
-    
+
     const plan = getPlanFromSubscription(subscription);
     const planLimits = getPlanLimits(plan);
-    
+
     // Update organization
     const { error: updateError } = await db.client
       .from('organizations')
       .update({
         subscription_plan: plan,
         subscription_status: subscription.status,
-        current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-        current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+        current_period_start: new Date(
+          subscription.current_period_start * 1000
+        ).toISOString(),
+        current_period_end: new Date(
+          subscription.current_period_end * 1000
+        ).toISOString(),
         ...planLimits,
         updated_at: new Date().toISOString(),
       })
       .eq('id', organization.id);
-      
+
     if (updateError) {
       console.error('Error updating organization:', updateError);
       return;
     }
-    
+
     // Record billing history if plan changed
     if (organization.subscription_plan !== plan) {
       await recordBillingHistory(organization.id, {
         previous_plan: organization.subscription_plan,
         new_plan: plan,
-        change_type: organization.subscription_plan === 'free' ? 'upgrade' : 
-                    (plan === 'free' ? 'downgrade' : 'upgrade'),
+        change_type:
+          organization.subscription_plan === 'free'
+            ? 'upgrade'
+            : plan === 'free'
+              ? 'downgrade'
+              : 'upgrade',
         amount_cents: subscription.items.data[0]?.price?.unit_amount || 0,
         stripe_subscription_id: subscription.id,
       });
     }
-    
-    console.log(`Subscription updated for organization ${organization.name}: ${plan}`);
+
+    console.log(
+      `Subscription updated for organization ${organization.name}: ${plan}`
+    );
   } catch (error) {
     console.error('Error handling subscription updated:', error);
   }
@@ -184,15 +203,18 @@ async function handleSubscriptionDeleted(subscription) {
       .select('*')
       .eq('stripe_subscription_id', subscription.id)
       .single();
-      
+
     if (orgError || !organization) {
-      console.error('Organization not found for subscription:', subscription.id);
+      console.error(
+        'Organization not found for subscription:',
+        subscription.id
+      );
       return;
     }
-    
+
     // Downgrade to free plan
     const freePlanLimits = getPlanLimits('free');
-    
+
     const { error: updateError } = await db.client
       .from('organizations')
       .update({
@@ -205,12 +227,12 @@ async function handleSubscriptionDeleted(subscription) {
         updated_at: new Date().toISOString(),
       })
       .eq('id', organization.id);
-      
+
     if (updateError) {
       console.error('Error updating organization:', updateError);
       return;
     }
-    
+
     // Record billing history
     await recordBillingHistory(organization.id, {
       previous_plan: organization.subscription_plan,
@@ -218,15 +240,16 @@ async function handleSubscriptionDeleted(subscription) {
       change_type: 'cancellation',
       stripe_subscription_id: subscription.id,
     });
-    
+
     // Create billing alert
     await createBillingAlert(organization.id, {
       alert_type: 'plan_changed',
       severity: 'warning',
       title: 'Subscription Canceled',
-      message: 'Your subscription has been canceled and your account has been downgraded to the free plan.',
+      message:
+        'Your subscription has been canceled and your account has been downgraded to the free plan.',
     });
-    
+
     console.log(`Subscription canceled for organization ${organization.name}`);
   } catch (error) {
     console.error('Error handling subscription deleted:', error);
@@ -241,12 +264,12 @@ async function handlePaymentSucceeded(invoice) {
       .select('*')
       .eq('stripe_customer_id', invoice.customer)
       .single();
-      
+
     if (orgError || !organization) {
       console.error('Organization not found for customer:', invoice.customer);
       return;
     }
-    
+
     // Record billing history
     await recordBillingHistory(organization.id, {
       previous_plan: organization.subscription_plan,
@@ -256,8 +279,10 @@ async function handlePaymentSucceeded(invoice) {
       stripe_subscription_id: invoice.subscription,
       stripe_invoice_id: invoice.id,
     });
-    
-    console.log(`Payment succeeded for organization ${organization.name}: $${invoice.amount_paid / 100}`);
+
+    console.log(
+      `Payment succeeded for organization ${organization.name}: $${invoice.amount_paid / 100}`
+    );
   } catch (error) {
     console.error('Error handling payment succeeded:', error);
   }
@@ -271,12 +296,12 @@ async function handlePaymentFailed(invoice) {
       .select('*')
       .eq('stripe_customer_id', invoice.customer)
       .single();
-      
+
     if (orgError || !organization) {
       console.error('Organization not found for customer:', invoice.customer);
       return;
     }
-    
+
     // Create billing alert
     await createBillingAlert(organization.id, {
       alert_type: 'payment_failed',
@@ -284,8 +309,10 @@ async function handlePaymentFailed(invoice) {
       title: 'Payment Failed',
       message: `Payment of $${invoice.amount_due / 100} failed. Please update your payment method to avoid service interruption.`,
     });
-    
-    console.log(`Payment failed for organization ${organization.name}: $${invoice.amount_due / 100}`);
+
+    console.log(
+      `Payment failed for organization ${organization.name}: $${invoice.amount_due / 100}`
+    );
   } catch (error) {
     console.error('Error handling payment failed:', error);
   }
@@ -299,20 +326,24 @@ async function handleTrialWillEnd(subscription) {
       .select('*')
       .eq('stripe_subscription_id', subscription.id)
       .single();
-      
+
     if (orgError || !organization) {
-      console.error('Organization not found for subscription:', subscription.id);
+      console.error(
+        'Organization not found for subscription:',
+        subscription.id
+      );
       return;
     }
-    
+
     // Create billing alert
     await createBillingAlert(organization.id, {
       alert_type: 'trial_ending',
       severity: 'warning',
       title: 'Trial Ending Soon',
-      message: 'Your trial will end soon. Please add a payment method to continue using premium features.',
+      message:
+        'Your trial will end soon. Please add a payment method to continue using premium features.',
     });
-    
+
     console.log(`Trial ending for organization ${organization.name}`);
   } catch (error) {
     console.error('Error handling trial will end:', error);
@@ -323,13 +354,13 @@ function getPlanFromSubscription(subscription) {
   // Extract plan from subscription items
   // This would depend on your Stripe price IDs
   const priceId = subscription.items.data[0]?.price?.id;
-  
+
   if (priceId === process.env.STRIPE_PRO_PRICE_ID) {
     return 'pro';
   } else if (priceId === process.env.STRIPE_ENTERPRISE_PRICE_ID) {
     return 'enterprise';
   }
-  
+
   return 'free';
 }
 
@@ -354,20 +385,18 @@ function getPlanLimits(plan) {
       max_status_pages: 999,
     },
   };
-  
+
   return limits[plan] || limits.free;
 }
 
 async function recordBillingHistory(organizationId, data) {
   try {
-    const { error } = await db.client
-      .from('billing_history')
-      .insert({
-        organization_id: organizationId,
-        ...data,
-        created_at: new Date().toISOString(),
-      });
-      
+    const { error } = await db.client.from('billing_history').insert({
+      organization_id: organizationId,
+      ...data,
+      created_at: new Date().toISOString(),
+    });
+
     if (error) {
       console.error('Error recording billing history:', error);
     }
@@ -378,14 +407,12 @@ async function recordBillingHistory(organizationId, data) {
 
 async function createBillingAlert(organizationId, data) {
   try {
-    const { error } = await db.client
-      .from('billing_alerts')
-      .insert({
-        organization_id: organizationId,
-        ...data,
-        created_at: new Date().toISOString(),
-      });
-      
+    const { error } = await db.client.from('billing_alerts').insert({
+      organization_id: organizationId,
+      ...data,
+      created_at: new Date().toISOString(),
+    });
+
     if (error) {
       console.error('Error creating billing alert:', error);
     }

@@ -16,12 +16,7 @@ import WarningIcon from '@mui/icons-material/Warning';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import Link from 'next/link';
 
-const BillingUsageCard = ({ 
-  organization, 
-  usage, 
-  subscription,
-  onUpgrade 
-}) => {
+const BillingUsageCard = ({ organization, usage, subscription, onUpgrade }) => {
   const planLimits = {
     free: {
       max_team_members: 3,
@@ -51,13 +46,13 @@ const BillingUsageCard = ({
     return Math.min((current / max) * 100, 100);
   };
 
-  const getUsageColor = (percentage) => {
+  const getUsageColor = percentage => {
     if (percentage >= 90) return 'error';
     if (percentage >= 75) return 'warning';
     return 'success';
   };
 
-  const getUsageIcon = (percentage) => {
+  const getUsageIcon = percentage => {
     if (percentage >= 90) return <WarningIcon color="error" />;
     return <CheckCircleIcon color="success" />;
   };
@@ -93,7 +88,9 @@ const BillingUsageCard = ({
     },
   ];
 
-  const overLimitItems = usageItems.filter(item => isOverLimit(item.current, item.max));
+  const overLimitItems = usageItems.filter(item =>
+    isOverLimit(item.current, item.max)
+  );
   const nearLimitItems = usageItems.filter(item => {
     const percentage = calculateUsagePercentage(item.current, item.max);
     return percentage >= 75 && !isOverLimit(item.current, item.max);
@@ -102,7 +99,12 @@ const BillingUsageCard = ({
   return (
     <Card>
       <CardContent>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={2}
+        >
           <Typography variant="h6">Usage & Limits</Typography>
           <Chip
             label={`${currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)} Plan`}
@@ -115,11 +117,12 @@ const BillingUsageCard = ({
         {overLimitItems.length > 0 && (
           <Alert severity="error" sx={{ mb: 2 }}>
             <Typography variant="body2" gutterBottom>
-              You have exceeded limits for: {overLimitItems.map(item => item.label).join(', ')}
+              You have exceeded limits for:{' '}
+              {overLimitItems.map(item => item.label).join(', ')}
             </Typography>
-            <Button 
-              size="small" 
-              variant="outlined" 
+            <Button
+              size="small"
+              variant="outlined"
               color="error"
               component={Link}
               href="/billing"
@@ -134,22 +137,28 @@ const BillingUsageCard = ({
         {nearLimitItems.length > 0 && overLimitItems.length === 0 && (
           <Alert severity="warning" sx={{ mb: 2 }}>
             <Typography variant="body2">
-              You are approaching limits for: {nearLimitItems.map(item => item.label).join(', ')}
+              You are approaching limits for:{' '}
+              {nearLimitItems.map(item => item.label).join(', ')}
             </Typography>
           </Alert>
         )}
 
         {/* Usage breakdown */}
         <Grid container spacing={2}>
-          {usageItems.map((item) => {
+          {usageItems.map(item => {
             const percentage = calculateUsagePercentage(item.current, item.max);
             const isUnlimited = item.max === 999;
             const isOver = isOverLimit(item.current, item.max);
-            
+
             return (
               <Grid item xs={12} sm={6} key={item.key}>
                 <Box>
-                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                  <Box
+                    display="flex"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    mb={1}
+                  >
                     <Typography variant="body2" color="text.secondary">
                       {item.label}
                     </Typography>
@@ -169,23 +178,30 @@ const BillingUsageCard = ({
                     />
                   )}
                   {isUnlimited && (
-                    <Box 
-                      sx={{ 
-                        height: 6, 
-                        borderRadius: 3, 
+                    <Box
+                      sx={{
+                        height: 6,
+                        borderRadius: 3,
                         backgroundColor: 'success.light',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center'
+                        justifyContent: 'center',
                       }}
                     >
-                      <Typography variant="caption" color="success.contrastText">
+                      <Typography
+                        variant="caption"
+                        color="success.contrastText"
+                      >
                         Unlimited
                       </Typography>
                     </Box>
                   )}
                   {!isUnlimited && (
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ mt: 0.5 }}
+                    >
                       {percentage.toFixed(1)}% used
                     </Typography>
                   )}
@@ -196,22 +212,23 @@ const BillingUsageCard = ({
         </Grid>
 
         {/* Upgrade suggestion */}
-        {(overLimitItems.length > 0 || nearLimitItems.length > 0) && currentPlan !== 'enterprise' && (
-          <Box mt={3} textAlign="center">
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              Need more capacity?
-            </Typography>
-            <Button 
-              variant="contained" 
-              color="primary"
-              component={Link}
-              href="/billing"
-              onClick={onUpgrade}
-            >
-              Upgrade Plan
-            </Button>
-          </Box>
-        )}
+        {(overLimitItems.length > 0 || nearLimitItems.length > 0) &&
+          currentPlan !== 'enterprise' && (
+            <Box mt={3} textAlign="center">
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Need more capacity?
+              </Typography>
+              <Button
+                variant="contained"
+                color="primary"
+                component={Link}
+                href="/billing"
+                onClick={onUpgrade}
+              >
+                Upgrade Plan
+              </Button>
+            </Box>
+          )}
       </CardContent>
     </Card>
   );

@@ -64,10 +64,7 @@ export async function POST(request) {
     }
 
     if (!PLANS[plan_id]) {
-      return NextResponse.json(
-        { error: 'Invalid plan ID' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid plan ID' }, { status: 400 });
     }
 
     // Get user
@@ -185,7 +182,7 @@ export async function POST(request) {
       try {
         // Create or get Stripe customer
         let stripeCustomerId = organization.stripe_customer_id;
-        
+
         if (!stripeCustomerId) {
           const customer = await stripe.customers.create({
             email: user.email,
@@ -195,14 +192,14 @@ export async function POST(request) {
             },
           });
           stripeCustomerId = customer.id;
-          
+
           // Update organization with customer ID
           await db.client
             .from('organizations')
             .update({ stripe_customer_id: stripeCustomerId })
             .eq('id', organization_id);
         }
-        
+
         // Create Stripe checkout session
         const session = await stripe.checkout.sessions.create({
           customer: stripeCustomerId,
@@ -221,7 +218,7 @@ export async function POST(request) {
             plan_id: plan_id,
           },
         });
-        
+
         return NextResponse.json({
           success: true,
           checkout_url: session.url,
@@ -230,7 +227,10 @@ export async function POST(request) {
       } catch (stripeError) {
         console.error('Stripe error:', stripeError);
         return NextResponse.json(
-          { error: 'Failed to create checkout session', details: stripeError.message },
+          {
+            error: 'Failed to create checkout session',
+            details: stripeError.message,
+          },
           { status: 500 }
         );
       }

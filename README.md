@@ -38,6 +38,7 @@ The application uses Supabase with a comprehensive PostgreSQL schema:
 ### Database Connection
 
 All database operations use Supabase client. Configure via environment variables:
+
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`

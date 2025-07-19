@@ -19,10 +19,10 @@ function getCheckData(check) {
       linked_service_id: check.linked_service_id,
       name: check.name,
       url: check.target_url,
-      ...check
+      ...check,
     };
   }
-  
+
   // Fall back to parsing JSON from description field (old format)
   try {
     if (check.description && typeof check.description === 'string') {

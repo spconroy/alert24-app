@@ -188,7 +188,7 @@ export default function CreateMonitoringCheckPage() {
       if (!response.ok) {
         const errorData = await response.json();
         console.error('API Error Response:', errorData);
-        
+
         // Provide more detailed error message
         let errorMessage = 'Failed to create monitoring check';
         if (errorData.error) {
@@ -200,7 +200,7 @@ export default function CreateMonitoringCheckPage() {
         if (errorData.debug) {
           console.error('Debug info:', errorData.debug);
         }
-        
+
         throw new Error(errorMessage);
       }
 
@@ -343,69 +343,71 @@ export default function CreateMonitoringCheckPage() {
                 />
               ) : (
                 <form onSubmit={handleSubmit}>
-                <Grid container spacing={3}>
-                  {/* Organization Info */}
-                  <Grid item xs={12}>
-                    {selectedOrganization ? (
-                      <Alert severity="success" sx={{ mb: 2 }}>
-                        <strong>Creating monitoring check for:</strong> 🏢{' '}
-                        {selectedOrganization.name}
-                      </Alert>
-                    ) : (
-                      <Alert severity="warning" sx={{ mb: 2 }}>
-                        <strong>Please select an organization</strong> from the
-                        dropdown in the top navigation bar to create a
-                        monitoring check.
-                      </Alert>
-                    )}
-                    {formErrors.organization && (
-                      <Alert severity="error" sx={{ mb: 2 }}>
-                        {formErrors.organization}
-                      </Alert>
-                    )}
-                  </Grid>
+                  <Grid container spacing={3}>
+                    {/* Organization Info */}
+                    <Grid item xs={12}>
+                      {selectedOrganization ? (
+                        <Alert severity="success" sx={{ mb: 2 }}>
+                          <strong>Creating monitoring check for:</strong> 🏢{' '}
+                          {selectedOrganization.name}
+                        </Alert>
+                      ) : (
+                        <Alert severity="warning" sx={{ mb: 2 }}>
+                          <strong>Please select an organization</strong> from
+                          the dropdown in the top navigation bar to create a
+                          monitoring check.
+                        </Alert>
+                      )}
+                      {formErrors.organization && (
+                        <Alert severity="error" sx={{ mb: 2 }}>
+                          {formErrors.organization}
+                        </Alert>
+                      )}
+                    </Grid>
 
-                  {/* Monitor Name */}
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      label="Monitor Name *"
-                      value={formData.name}
-                      onChange={e => handleInputChange('name', e.target.value)}
-                      error={!!formErrors.name}
-                      helperText={
-                        formErrors.name ||
-                        'A descriptive name for this monitoring check'
-                      }
-                      placeholder="e.g., Main Website HTTP Check"
-                    />
-                  </Grid>
-
-                  {/* Check Type */}
-                  <Grid item xs={12} md={6}>
-                    <FormControl fullWidth>
-                      <InputLabel>Check Type</InputLabel>
-                      <Select
-                        value={formData.check_type}
-                        label="Check Type"
+                    {/* Monitor Name */}
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        label="Monitor Name *"
+                        value={formData.name}
                         onChange={e =>
-                          handleInputChange('check_type', e.target.value)
+                          handleInputChange('name', e.target.value)
                         }
-                      >
-                        <MenuItem value="http">HTTP/HTTPS</MenuItem>
-                        <MenuItem value="ping">Ping</MenuItem>
-                        <MenuItem value="tcp">TCP Port</MenuItem>
-                        <MenuItem value="ssl">SSL Certificate</MenuItem>
-                        <MenuItem value="status_page">Status Page</MenuItem>
-                      </Select>
-                      <FormHelperText>
-                        {getCheckTypeDescription(formData.check_type)}
-                      </FormHelperText>
-                    </FormControl>
-                  </Grid>
+                        error={!!formErrors.name}
+                        helperText={
+                          formErrors.name ||
+                          'A descriptive name for this monitoring check'
+                        }
+                        placeholder="e.g., Main Website HTTP Check"
+                      />
+                    </Grid>
 
-                  {/* Monitoring Locations - TEMPORARILY HIDDEN */}
-                  {/* 
+                    {/* Check Type */}
+                    <Grid item xs={12} md={6}>
+                      <FormControl fullWidth>
+                        <InputLabel>Check Type</InputLabel>
+                        <Select
+                          value={formData.check_type}
+                          label="Check Type"
+                          onChange={e =>
+                            handleInputChange('check_type', e.target.value)
+                          }
+                        >
+                          <MenuItem value="http">HTTP/HTTPS</MenuItem>
+                          <MenuItem value="ping">Ping</MenuItem>
+                          <MenuItem value="tcp">TCP Port</MenuItem>
+                          <MenuItem value="ssl">SSL Certificate</MenuItem>
+                          <MenuItem value="status_page">Status Page</MenuItem>
+                        </Select>
+                        <FormHelperText>
+                          {getCheckTypeDescription(formData.check_type)}
+                        </FormHelperText>
+                      </FormControl>
+                    </Grid>
+
+                    {/* Monitoring Locations - TEMPORARILY HIDDEN */}
+                    {/* 
                   <Grid item xs={12}>
                     <MonitoringLocationSelector
                       selectedLocations={formData.monitoring_locations}
@@ -419,365 +421,375 @@ export default function CreateMonitoringCheckPage() {
                   </Grid>
                   */}
 
-                  {/* Target URL/Hostname - Hide for status page checks */}
-                  {formData.check_type !== 'status_page' && (
-                    <Grid item xs={12}>
+                    {/* Target URL/Hostname - Hide for status page checks */}
+                    {formData.check_type !== 'status_page' && (
+                      <Grid item xs={12}>
+                        <TextField
+                          fullWidth
+                          label={
+                            formData.check_type === 'ping'
+                              ? 'Hostname or IP Address *'
+                              : formData.check_type === 'tcp'
+                                ? 'Target Host:Port *'
+                                : formData.check_type === 'ssl'
+                                  ? 'Hostname or URL *'
+                                  : 'Target URL *'
+                          }
+                          value={formData.target_url}
+                          onChange={e =>
+                            handleInputChange('target_url', e.target.value)
+                          }
+                          error={!!formErrors.target_url}
+                          helperText={
+                            formErrors.target_url ||
+                            (formData.check_type === 'ping'
+                              ? 'The hostname or IP address to ping'
+                              : formData.check_type === 'tcp'
+                                ? 'The hostname:port or IP:port to check'
+                                : formData.check_type === 'ssl'
+                                  ? 'The hostname or URL to check SSL certificate'
+                                  : 'The URL or endpoint to monitor')
+                          }
+                          placeholder={
+                            formData.check_type === 'ping'
+                              ? 'example.com or 192.168.1.1'
+                              : formData.check_type === 'tcp'
+                                ? 'example.com:80 or 192.168.1.1:443'
+                                : formData.check_type === 'ssl'
+                                  ? 'example.com or https://example.com'
+                                  : 'https://example.com'
+                          }
+                        />
+                      </Grid>
+                    )}
+
+                    {/* Status Page Configuration */}
+                    {formData.check_type === 'status_page' && (
+                      <Grid item xs={12}>
+                        <Alert severity="info" sx={{ mb: 2 }}>
+                          Status page monitoring checks will be configured using
+                          the dedicated form above.
+                        </Alert>
+                      </Grid>
+                    )}
+
+                    {/* Timing Settings */}
+                    <Grid item xs={12} md={6}>
                       <TextField
                         fullWidth
-                        label={
-                          formData.check_type === 'ping'
-                            ? 'Hostname or IP Address *'
-                            : formData.check_type === 'tcp'
-                              ? 'Target Host:Port *'
-                              : formData.check_type === 'ssl'
-                                ? 'Hostname or URL *'
-                                : 'Target URL *'
-                        }
-                        value={formData.target_url}
+                        type="number"
+                        label="Check Interval (seconds)"
+                        value={formData.check_interval_seconds}
                         onChange={e =>
-                          handleInputChange('target_url', e.target.value)
+                          handleInputChange(
+                            'check_interval_seconds',
+                            parseInt(e.target.value)
+                          )
                         }
-                        error={!!formErrors.target_url}
+                        error={!!formErrors.check_interval_seconds}
                         helperText={
-                          formErrors.target_url ||
-                          (formData.check_type === 'ping'
-                            ? 'The hostname or IP address to ping'
-                            : formData.check_type === 'tcp'
-                              ? 'The hostname:port or IP:port to check'
-                              : formData.check_type === 'ssl'
-                                ? 'The hostname or URL to check SSL certificate'
-                                : 'The URL or endpoint to monitor')
+                          formErrors.check_interval_seconds ||
+                          'How often to run the check (minimum 60 seconds)'
                         }
-                        placeholder={
-                          formData.check_type === 'ping'
-                            ? 'example.com or 192.168.1.1'
-                            : formData.check_type === 'tcp'
-                              ? 'example.com:80 or 192.168.1.1:443'
-                              : formData.check_type === 'ssl'
-                                ? 'example.com or https://example.com'
-                                : 'https://example.com'
-                        }
+                        inputProps={{ min: 60, max: 3600 }}
                       />
                     </Grid>
-                  )}
-                  
-                  {/* Status Page Configuration */}
-                  {formData.check_type === 'status_page' && (
-                    <Grid item xs={12}>
-                      <Alert severity="info" sx={{ mb: 2 }}>
-                        Status page monitoring checks will be configured using the dedicated form above.
-                      </Alert>
+
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        type="number"
+                        label="Timeout (seconds)"
+                        value={formData.timeout_seconds}
+                        onChange={e =>
+                          handleInputChange(
+                            'timeout_seconds',
+                            parseInt(e.target.value)
+                          )
+                        }
+                        error={!!formErrors.timeout_seconds}
+                        helperText={
+                          formErrors.timeout_seconds ||
+                          'Maximum time to wait for response'
+                        }
+                        inputProps={{ min: 1, max: 300 }}
+                      />
                     </Grid>
-                  )}
 
-                  {/* Timing Settings */}
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      type="number"
-                      label="Check Interval (seconds)"
-                      value={formData.check_interval_seconds}
-                      onChange={e =>
-                        handleInputChange(
-                          'check_interval_seconds',
-                          parseInt(e.target.value)
-                        )
-                      }
-                      error={!!formErrors.check_interval_seconds}
-                      helperText={
-                        formErrors.check_interval_seconds ||
-                        'How often to run the check (minimum 60 seconds)'
-                      }
-                      inputProps={{ min: 60, max: 3600 }}
-                    />
-                  </Grid>
+                    {/* HTTP-specific settings */}
+                    {formData.check_type === 'http' && (
+                      <>
+                        <Grid item xs={12}>
+                          <Divider sx={{ my: 2 }} />
+                          <Typography variant="h6" gutterBottom>
+                            HTTP Settings
+                          </Typography>
+                        </Grid>
 
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      type="number"
-                      label="Timeout (seconds)"
-                      value={formData.timeout_seconds}
-                      onChange={e =>
-                        handleInputChange(
-                          'timeout_seconds',
-                          parseInt(e.target.value)
-                        )
-                      }
-                      error={!!formErrors.timeout_seconds}
-                      helperText={
-                        formErrors.timeout_seconds ||
-                        'Maximum time to wait for response'
-                      }
-                      inputProps={{ min: 1, max: 300 }}
-                    />
-                  </Grid>
-
-                  {/* HTTP-specific settings */}
-                  {formData.check_type === 'http' && (
-                    <>
-                      <Grid item xs={12}>
-                        <Divider sx={{ my: 2 }} />
-                        <Typography variant="h6" gutterBottom>
-                          HTTP Settings
-                        </Typography>
-                      </Grid>
-
-                      <Grid item xs={12} md={4}>
-                        <FormControl fullWidth>
-                          <InputLabel>HTTP Method</InputLabel>
-                          <Select
-                            value={formData.http_method}
-                            label="HTTP Method"
-                            onChange={e =>
-                              handleInputChange('http_method', e.target.value)
-                            }
-                          >
-                            <MenuItem value="GET">GET</MenuItem>
-                            <MenuItem value="POST">POST</MenuItem>
-                            <MenuItem value="PUT">PUT</MenuItem>
-                            <MenuItem value="HEAD">HEAD</MenuItem>
-                          </Select>
-                        </FormControl>
-                      </Grid>
-
-                      <Grid item xs={12} md={4}>
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              checked={formData.follow_redirects}
+                        <Grid item xs={12} md={4}>
+                          <FormControl fullWidth>
+                            <InputLabel>HTTP Method</InputLabel>
+                            <Select
+                              value={formData.http_method}
+                              label="HTTP Method"
                               onChange={e =>
-                                handleInputChange(
-                                  'follow_redirects',
-                                  e.target.checked
-                                )
+                                handleInputChange('http_method', e.target.value)
                               }
-                            />
-                          }
-                          label="Follow Redirects"
-                        />
-                      </Grid>
+                            >
+                              <MenuItem value="GET">GET</MenuItem>
+                              <MenuItem value="POST">POST</MenuItem>
+                              <MenuItem value="PUT">PUT</MenuItem>
+                              <MenuItem value="HEAD">HEAD</MenuItem>
+                            </Select>
+                          </FormControl>
+                        </Grid>
 
-                      <Grid item xs={12} md={4}>
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              checked={formData.ssl_check_enabled}
-                              onChange={e =>
-                                handleInputChange(
-                                  'ssl_check_enabled',
-                                  e.target.checked
-                                )
-                              }
-                            />
-                          }
-                          label="SSL Certificate Check"
-                        />
-                      </Grid>
-
-                      {/* Expected Status Codes */}
-                      <Grid item xs={12}>
-                        <Typography variant="subtitle2" gutterBottom>
-                          Expected Status Codes
-                        </Typography>
-                        <Box display="flex" gap={1} alignItems="center" mb={1}>
-                          <TextField
-                            size="small"
-                            label="Status Code"
-                            value={newStatusCode}
-                            onChange={e => setNewStatusCode(e.target.value)}
-                            placeholder="200"
-                            inputProps={{ min: 100, max: 599 }}
-                            sx={{ width: 150 }}
-                          />
-                          <Button
-                            onClick={handleAddStatusCode}
-                            disabled={!newStatusCode}
-                          >
-                            Add
-                          </Button>
-                        </Box>
-                        <Box display="flex" flexWrap="wrap" gap={1}>
-                          {formData.expected_status_codes.map(code => (
-                            <Chip
-                              key={code}
-                              label={code}
-                              onDelete={() => handleRemoveStatusCode(code)}
-                              color="primary"
-                              variant="outlined"
-                            />
-                          ))}
-                        </Box>
-                      </Grid>
-
-                      {/* Advanced HTTP Settings */}
-                      <Grid item xs={12}>
-                        <Accordion>
-                          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                            <Typography>Advanced HTTP Settings</Typography>
-                          </AccordionSummary>
-                          <AccordionDetails>
-                            <Grid container spacing={2}>
-                              {/* HTTP Headers */}
-                              <Grid item xs={12}>
-                                <Typography variant="subtitle2" gutterBottom>
-                                  HTTP Headers
-                                </Typography>
-                                <Box
-                                  display="flex"
-                                  gap={1}
-                                  alignItems="center"
-                                  mb={1}
-                                >
-                                  <TextField
-                                    size="small"
-                                    label="Header Name"
-                                    value={headerKey}
-                                    onChange={e => setHeaderKey(e.target.value)}
-                                    placeholder="Authorization"
-                                  />
-                                  <TextField
-                                    size="small"
-                                    label="Header Value"
-                                    value={headerValue}
-                                    onChange={e =>
-                                      setHeaderValue(e.target.value)
-                                    }
-                                    placeholder="Bearer token"
-                                  />
-                                  <Button
-                                    onClick={handleAddHeader}
-                                    disabled={!headerKey || !headerValue}
-                                  >
-                                    Add
-                                  </Button>
-                                </Box>
-                                {Object.entries(formData.http_headers).map(
-                                  ([key, value]) => (
-                                    <Box
-                                      key={key}
-                                      display="flex"
-                                      justifyContent="space-between"
-                                      alignItems="center"
-                                      p={1}
-                                      border="1px solid #ddd"
-                                      borderRadius={1}
-                                      mb={1}
-                                    >
-                                      <Typography variant="body2">
-                                        <strong>{key}:</strong> {value}
-                                      </Typography>
-                                      <Button
-                                        size="small"
-                                        onClick={() => handleRemoveHeader(key)}
-                                        color="error"
-                                      >
-                                        Remove
-                                      </Button>
-                                    </Box>
+                        <Grid item xs={12} md={4}>
+                          <FormControlLabel
+                            control={
+                              <Switch
+                                checked={formData.follow_redirects}
+                                onChange={e =>
+                                  handleInputChange(
+                                    'follow_redirects',
+                                    e.target.checked
                                   )
-                                )}
-                              </Grid>
+                                }
+                              />
+                            }
+                            label="Follow Redirects"
+                          />
+                        </Grid>
 
-                              {/* Keyword Matching */}
-                              <Grid item xs={12} md={8}>
-                                <TextField
-                                  fullWidth
-                                  label="Keyword Match (Optional)"
-                                  value={formData.keyword_match}
-                                  onChange={e =>
-                                    handleInputChange(
-                                      'keyword_match',
-                                      e.target.value
+                        <Grid item xs={12} md={4}>
+                          <FormControlLabel
+                            control={
+                              <Switch
+                                checked={formData.ssl_check_enabled}
+                                onChange={e =>
+                                  handleInputChange(
+                                    'ssl_check_enabled',
+                                    e.target.checked
+                                  )
+                                }
+                              />
+                            }
+                            label="SSL Certificate Check"
+                          />
+                        </Grid>
+
+                        {/* Expected Status Codes */}
+                        <Grid item xs={12}>
+                          <Typography variant="subtitle2" gutterBottom>
+                            Expected Status Codes
+                          </Typography>
+                          <Box
+                            display="flex"
+                            gap={1}
+                            alignItems="center"
+                            mb={1}
+                          >
+                            <TextField
+                              size="small"
+                              label="Status Code"
+                              value={newStatusCode}
+                              onChange={e => setNewStatusCode(e.target.value)}
+                              placeholder="200"
+                              inputProps={{ min: 100, max: 599 }}
+                              sx={{ width: 150 }}
+                            />
+                            <Button
+                              onClick={handleAddStatusCode}
+                              disabled={!newStatusCode}
+                            >
+                              Add
+                            </Button>
+                          </Box>
+                          <Box display="flex" flexWrap="wrap" gap={1}>
+                            {formData.expected_status_codes.map(code => (
+                              <Chip
+                                key={code}
+                                label={code}
+                                onDelete={() => handleRemoveStatusCode(code)}
+                                color="primary"
+                                variant="outlined"
+                              />
+                            ))}
+                          </Box>
+                        </Grid>
+
+                        {/* Advanced HTTP Settings */}
+                        <Grid item xs={12}>
+                          <Accordion>
+                            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                              <Typography>Advanced HTTP Settings</Typography>
+                            </AccordionSummary>
+                            <AccordionDetails>
+                              <Grid container spacing={2}>
+                                {/* HTTP Headers */}
+                                <Grid item xs={12}>
+                                  <Typography variant="subtitle2" gutterBottom>
+                                    HTTP Headers
+                                  </Typography>
+                                  <Box
+                                    display="flex"
+                                    gap={1}
+                                    alignItems="center"
+                                    mb={1}
+                                  >
+                                    <TextField
+                                      size="small"
+                                      label="Header Name"
+                                      value={headerKey}
+                                      onChange={e =>
+                                        setHeaderKey(e.target.value)
+                                      }
+                                      placeholder="Authorization"
+                                    />
+                                    <TextField
+                                      size="small"
+                                      label="Header Value"
+                                      value={headerValue}
+                                      onChange={e =>
+                                        setHeaderValue(e.target.value)
+                                      }
+                                      placeholder="Bearer token"
+                                    />
+                                    <Button
+                                      onClick={handleAddHeader}
+                                      disabled={!headerKey || !headerValue}
+                                    >
+                                      Add
+                                    </Button>
+                                  </Box>
+                                  {Object.entries(formData.http_headers).map(
+                                    ([key, value]) => (
+                                      <Box
+                                        key={key}
+                                        display="flex"
+                                        justifyContent="space-between"
+                                        alignItems="center"
+                                        p={1}
+                                        border="1px solid #ddd"
+                                        borderRadius={1}
+                                        mb={1}
+                                      >
+                                        <Typography variant="body2">
+                                          <strong>{key}:</strong> {value}
+                                        </Typography>
+                                        <Button
+                                          size="small"
+                                          onClick={() =>
+                                            handleRemoveHeader(key)
+                                          }
+                                          color="error"
+                                        >
+                                          Remove
+                                        </Button>
+                                      </Box>
                                     )
-                                  }
-                                  helperText="Check if response contains specific text"
-                                  placeholder="Success"
-                                />
-                              </Grid>
+                                  )}
+                                </Grid>
 
-                              <Grid item xs={12} md={4}>
-                                <FormControl fullWidth>
-                                  <InputLabel>Match Type</InputLabel>
-                                  <Select
-                                    value={formData.keyword_match_type}
-                                    label="Match Type"
+                                {/* Keyword Matching */}
+                                <Grid item xs={12} md={8}>
+                                  <TextField
+                                    fullWidth
+                                    label="Keyword Match (Optional)"
+                                    value={formData.keyword_match}
                                     onChange={e =>
                                       handleInputChange(
-                                        'keyword_match_type',
+                                        'keyword_match',
                                         e.target.value
                                       )
                                     }
-                                  >
-                                    <MenuItem value="contains">
-                                      Contains
-                                    </MenuItem>
-                                    <MenuItem value="exact">
-                                      Exact Match
-                                    </MenuItem>
-                                    <MenuItem value="regex">
-                                      Regular Expression
-                                    </MenuItem>
-                                  </Select>
-                                </FormControl>
+                                    helperText="Check if response contains specific text"
+                                    placeholder="Success"
+                                  />
+                                </Grid>
+
+                                <Grid item xs={12} md={4}>
+                                  <FormControl fullWidth>
+                                    <InputLabel>Match Type</InputLabel>
+                                    <Select
+                                      value={formData.keyword_match_type}
+                                      label="Match Type"
+                                      onChange={e =>
+                                        handleInputChange(
+                                          'keyword_match_type',
+                                          e.target.value
+                                        )
+                                      }
+                                    >
+                                      <MenuItem value="contains">
+                                        Contains
+                                      </MenuItem>
+                                      <MenuItem value="exact">
+                                        Exact Match
+                                      </MenuItem>
+                                      <MenuItem value="regex">
+                                        Regular Expression
+                                      </MenuItem>
+                                    </Select>
+                                  </FormControl>
+                                </Grid>
                               </Grid>
-                            </Grid>
-                          </AccordionDetails>
-                        </Accordion>
-                      </Grid>
-                    </>
-                  )}
+                            </AccordionDetails>
+                          </Accordion>
+                        </Grid>
+                      </>
+                    )}
 
-                  {/* Status */}
-                  <Grid item xs={12}>
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={formData.is_active}
-                          onChange={e =>
-                            handleInputChange('is_active', e.target.checked)
-                          }
-                        />
-                      }
-                      label="Enable monitoring check"
-                    />
-                  </Grid>
-
-                  {/* Submit Buttons */}
-                  <Grid item xs={12}>
-                    <Box
-                      display="flex"
-                      gap={2}
-                      justifyContent="flex-end"
-                      sx={{ mt: 2 }}
-                    >
-                      <Button
-                        component={Link}
-                        href="/monitoring"
-                        variant="outlined"
-                        disabled={loading}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        type="submit"
-                        variant="contained"
-                        startIcon={
-                          loading ? (
-                            <CircularProgress size={20} />
-                          ) : (
-                            <SaveIcon />
-                          )
+                    {/* Status */}
+                    <Grid item xs={12}>
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={formData.is_active}
+                            onChange={e =>
+                              handleInputChange('is_active', e.target.checked)
+                            }
+                          />
                         }
-                        disabled={loading}
-                        color="primary"
+                        label="Enable monitoring check"
+                      />
+                    </Grid>
+
+                    {/* Submit Buttons */}
+                    <Grid item xs={12}>
+                      <Box
+                        display="flex"
+                        gap={2}
+                        justifyContent="flex-end"
+                        sx={{ mt: 2 }}
                       >
-                        {loading ? 'Creating...' : 'Create Monitor'}
-                      </Button>
-                    </Box>
+                        <Button
+                          component={Link}
+                          href="/monitoring"
+                          variant="outlined"
+                          disabled={loading}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="submit"
+                          variant="contained"
+                          startIcon={
+                            loading ? (
+                              <CircularProgress size={20} />
+                            ) : (
+                              <SaveIcon />
+                            )
+                          }
+                          disabled={loading}
+                          color="primary"
+                        >
+                          {loading ? 'Creating...' : 'Create Monitor'}
+                        </Button>
+                      </Box>
+                    </Grid>
                   </Grid>
-                </Grid>
-              </form>
+                </form>
               )}
             </CardContent>
           </Card>

@@ -209,11 +209,22 @@ export async function POST(request) {
  * DELETE /api/user/default-organization
  * Remove default organization setting (no organization will be default)
  */
-export async function DELETE() {
+export async function DELETE(request) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return ApiResponse.error('Authentication required', 401);
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(request);
+
+    if (!session || !session.user?.email) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // Get user by email from session
+    const user = await db.getUserByEmail(session.user.email);
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Remove default status from all user's organizations
@@ -223,18 +234,28 @@ export async function DELETE() {
         is_default: false,
         updated_at: new Date().toISOString(),
       })
-      .eq('user_id', session.user.id);
+      .eq('user_id', user.id);
 
     if (error) {
       console.error('Error removing default organization:', error);
-      return ApiResponse.error('Failed to remove default organization', 500);
+      return NextResponse.json(
+        {
+          error: 'Failed to remove default organization',
+          details: error.message,
+        },
+        { status: 500 }
+      );
     }
 
-    return ApiResponse.success({
+    return NextResponse.json({
+      success: true,
       message: 'Default organization removed successfully',
     });
   } catch (error) {
     console.error('Error in DELETE /api/user/default-organization:', error);
-    return ApiResponse.error('Internal server error', 500);
+    return NextResponse.json(
+      { error: 'Internal server error', details: error.message },
+      { status: 500 }
+    );
   }
 }

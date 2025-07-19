@@ -11,11 +11,11 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Box from '@mui/material/Box';
 import WarningIcon from '@mui/icons-material/Warning';
 
-export default function DeleteOrganizationModal({ 
-  open, 
-  onClose, 
-  organization, 
-  onOrganizationDeleted 
+export default function DeleteOrganizationModal({
+  open,
+  onClose,
+  organization,
+  onOrganizationDeleted,
 }) {
   const [confirmationText, setConfirmationText] = useState('');
   const [loading, setLoading] = useState(false);
@@ -39,7 +39,9 @@ export default function DeleteOrganizationModal({
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${res.status}: ${res.statusText}`);
+        throw new Error(
+          errorData.error || `HTTP ${res.status}: ${res.statusText}`
+        );
       }
 
       const data = await res.json();
@@ -75,7 +77,7 @@ export default function DeleteOrganizationModal({
           Delete Organization
         </Box>
       </DialogTitle>
-      
+
       <DialogContent>
         <Alert severity="error" sx={{ mb: 3 }}>
           <Typography variant="body2" fontWeight="bold" gutterBottom>
@@ -101,16 +103,16 @@ export default function DeleteOrganizationModal({
         <Typography variant="body1" gutterBottom>
           To confirm deletion, please type the organization name:
         </Typography>
-        
-        <Typography 
-          variant="body1" 
-          fontWeight="bold" 
-          sx={{ 
-            p: 1, 
-            bgcolor: 'grey.100', 
-            borderRadius: 1, 
+
+        <Typography
+          variant="body1"
+          fontWeight="bold"
+          sx={{
+            p: 1,
+            bgcolor: 'grey.100',
+            borderRadius: 1,
             fontFamily: 'monospace',
-            mb: 2 
+            mb: 2,
           }}
         >
           {organization.name}
@@ -118,24 +120,24 @@ export default function DeleteOrganizationModal({
 
         <TextField
           value={confirmationText}
-          onChange={(e) => setConfirmationText(e.target.value)}
+          onChange={e => setConfirmationText(e.target.value)}
           placeholder="Type organization name here"
           fullWidth
           disabled={loading}
           error={confirmationText.length > 0 && !isConfirmationValid}
           helperText={
-            confirmationText.length > 0 && !isConfirmationValid 
-              ? 'Organization name does not match' 
+            confirmationText.length > 0 && !isConfirmationValid
+              ? 'Organization name does not match'
               : ''
           }
         />
       </DialogContent>
-      
+
       <DialogActions>
         <Button onClick={handleClose} disabled={loading}>
           Cancel
         </Button>
-        <Button 
+        <Button
           onClick={handleDelete}
           variant="contained"
           color="error"
@@ -153,4 +155,4 @@ export default function DeleteOrganizationModal({
       </DialogActions>
     </Dialog>
   );
-} 
+}

@@ -21,7 +21,7 @@ console.log(`Found ${uniqueUrls.length} unique URLs to check\n`);
 const results = {
   compatible: [],
   incompatible: [],
-  errors: []
+  errors: [],
 };
 
 // Function to make HTTP request with timeout
@@ -29,32 +29,32 @@ function makeRequest(url, timeout = 5000) {
   return new Promise((resolve, reject) => {
     const parsedUrl = new URL(url);
     const client = parsedUrl.protocol === 'https:' ? https : http;
-    
-    const req = client.get(url, { timeout }, (res) => {
+
+    const req = client.get(url, { timeout }, res => {
       let data = '';
-      
-      res.on('data', (chunk) => {
+
+      res.on('data', chunk => {
         data += chunk;
       });
-      
+
       res.on('end', () => {
         resolve({
           statusCode: res.statusCode,
           headers: res.headers,
-          data: data
+          data: data,
         });
       });
     });
-    
+
     req.on('timeout', () => {
       req.destroy();
       reject(new Error('Request timeout'));
     });
-    
-    req.on('error', (err) => {
+
+    req.on('error', err => {
       reject(err);
     });
-    
+
     req.setTimeout(timeout);
   });
 }
@@ -64,28 +64,29 @@ async function checkStatuspageAPI(baseUrl) {
   const apiEndpoints = [
     '/api/v2/status.json',
     '/api/v2/summary.json',
-    '/api/v2/components.json'
+    '/api/v2/components.json',
   ];
-  
+
   const results = [];
-  
+
   for (const endpoint of apiEndpoints) {
     try {
       const url = new URL(baseUrl);
       const testUrl = `${url.protocol}//${url.host}${endpoint}`;
-      
+
       const response = await makeRequest(testUrl, 4000);
-      
+
       if (response.statusCode === 200) {
         try {
           const jsonData = JSON.parse(response.data);
-          
+
           // Check for statuspage.io API structure
           const hasStatus = jsonData.status || jsonData.page;
           const hasComponents = jsonData.components;
           const hasIndicator = jsonData.status?.indicator;
-          const hasDescription = jsonData.status?.description || jsonData.page?.name;
-          
+          const hasDescription =
+            jsonData.status?.description || jsonData.page?.name;
+
           if (hasStatus || hasComponents) {
             results.push({
               endpoint: testUrl,
@@ -94,9 +95,9 @@ async function checkStatuspageAPI(baseUrl) {
                 hasComponents: !!hasComponents,
                 hasIndicator: !!hasIndicator,
                 hasDescription: !!hasDescription,
-                keys: Object.keys(jsonData).slice(0, 10) // Limit keys for readability
+                keys: Object.keys(jsonData).slice(0, 10), // Limit keys for readability
               },
-              sample: JSON.stringify(jsonData).substring(0, 150) + '...'
+              sample: JSON.stringify(jsonData).substring(0, 150) + '...',
             });
             break; // Found working API, stop checking other endpoints for this URL
           }
@@ -108,7 +109,7 @@ async function checkStatuspageAPI(baseUrl) {
       // Endpoint not available, continue
     }
   }
-  
+
   return results;
 }
 
@@ -118,20 +119,22 @@ async function processBatch(urls, batchSize = 5) {
   for (let i = 0; i < urls.length; i += batchSize) {
     batches.push(urls.slice(i, i + batchSize));
   }
-  
+
   for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
     const batch = batches[batchIndex];
-    console.log(`Processing batch ${batchIndex + 1}/${batches.length} (URLs ${batchIndex * batchSize + 1}-${Math.min((batchIndex + 1) * batchSize, urls.length)})`);
-    
-    const promises = batch.map(async (url) => {
+    console.log(
+      `Processing batch ${batchIndex + 1}/${batches.length} (URLs ${batchIndex * batchSize + 1}-${Math.min((batchIndex + 1) * batchSize, urls.length)})`
+    );
+
+    const promises = batch.map(async url => {
       try {
         const apiResults = await checkStatuspageAPI(url);
-        
+
         if (apiResults.length > 0) {
           console.log(`  ✅ ${url} - Compatible`);
           results.compatible.push({
             url: url,
-            apis: apiResults
+            apis: apiResults,
           });
         } else {
           console.log(`  ❌ ${url} - No API`);
@@ -141,13 +144,13 @@ async function processBatch(urls, batchSize = 5) {
         console.log(`  ⚠️  ${url} - Error: ${error.message}`);
         results.errors.push({
           url: url,
-          error: error.message
+          error: error.message,
         });
       }
     });
-    
+
     await Promise.all(promises);
-    
+
     // Small delay between batches
     if (batchIndex < batches.length - 1) {
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -158,9 +161,9 @@ async function processBatch(urls, batchSize = 5) {
 // Main function to process all URLs
 async function processUrls() {
   console.log('Checking statuspage.io API compatibility...\n');
-  
+
   await processBatch(uniqueUrls, 10);
-  
+
   // Generate report
   generateReport();
 }
@@ -169,28 +172,30 @@ function generateReport() {
   console.log('\n' + '='.repeat(60));
   console.log('STATUSPAGE.IO API COMPATIBILITY REPORT');
   console.log('='.repeat(60));
-  
+
   console.log(`\n📊 SUMMARY:`);
   console.log(`Total URLs checked: ${uniqueUrls.length}`);
   console.log(`Compatible: ${results.compatible.length}`);
   console.log(`Incompatible: ${results.incompatible.length}`);
   console.log(`Errors: ${results.errors.length}`);
-  
+
   if (results.compatible.length > 0) {
     console.log(`\n✅ COMPATIBLE SERVICES (${results.compatible.length}):`);
     console.log('='.repeat(40));
-    
+
     results.compatible.forEach((result, index) => {
       console.log(`${index + 1}. ${result.url}`);
       result.apis.forEach(api => {
         console.log(`   📡 API: ${api.endpoint}`);
-        console.log(`   🔧 Has Status: ${api.structure.hasStatus}, Components: ${api.structure.hasComponents}`);
+        console.log(
+          `   🔧 Has Status: ${api.structure.hasStatus}, Components: ${api.structure.hasComponents}`
+        );
         console.log(`   📝 Keys: ${api.structure.keys.join(', ')}`);
         console.log('');
       });
     });
   }
-  
+
   if (results.incompatible.length > 0) {
     console.log(`\n❌ INCOMPATIBLE SERVICES (${results.incompatible.length}):`);
     console.log('='.repeat(40));
@@ -198,7 +203,7 @@ function generateReport() {
       console.log(`${index + 1}. ${url}`);
     });
   }
-  
+
   if (results.errors.length > 0) {
     console.log(`\n⚠️  ERRORS (${results.errors.length}):`);
     console.log('='.repeat(40));
@@ -206,7 +211,7 @@ function generateReport() {
       console.log(`${index + 1}. ${error.url} - ${error.error}`);
     });
   }
-  
+
   // Save detailed results to JSON file
   const detailedResults = {
     timestamp: new Date().toISOString(),
@@ -214,16 +219,21 @@ function generateReport() {
       total: uniqueUrls.length,
       compatible: results.compatible.length,
       incompatible: results.incompatible.length,
-      errors: results.errors.length
+      errors: results.errors.length,
     },
     compatible: results.compatible,
     incompatible: results.incompatible,
-    errors: results.errors
+    errors: results.errors,
   };
-  
-  fs.writeFileSync('statuspage-api-compatibility-report.json', JSON.stringify(detailedResults, null, 2));
-  console.log(`\n📄 Detailed report saved to: statuspage-api-compatibility-report.json`);
-  
+
+  fs.writeFileSync(
+    'statuspage-api-compatibility-report.json',
+    JSON.stringify(detailedResults, null, 2)
+  );
+  console.log(
+    `\n📄 Detailed report saved to: statuspage-api-compatibility-report.json`
+  );
+
   // Also create a simple text file with just the compatible URLs
   const compatibleUrls = results.compatible.map(r => r.url).join('\n');
   fs.writeFileSync('compatible-statuspage-apis.txt', compatibleUrls);
