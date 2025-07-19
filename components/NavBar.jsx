@@ -248,6 +248,18 @@ export default function NavBar() {
         <ListItem disablePadding>
           <ListItemButton
             component={Link}
+            href="/profile"
+            onClick={toggleMobileDrawer}
+          >
+            <ListItemIcon>
+              <PersonIcon />
+            </ListItemIcon>
+            <ListItemText primary="Profile" />
+          </ListItemButton>
+        </ListItem>
+        <ListItem disablePadding>
+          <ListItemButton
+            component={Link}
             href="/settings"
             onClick={toggleMobileDrawer}
           >
@@ -437,24 +449,46 @@ export default function NavBar() {
                 <Box
                   sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 1 }}
                 >
-                  <Avatar
-                    src={session.user?.image}
-                    sx={{ width: 32, height: 32 }}
-                  >
-                    {session.user?.name?.charAt(0)}
-                  </Avatar>
-                  {!isMobile && (
-                    <Typography
-                      variant="body2"
+                  <Tooltip title="Profile">
+                    <Button
+                      component={Link}
+                      href="/profile"
+                      color="inherit"
                       sx={{
-                        maxWidth: 100,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
+                        textTransform: 'none',
+                        minWidth: 'auto',
+                        p: 0.5,
+                        borderRadius: 2,
+                        '&:hover': {
+                          backgroundColor: 'rgba(255,255,255,0.1)',
+                        },
                       }}
                     >
-                      {session.user?.name?.split(' ')[0]}
-                    </Typography>
-                  )}
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
+                        <Avatar
+                          src={session.user?.image}
+                          sx={{ width: 32, height: 32 }}
+                        >
+                          {session.user?.name?.charAt(0)}
+                        </Avatar>
+                        {!isMobile && (
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              maxWidth: 100,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              color: 'inherit',
+                            }}
+                          >
+                            {session.user?.name?.split(' ')[0]}
+                          </Typography>
+                        )}
+                      </Box>
+                    </Button>
+                  </Tooltip>
                   <Tooltip title="Sign out">
                     <IconButton
                       color="inherit"
