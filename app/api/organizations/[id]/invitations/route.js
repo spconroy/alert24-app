@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { SessionManager } from '@/lib/session-manager';
 
 import { SupabaseClient } from '@/lib/db-supabase';
 import { emailService } from '@/lib/email-service';
@@ -18,7 +18,8 @@ export const runtime = 'edge';
 // GET - List pending invitations for an organization
 export async function GET(req, { params }) {
   try {
-    const session = await auth();
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(request);
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -71,7 +72,8 @@ export async function GET(req, { params }) {
 // POST - Send new invitation
 export async function POST(req, { params }) {
   try {
-    const session = await auth();
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(request);
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

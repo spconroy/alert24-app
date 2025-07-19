@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@/lib/db-supabase';
-import { auth } from '@/auth';
+import { SessionManager } from '@/lib/session-manager';
 import { NextResponse } from 'next/server';
 
 const db = new SupabaseClient();
@@ -187,7 +187,8 @@ export async function GET(request) {
     }
 
     // Get all services - require authentication for this
-    const session = await auth();
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(request);
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

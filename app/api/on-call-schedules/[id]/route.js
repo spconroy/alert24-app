@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { SessionManager } from '@/lib/session-manager';
 import { SupabaseClient } from '@/lib/db-supabase';
 
 const db = new SupabaseClient();
@@ -8,7 +8,8 @@ export const runtime = 'edge';
 
 export async function GET(request, { params }) {
   try {
-    const session = await auth();
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(request);
 
     if (!session?.user?.email) {
       return NextResponse.json(
@@ -60,7 +61,8 @@ export async function GET(request, { params }) {
 
 export async function PATCH(request, { params }) {
   try {
-    const session = await auth();
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(request);
 
     if (!session?.user?.email) {
       return NextResponse.json(
@@ -128,7 +130,8 @@ export async function PATCH(request, { params }) {
 
 export async function PUT(request, { params }) {
   try {
-    const session = await auth();
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(request);
 
     if (!session?.user?.email) {
       return NextResponse.json(
@@ -196,7 +199,8 @@ export async function PUT(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
-    const session = await auth();
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(request);
 
     if (!session?.user?.email) {
       return NextResponse.json(
