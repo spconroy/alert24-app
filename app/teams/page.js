@@ -24,14 +24,14 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Alert
+  Alert,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   People as PeopleIcon,
-  PersonAdd as PersonAddIcon
+  PersonAdd as PersonAddIcon,
 } from '@mui/icons-material';
 
 export default function TeamsPage() {
@@ -44,7 +44,7 @@ export default function TeamsPage() {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    color: '#0066CC'
+    color: '#0066CC',
   });
 
   useEffect(() => {
@@ -56,11 +56,33 @@ export default function TeamsPage() {
   const fetchTeams = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/teams?organizationId=${currentOrganization.id}`);
-      if (!response.ok) throw new Error('Failed to fetch teams');
+      setError(null);
+
+      console.log(
+        '🔍 Fetching teams for organization:',
+        currentOrganization?.id
+      );
+
+      if (!currentOrganization?.id) {
+        throw new Error('No organization selected');
+      }
+
+      const response = await fetch(
+        `/api/teams?organizationId=${currentOrganization.id}`
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage =
+          errorData.details || errorData.error || `HTTP ${response.status}`;
+        throw new Error(`Failed to fetch teams: ${errorMessage}`);
+      }
+
       const data = await response.json();
+      console.log('✅ Teams fetched successfully:', data?.length || 0);
       setTeams(data);
     } catch (err) {
+      console.error('❌ Error fetching teams:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -73,12 +95,12 @@ export default function TeamsPage() {
     setDialogOpen(true);
   };
 
-  const handleEditTeam = (team) => {
+  const handleEditTeam = team => {
     setEditingTeam(team);
     setFormData({
       name: team.name,
       description: team.description || '',
-      color: team.color || '#0066CC'
+      color: team.color || '#0066CC',
     });
     setDialogOpen(true);
   };
@@ -87,7 +109,7 @@ export default function TeamsPage() {
     try {
       const teamData = {
         ...formData,
-        organizationId: currentOrganization.id
+        organizationId: currentOrganization.id,
       };
 
       const url = editingTeam ? `/api/teams/${editingTeam.id}` : '/api/teams';
@@ -96,7 +118,7 @@ export default function TeamsPage() {
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(teamData)
+        body: JSON.stringify(teamData),
       });
 
       if (!response.ok) throw new Error('Failed to save team');
@@ -108,12 +130,12 @@ export default function TeamsPage() {
     }
   };
 
-  const handleDeleteTeam = async (teamId) => {
+  const handleDeleteTeam = async teamId => {
     if (!confirm('Are you sure you want to delete this team?')) return;
 
     try {
       const response = await fetch(`/api/teams/${teamId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
       });
 
       if (!response.ok) throw new Error('Failed to delete team');
@@ -126,14 +148,23 @@ export default function TeamsPage() {
   if (!currentOrganization) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert severity="warning">Please select an organization to manage teams.</Alert>
+        <Alert severity="warning">
+          Please select an organization to manage teams.
+        </Alert>
       </Box>
     );
   }
 
   return (
     <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 3,
+        }}
+      >
         <Typography variant="h4" component="h1">
           Teams
         </Typography>
@@ -162,7 +193,8 @@ export default function TeamsPage() {
               No teams created yet
             </Typography>
             <Typography color="text.secondary" paragraph>
-              Create teams to organize your organization members and manage escalation policies.
+              Create teams to organize your organization members and manage
+              escalation policies.
             </Typography>
             <Button
               variant="contained"
@@ -174,27 +206,46 @@ export default function TeamsPage() {
           </CardContent>
         </Card>
       ) : (
-        <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))' }}>
-          {teams.map((team) => (
+        <Box
+          sx={{
+            display: 'grid',
+            gap: 2,
+            gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))',
+          }}
+        >
+          {teams.map(team => (
             <Card key={team.id}>
               <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    mb: 2,
+                  }}
+                >
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Box
                       sx={{
                         width: 12,
                         height: 12,
                         borderRadius: '50%',
-                        bgcolor: team.color || '#0066CC'
+                        bgcolor: team.color || '#0066CC',
                       }}
                     />
                     <Typography variant="h6">{team.name}</Typography>
                   </Box>
                   <Box>
-                    <IconButton size="small" onClick={() => handleEditTeam(team)}>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleEditTeam(team)}
+                    >
                       <EditIcon />
                     </IconButton>
-                    <IconButton size="small" onClick={() => handleDeleteTeam(team.id)}>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleDeleteTeam(team.id)}
+                    >
                       <DeleteIcon />
                     </IconButton>
                   </Box>
@@ -206,7 +257,13 @@ export default function TeamsPage() {
                   </Typography>
                 )}
 
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
                   <Chip
                     icon={<PeopleIcon />}
                     label={`${team.members?.length || 0} members`}
@@ -215,7 +272,9 @@ export default function TeamsPage() {
                   <Button
                     size="small"
                     startIcon={<PersonAddIcon />}
-                    onClick={() => {/* TODO: Open member management dialog */}}
+                    onClick={() => {
+                      /* TODO: Open member management dialog */
+                    }}
                   >
                     Manage Members
                   </Button>
@@ -223,14 +282,22 @@ export default function TeamsPage() {
 
                 {team.members && team.members.length > 0 && (
                   <Box sx={{ mt: 2 }}>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      gutterBottom
+                    >
                       Members:
                     </Typography>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                      {team.members.slice(0, 3).map((member) => (
+                      {team.members.slice(0, 3).map(member => (
                         <Chip
                           key={member.user_id}
-                          avatar={<Avatar sx={{ width: 24, height: 24 }}>{member.users?.name?.charAt(0)}</Avatar>}
+                          avatar={
+                            <Avatar sx={{ width: 24, height: 24 }}>
+                              {member.users?.name?.charAt(0)}
+                            </Avatar>
+                          }
                           label={member.users?.name}
                           size="small"
                         />
@@ -252,7 +319,12 @@ export default function TeamsPage() {
       )}
 
       {/* Create/Edit Team Dialog */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>
           {editingTeam ? 'Edit Team' : 'Create New Team'}
         </DialogTitle>
@@ -261,14 +333,16 @@ export default function TeamsPage() {
             <TextField
               label="Team Name"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={e => setFormData({ ...formData, name: e.target.value })}
               fullWidth
               required
             />
             <TextField
               label="Description"
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={e =>
+                setFormData({ ...formData, description: e.target.value })
+              }
               fullWidth
               multiline
               rows={3}
@@ -278,7 +352,9 @@ export default function TeamsPage() {
                 label="Color"
                 type="color"
                 value={formData.color}
-                onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, color: e.target.value })
+                }
                 sx={{ width: 100 }}
               />
               <Typography variant="body2" color="text.secondary">
