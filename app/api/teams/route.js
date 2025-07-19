@@ -3,8 +3,6 @@ import { SessionManager } from '@/lib/session-manager';
 import { SupabaseClient } from '@/lib/db-supabase';
 
 const db = new SupabaseClient();
-const adminDb = new SupabaseClient();
-adminDb.client = adminDb.adminClient; // Use admin client to bypass RLS
 
 export const runtime = 'edge';
 
@@ -64,14 +62,15 @@ export async function GET(request) {
 
     console.log('✅ User has access to organization, fetching teams...');
 
-    const teams = await adminDb.getTeamGroups(organizationId);
+    // Use regular client since we have RLS policies in place
+    const teams = await db.getTeamGroups(organizationId);
     console.log('👥 Teams found:', teams?.length || 0);
 
     // Get memberships for each team
     const teamsWithMembers = await Promise.all(
       teams.map(async team => {
         try {
-          const memberships = await adminDb.getTeamMemberships(team.id);
+          const memberships = await db.getTeamMemberships(team.id);
           console.log(
             `👤 Team "${team.name}" has ${memberships?.length || 0} members`
           );
@@ -105,53 +104,55 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    console.log('🔍 Create team API called');
+
     const sessionManager = new SessionManager();
     const session = await sessionManager.getSessionFromRequest(request);
     if (!session || !session.user?.email) {
+      console.log('❌ No valid session found for create team API');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user by email
     const user = await db.getUserByEmail(session.user.email);
     if (!user) {
+      console.log('❌ User not found in database:', session.user.email);
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     const body = await request.json();
     const { name, description, color, organizationId, teamLeadId } = body;
 
-    if (!name || !organizationId) {
-      return NextResponse.json(
-        { error: 'Name and organization ID required' },
-        { status: 400 }
-      );
-    }
+    console.log('🏗️ Creating team:', { name, organizationId });
 
     // Verify user has access to this organization
     const userOrgs = await db.getOrganizations(user.id);
     const hasAccess = userOrgs.some(org => org.id === organizationId);
     if (!hasAccess) {
+      console.log(
+        '❌ User does not have access to organization:',
+        organizationId
+      );
       return NextResponse.json(
         { error: 'Access denied to organization' },
         { status: 403 }
       );
     }
 
-    const teamData = {
+    // Create the team
+    const newTeam = await db.createTeamGroup({
       name,
       description,
       color: color || '#0066CC',
-      organization_id: organizationId,
-      team_lead_id: teamLeadId || null,
-      is_active: true,
-    };
+      organizationId,
+      teamLeadId,
+    });
 
-    const team = await adminDb.createTeamGroup(teamData);
-    return NextResponse.json(team, { status: 201 });
+    console.log('✅ Team created successfully:', newTeam);
+    return NextResponse.json(newTeam);
   } catch (error) {
-    console.error('Error creating team:', error);
+    console.error('❌ Error creating team:', error);
     return NextResponse.json(
-      { error: 'Failed to create team' },
+      { error: 'Failed to create team', details: error.message },
       { status: 500 }
     );
   }

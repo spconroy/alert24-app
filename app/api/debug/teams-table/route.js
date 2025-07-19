@@ -7,70 +7,121 @@ export const runtime = 'edge';
 
 export async function GET(request) {
   try {
-    console.log('🔍 Debug: Checking team_groups table');
+    console.log('🔍 Debug: Checking team_groups and team_memberships tables');
 
-    // First, try to check if the table exists
-    const { data: tables, error: tablesError } = await db.client
-      .from('information_schema.tables')
-      .select('table_name')
-      .eq('table_schema', 'alert24_schema')
-      .eq('table_name', 'team_groups');
+    const results = {
+      success: true,
+      timestamp: new Date().toISOString(),
+      tests: [],
+    };
 
-    if (tablesError) {
-      console.log('⚠️ Error checking table existence:', tablesError);
-    } else {
-      console.log('📊 Table existence check result:', tables);
-    }
+    // Test 1: Query team_groups table
+    try {
+      const { data: teamGroups, error: teamError } = await db.client
+        .from('team_groups')
+        .select('*')
+        .limit(5);
 
-    // Try to query the team_groups table directly
-    const { data: teamGroups, error: teamError } = await db.client
-      .from('team_groups')
-      .select('*')
-      .limit(5);
+      results.tests.push({
+        test: 'team_groups_query',
+        success: !teamError,
+        error: teamError?.message,
+        errorCode: teamError?.code,
+        count: teamGroups?.length || 0,
+        data: teamGroups || [],
+      });
 
-    if (teamError) {
-      console.log('❌ Error querying team_groups table:', teamError);
-      return NextResponse.json({
+      console.log('📊 team_groups query:', teamGroups?.length || 0, 'records');
+    } catch (error) {
+      results.tests.push({
+        test: 'team_groups_query',
         success: false,
-        tableExists: false,
-        error: teamError.message,
-        errorCode: teamError.code,
-        errorDetails: teamError.details,
+        error: error.message,
+        count: 0,
       });
     }
 
-    console.log(
-      '✅ team_groups table query successful, found:',
-      teamGroups?.length || 0
-    );
+    // Test 2: Query team_memberships table
+    try {
+      const { data: memberships, error: memberError } = await db.client
+        .from('team_memberships')
+        .select('*')
+        .limit(5);
 
-    // Also check team_memberships table
-    const { data: memberships, error: memberError } = await db.client
-      .from('team_memberships')
-      .select('*')
-      .limit(5);
+      results.tests.push({
+        test: 'team_memberships_query',
+        success: !memberError,
+        error: memberError?.message,
+        errorCode: memberError?.code,
+        count: memberships?.length || 0,
+        data: memberships || [],
+      });
 
-    if (memberError) {
-      console.log('⚠️ Error querying team_memberships table:', memberError);
+      console.log(
+        '📊 team_memberships query:',
+        memberships?.length || 0,
+        'records'
+      );
+    } catch (error) {
+      results.tests.push({
+        test: 'team_memberships_query',
+        success: false,
+        error: error.message,
+        count: 0,
+      });
     }
 
-    // Try to get schema information
-    const { data: columns, error: columnError } = await db.client
-      .from('information_schema.columns')
-      .select('column_name, data_type, is_nullable')
-      .eq('table_schema', 'alert24_schema')
-      .eq('table_name', 'team_groups');
+    // Test 3: Try the getTeamGroups method directly
+    try {
+      const teamGroupsMethod = await db.getTeamGroups('test-org-id');
+      results.tests.push({
+        test: 'getTeamGroups_method',
+        success: true,
+        count: teamGroupsMethod?.length || 0,
+        data: teamGroupsMethod || [],
+      });
 
-    return NextResponse.json({
-      success: true,
-      tableExists: true,
-      teamGroupsCount: teamGroups?.length || 0,
-      teamGroups: teamGroups || [],
-      teamMembershipsCount: memberships?.length || 0,
-      teamMemberships: memberships || [],
-      tableSchema: columns || [],
-      schemaError: columnError?.message,
+      console.log(
+        '📊 getTeamGroups method:',
+        teamGroupsMethod?.length || 0,
+        'records'
+      );
+    } catch (error) {
+      results.tests.push({
+        test: 'getTeamGroups_method',
+        success: false,
+        error: error.message,
+        count: 0,
+      });
+    }
+
+    // Test 4: Check if client is properly initialized
+    results.tests.push({
+      test: 'client_initialization',
+      success: !!db.client,
+      error: db.client ? null : 'Client is null',
+      info: {
+        clientExists: !!db.client,
+        clientType: typeof db.client,
+      },
     });
+
+    // Summary
+    const successfulTests = results.tests.filter(t => t.success).length;
+    const totalTests = results.tests.length;
+
+    results.summary = {
+      totalTests,
+      successfulTests,
+      failedTests: totalTests - successfulTests,
+      allTestsPassed: successfulTests === totalTests,
+    };
+
+    console.log(
+      `✅ Debug complete: ${successfulTests}/${totalTests} tests passed`
+    );
+
+    return NextResponse.json(results);
   } catch (error) {
     console.error('❌ Debug teams table error:', error);
     return NextResponse.json(
@@ -78,6 +129,7 @@ export async function GET(request) {
         success: false,
         error: error.message,
         stack: error.stack,
+        timestamp: new Date().toISOString(),
       },
       { status: 500 }
     );
