@@ -36,7 +36,7 @@ import { useOrganization } from '@/contexts/OrganizationContext';
 
 export default function CreateEscalationPolicyPage() {
   const router = useRouter();
-  const { session } = useOrganization();
+  const { session, selectedOrganization } = useOrganization();
 
   const [formData, setFormData] = useState({
     organization_id: '',
@@ -56,22 +56,32 @@ export default function CreateEscalationPolicyPage() {
 
   const [organizations, setOrganizations] = useState([]);
   const [organizationMembers, setOrganizationMembers] = useState([]);
+  const [onCallSchedules, setOnCallSchedules] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
-    if (session) {
+    if (session && selectedOrganization?.id) {
+      // Use the selected organization from navbar
+      setFormData(prev => ({
+        ...prev,
+        organization_id: selectedOrganization.id,
+      }));
+      fetchOrganizationMembers(selectedOrganization.id);
+      fetchOnCallSchedules(selectedOrganization.id);
+    } else if (session) {
       fetchOrganizations();
     }
-  }, [session]);
+  }, [session, selectedOrganization]);
 
   useEffect(() => {
-    if (formData.organization_id) {
+    if (formData.organization_id && !selectedOrganization?.id) {
       fetchOrganizationMembers(formData.organization_id);
+      fetchOnCallSchedules(formData.organization_id);
     }
-  }, [formData.organization_id]);
+  }, [formData.organization_id, selectedOrganization]);
 
   const fetchOrganizations = async () => {
     try {
@@ -102,6 +112,18 @@ export default function CreateEscalationPolicyPage() {
       }
     } catch (err) {
       console.error('Error fetching organization members:', err);
+    }
+  };
+
+  const fetchOnCallSchedules = async orgId => {
+    try {
+      const response = await fetch(`/api/on-call-schedules?organization_id=${orgId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setOnCallSchedules(data.schedules || []);
+      }
+    } catch (err) {
+      console.error('Error fetching on-call schedules:', err);
     }
   };
 
@@ -298,6 +320,7 @@ export default function CreateEscalationPolicyPage() {
                       onChange={e =>
                         handleInputChange('organization_id', e.target.value)
                       }
+                      disabled={!!selectedOrganization?.id}
                     >
                       {organizations.map(org => (
                         <MenuItem key={org.id} value={org.id}>
@@ -308,6 +331,11 @@ export default function CreateEscalationPolicyPage() {
                     {formErrors.organization_id && (
                       <FormHelperText>
                         {formErrors.organization_id}
+                      </FormHelperText>
+                    )}
+                    {selectedOrganization?.id && (
+                      <FormHelperText>
+                        Using organization selected in navigation: {selectedOrganization.name}
                       </FormHelperText>
                     )}
                   </FormControl>
@@ -526,11 +554,12 @@ export default function CreateEscalationPolicyPage() {
                                     Engineering Team
                                   </MenuItem>
                                 )}
-                                {rule.target_type === 'on_call' && (
-                                  <MenuItem value="current_oncall">
-                                    Current On-Call
-                                  </MenuItem>
-                                )}
+                                {rule.target_type === 'on_call' &&
+                                  onCallSchedules.map(schedule => (
+                                    <MenuItem key={schedule.id} value={schedule.id}>
+                                      {schedule.name}
+                                    </MenuItem>
+                                  ))}
                               </Select>
                               {formErrors[`rule_${index}_target`] && (
                                 <FormHelperText>
@@ -563,7 +592,7 @@ export default function CreateEscalationPolicyPage() {
                                 {rule.target_type === 'team' &&
                                   'Engineering Team'}
                                 {rule.target_type === 'on_call' &&
-                                  'Current On-Call Person'}
+                                  (onCallSchedules.find(s => s.id === rule.target_id)?.name || 'Selected On-Call Schedule')}
                                 {!rule.target_id && 'selected target'}
                               </Typography>
                             </Box>

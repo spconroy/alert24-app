@@ -409,11 +409,12 @@ export default function EscalationPolicyForm({
                         onChange={(newTargets) => 
                           updateEscalationRule(ruleIndex, 'targets', newTargets)
                         }
-                        label="Select users or teams to notify"
-                        placeholder="Search for users or teams to escalate to..."
+                        label="Select users, teams, or on-call schedules to notify"
+                        placeholder="Search for users, teams, or on-call schedules to escalate to..."
                         multiple={true}
                         showTeams={true}
                         showUsers={true}
+                        showOnCallSchedules={true}
                       />
                     </CardContent>
                   </Card>

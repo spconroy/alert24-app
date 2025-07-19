@@ -19,7 +19,8 @@ import {
 import {
   Person as PersonIcon,
   People as PeopleIcon,
-  Group as GroupIcon
+  Group as GroupIcon,
+  Schedule as ScheduleIcon
 } from '@mui/icons-material';
 
 export default function UserTeamSelector({
@@ -30,12 +31,13 @@ export default function UserTeamSelector({
   multiple = true,
   showTeams = true,
   showUsers = true,
+  showOnCallSchedules = false,
   placeholder = 'Search for users or teams...'
 }) {
   const [options, setOptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('all'); // 'all', 'users', 'teams'
+  const [filterType, setFilterType] = useState('all'); // 'all', 'users', 'teams', 'schedules'
 
   useEffect(() => {
     if (organizationId) {
@@ -80,6 +82,25 @@ export default function UserTeamSelector({
                 color: team.color,
                 memberCount: team.members?.length || 0,
                 data: team
+              }))
+            )
+        );
+      }
+
+      if ((filterType === 'all' || filterType === 'schedules') && showOnCallSchedules) {
+        promises.push(
+          fetch(`/api/on-call-schedules?organization_id=${organizationId}`)
+            .then(res => res.json())
+            .then(data => 
+              (data.schedules || []).map(schedule => ({
+                id: schedule.id,
+                type: 'schedule',
+                label: schedule.name,
+                description: schedule.description || `${schedule.members?.length || 0} members in rotation`,
+                color: '#FF9800', // Orange color for schedules
+                memberCount: schedule.members?.length || 0,
+                isActive: schedule.is_active,
+                data: schedule
               }))
             )
         );
@@ -136,7 +157,11 @@ export default function UserTeamSelector({
             justifyContent: 'center'
           }}
         >
-          <GroupIcon sx={{ color: 'white', fontSize: 16 }} />
+          {option.type === 'schedule' ? (
+            <ScheduleIcon sx={{ color: 'white', fontSize: 16 }} />
+          ) : (
+            <GroupIcon sx={{ color: 'white', fontSize: 16 }} />
+          )}
         </Box>
       )}
       
@@ -173,6 +198,25 @@ export default function UserTeamSelector({
               variant="outlined"
             />
           )}
+          
+          {option.type === 'schedule' && (
+            <>
+              <Chip
+                icon={<ScheduleIcon />}
+                label={`${option.memberCount} members`}
+                size="small"
+                variant="outlined"
+              />
+              {option.isActive && (
+                <Chip
+                  label="Active"
+                  size="small"
+                  color="success"
+                  sx={{ fontSize: '0.7rem' }}
+                />
+              )}
+            </>
+          )}
         </Box>
         
         {option.type === 'user' && option.email && (
@@ -182,6 +226,12 @@ export default function UserTeamSelector({
         )}
         
         {option.type === 'team' && option.description && (
+          <Typography variant="caption" color="text.secondary">
+            {option.description}
+          </Typography>
+        )}
+        
+        {option.type === 'schedule' && option.description && (
           <Typography variant="caption" color="text.secondary">
             {option.description}
           </Typography>
@@ -212,7 +262,11 @@ export default function UserTeamSelector({
                 justifyContent: 'center'
               }}
             >
-              <GroupIcon sx={{ color: 'white', fontSize: 12 }} />
+              {option.type === 'schedule' ? (
+                <ScheduleIcon sx={{ color: 'white', fontSize: 12 }} />
+              ) : (
+                <GroupIcon sx={{ color: 'white', fontSize: 12 }} />
+              )}
             </Box>
           )
         }
@@ -223,7 +277,7 @@ export default function UserTeamSelector({
 
   return (
     <Box>
-      {(showUsers && showTeams) && (
+      {(showUsers && showTeams) || (showUsers && showOnCallSchedules) || (showTeams && showOnCallSchedules) ? (
         <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
           <FormControl size="small" sx={{ minWidth: 120 }}>
             <InputLabel>Filter</InputLabel>
@@ -233,12 +287,13 @@ export default function UserTeamSelector({
               label="Filter"
             >
               <MenuItem value="all">All</MenuItem>
-              <MenuItem value="users">Users Only</MenuItem>
-              <MenuItem value="teams">Teams Only</MenuItem>
+              {showUsers && <MenuItem value="users">Users Only</MenuItem>}
+              {showTeams && <MenuItem value="teams">Teams Only</MenuItem>}
+              {showOnCallSchedules && <MenuItem value="schedules">On-Call Schedules Only</MenuItem>}
             </Select>
           </FormControl>
         </Box>
-      )}
+      ) : null}
 
       <Autocomplete
         multiple={multiple}
@@ -262,13 +317,18 @@ export default function UserTeamSelector({
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
                 <PersonIcon sx={{ fontSize: 14 }} />
                 <Typography variant="caption">
-                  Select individual users or entire teams for notifications
+                  Select individual users{showTeams ? ', entire teams' : ''}{showOnCallSchedules ? ', or on-call schedules' : ''} for notifications
                 </Typography>
               </Box>
             }
           />
         )}
-        groupBy={(option) => option.type === 'user' ? 'Users' : 'Teams'}
+        groupBy={(option) => {
+          if (option.type === 'user') return 'Users';
+          if (option.type === 'team') return 'Teams';
+          if (option.type === 'schedule') return 'On-Call Schedules';
+          return 'Other';
+        }}
         isOptionEqualToValue={(option, value) => option.id === value.id && option.type === value.type}
         sx={{ width: '100%' }}
       />
@@ -299,7 +359,11 @@ export default function UserTeamSelector({
                         justifyContent: 'center'
                       }}
                     >
-                      <GroupIcon sx={{ color: 'white', fontSize: 12 }} />
+                      {item.type === 'schedule' ? (
+                        <ScheduleIcon sx={{ color: 'white', fontSize: 12 }} />
+                      ) : (
+                        <GroupIcon sx={{ color: 'white', fontSize: 12 }} />
+                      )}
                     </Box>
                   )
                 }
