@@ -47,8 +47,7 @@ function getCheckData(check) {
 
 // GET - Get associations for monitoring checks
 export const GET = withErrorHandler(async request => {
-  const sessionManager = new SessionManager(); 
-  const session = await sessionManager.getSessionFromRequest(request);
+  const session = await auth();
   const user = await Auth.requireUser(db, session.user.email);
 
   const { searchParams } = new URL(request.url);
@@ -133,8 +132,7 @@ export const GET = withErrorHandler(async request => {
 
 // POST - Create or update association between monitoring check and service
 export const POST = withErrorHandler(async request => {
-  const sessionManager = new SessionManager(); 
-  const session = await sessionManager.getSessionFromRequest(request);
+  const session = await auth();
   const user = await Auth.requireUser(db, session.user.email);
 
   const { monitoringCheckId, serviceId, failureStatus, organizationId } =
@@ -238,8 +236,7 @@ export const POST = withErrorHandler(async request => {
 
 // DELETE - Remove association between monitoring check and service
 export const DELETE = withErrorHandler(async request => {
-  const sessionManager = new SessionManager(); 
-  const session = await sessionManager.getSessionFromRequest(request);
+  const session = await auth();
   const user = await Auth.requireUser(db, session.user.email);
 
   const { searchParams } = new URL(request.url);

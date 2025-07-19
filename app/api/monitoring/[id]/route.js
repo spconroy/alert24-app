@@ -72,7 +72,8 @@ export async function GET(req, { params }) {
 
 export async function PATCH(req, { params }) {
   try {
-    const session = await auth();
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(req);
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
