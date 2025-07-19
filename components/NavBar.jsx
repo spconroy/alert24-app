@@ -290,9 +290,13 @@ export default function NavBar() {
                 endIcon={<KeyboardArrowDownIcon />}
                 onClick={handleIncidentMenuOpen}
                 sx={{
-                  backgroundColor: pathname.startsWith('/incidents')
-                    ? 'rgba(255,255,255,0.1)'
-                    : 'transparent',
+                  backgroundColor:
+                    pathname.startsWith('/incidents') ||
+                    pathname.startsWith('/on-call') ||
+                    pathname.startsWith('/escalation-policies') ||
+                    pathname.startsWith('/teams')
+                      ? 'rgba(255,255,255,0.1)'
+                      : 'transparent',
                   '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
                 }}
               >
@@ -344,6 +348,16 @@ export default function NavBar() {
                     <PeopleIcon fontSize="small" />
                   </ListItemIcon>
                   <ListItemText>Teams</ListItemText>
+                </MenuItem>
+                <MenuItem
+                  component={Link}
+                  href="/on-call"
+                  onClick={handleMenuClose}
+                >
+                  <ListItemIcon>
+                    <PeopleIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>On-Call Schedules</ListItemText>
                 </MenuItem>
               </Menu>
 
@@ -400,22 +414,6 @@ export default function NavBar() {
                   <ListItemText>Status Pages</ListItemText>
                 </MenuItem>
               </Menu>
-
-              {/* On-Call */}
-              <Button
-                component={Link}
-                href="/on-call"
-                color="inherit"
-                startIcon={<PeopleIcon />}
-                sx={{
-                  backgroundColor: pathname.startsWith('/on-call')
-                    ? 'rgba(255,255,255,0.1)'
-                    : 'transparent',
-                  '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
-                }}
-              >
-                On-Call
-              </Button>
 
               {/* Analytics */}
               <Button
