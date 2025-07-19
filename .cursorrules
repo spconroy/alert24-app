@@ -128,3 +128,5 @@ when running cli commands make sure you properly escape passwords
 After any major feature is completed, do a git commit and a git push
 
 Make sure to document things as you go. And update the help page when the user UI changes
+
+Always use the edge runtime. Otherwise deployments to cloudflare will fail.
