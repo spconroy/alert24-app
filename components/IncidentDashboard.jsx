@@ -25,6 +25,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import MonitorIcon from '@mui/icons-material/Monitor';
 import PeopleIcon from '@mui/icons-material/People';
+import InfoIcon from '@mui/icons-material/Info';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import NoSSR from './NoSSR';
 
@@ -1012,10 +1013,79 @@ export default function IncidentDashboard() {
           {/* Quick Actions */}
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Quick Actions
-              </Typography>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mb: 1,
+                }}
+              >
+                <Typography variant="h6">Quick Actions</Typography>
+                {/* Setup progress indicator */}
+                <Tooltip title="Setup completion progress">
+                  <Chip
+                    label={`${Math.round((((monitoringStats.total > 0 ? 1 : 0) + (currentlyOnCall.length > 0 ? 1 : 0)) / 2) * 100)}%`}
+                    color={
+                      (monitoringStats.total > 0 ? 1 : 0) +
+                        (currentlyOnCall.length > 0 ? 1 : 0) ===
+                      2
+                        ? 'success'
+                        : 'primary'
+                    }
+                    size="small"
+                  />
+                </Tooltip>
+              </Box>
               <Divider sx={{ mb: 2 }} />
+
+              {/* Setup Progress Bar */}
+              <Box sx={{ mb: 3 }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  gutterBottom
+                >
+                  Platform Setup Progress
+                </Typography>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    mt: 0.5,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      flex: 1,
+                      height: 6,
+                      backgroundColor: 'grey.200',
+                      borderRadius: 3,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        height: '100%',
+                        width: `${(((monitoringStats.total > 0 ? 1 : 0) + (currentlyOnCall.length > 0 ? 1 : 0)) / 2) * 100}%`,
+                        backgroundColor:
+                          (monitoringStats.total > 0 ? 1 : 0) +
+                            (currentlyOnCall.length > 0 ? 1 : 0) ===
+                          2
+                            ? '#4caf50'
+                            : '#2196f3',
+                        transition: 'width 0.3s ease',
+                      }}
+                    />
+                  </Box>
+                  <Typography variant="caption" color="text.secondary">
+                    {(monitoringStats.total > 0 ? 1 : 0) +
+                      (currentlyOnCall.length > 0 ? 1 : 0)}
+                    /2
+                  </Typography>
+                </Box>
+              </Box>
 
               {/* Initial Setup Section */}
               {(monitoringStats.total === 0 ||
@@ -1024,36 +1094,155 @@ export default function IncidentDashboard() {
                   <Typography
                     variant="subtitle2"
                     color="primary"
-                    sx={{ mb: 1, fontWeight: 600 }}
+                    sx={{
+                      mb: 2,
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                    }}
                   >
-                    🚀 Initial Setup
+                    🚀 Essential Setup
+                    <Typography variant="caption" color="text.secondary">
+                      (
+                      {2 -
+                        ((monitoringStats.total > 0 ? 1 : 0) +
+                          (currentlyOnCall.length > 0 ? 1 : 0))}{' '}
+                      remaining)
+                    </Typography>
                   </Typography>
-                  <Box display="flex" flexDirection="column" gap={1}>
+                  <Box display="flex" flexDirection="column" gap={2}>
                     {monitoringStats.total === 0 && (
-                      <Button
-                        component={Link}
-                        href="/monitoring/new"
-                        variant="contained"
-                        startIcon={<MonitorIcon />}
-                        fullWidth
-                        sx={{ justifyContent: 'flex-start' }}
+                      <Box
+                        sx={{
+                          p: 2,
+                          border: '2px solid',
+                          borderColor: 'primary.main',
+                          borderRadius: 2,
+                          backgroundColor: 'primary.50',
+                        }}
                       >
-                        Add Your First Monitoring Check
-                      </Button>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'flex-start',
+                            mb: 1,
+                          }}
+                        >
+                          <Typography
+                            variant="subtitle2"
+                            sx={{ fontWeight: 600 }}
+                          >
+                            Add Monitoring
+                          </Typography>
+                          <Chip
+                            label="~3 min"
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                          />
+                        </Box>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: 'block', mb: 2 }}
+                        >
+                          Monitor your services to track uptime and get alerts
+                          when issues occur
+                        </Typography>
+                        <Button
+                          component={Link}
+                          href="/monitoring/new"
+                          variant="contained"
+                          startIcon={<MonitorIcon />}
+                          fullWidth
+                          size="small"
+                        >
+                          Add Your First Monitor
+                        </Button>
+                      </Box>
                     )}
                     {currentlyOnCall.length === 0 && (
-                      <Button
-                        component={Link}
-                        href="/on-call/new"
-                        variant="contained"
-                        startIcon={<PeopleIcon />}
-                        fullWidth
-                        sx={{ justifyContent: 'flex-start' }}
+                      <Box
+                        sx={{
+                          p: 2,
+                          border: '2px solid',
+                          borderColor: 'warning.main',
+                          borderRadius: 2,
+                          backgroundColor: 'warning.50',
+                        }}
                       >
-                        Set Up On-Call Schedule
-                      </Button>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'flex-start',
+                            mb: 1,
+                          }}
+                        >
+                          <Typography
+                            variant="subtitle2"
+                            sx={{ fontWeight: 600 }}
+                          >
+                            On-Call Schedule
+                          </Typography>
+                          <Chip
+                            label="~5 min"
+                            size="small"
+                            color="warning"
+                            variant="outlined"
+                          />
+                        </Box>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: 'block', mb: 2 }}
+                        >
+                          Ensure someone is always available to handle incidents
+                          24/7
+                        </Typography>
+                        <Button
+                          component={Link}
+                          href="/on-call/new"
+                          variant="contained"
+                          color="warning"
+                          startIcon={<PeopleIcon />}
+                          fullWidth
+                          size="small"
+                        >
+                          Set Up On-Call Team
+                        </Button>
+                      </Box>
                     )}
                   </Box>
+                </Box>
+              )}
+
+              {/* Completed Setup Celebration */}
+              {monitoringStats.total > 0 && currentlyOnCall.length > 0 && (
+                <Box
+                  sx={{
+                    mb: 3,
+                    p: 2,
+                    backgroundColor: 'success.50',
+                    borderRadius: 2,
+                    border: '1px solid',
+                    borderColor: 'success.200',
+                    textAlign: 'center',
+                  }}
+                >
+                  <Typography
+                    variant="subtitle2"
+                    color="success.main"
+                    sx={{ fontWeight: 600, mb: 1 }}
+                  >
+                    🎉 Setup Complete!
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Your incident management system is ready. You can now create
+                    incidents, manage escalations, and monitor your services.
+                  </Typography>
                 </Box>
               )}
 
@@ -1062,43 +1251,93 @@ export default function IncidentDashboard() {
                 <Typography
                   variant="subtitle2"
                   color="text.secondary"
-                  sx={{ mb: 1, fontWeight: 600 }}
+                  sx={{
+                    mb: 2,
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                  }}
                 >
                   ⚙️ Advanced Configuration
+                  <Tooltip title="Optional features to enhance your incident management">
+                    <InfoIcon fontSize="small" color="action" />
+                  </Tooltip>
                 </Typography>
-                <Box display="flex" flexDirection="column" gap={1}>
-                  <Button
-                    component={Link}
-                    href="/escalation-policies/new"
-                    variant="outlined"
-                    startIcon={<NotificationsIcon />}
-                    fullWidth
-                    sx={{ justifyContent: 'flex-start' }}
-                  >
-                    Create Escalation Policy
-                  </Button>
-                  <Button
-                    component={Link}
-                    href="/organizations/new"
-                    variant="outlined"
-                    startIcon={<AddIcon />}
-                    fullWidth
-                    sx={{ justifyContent: 'flex-start' }}
-                  >
-                    Add Organization
-                  </Button>
-                  {monitoringStats.total > 0 && (
-                    <Button
-                      component={Link}
-                      href="/monitoring/new"
-                      variant="outlined"
-                      startIcon={<MonitorIcon />}
-                      fullWidth
-                      sx={{ justifyContent: 'flex-start' }}
+                <Box display="flex" flexDirection="column" gap={1.5}>
+                  <Box>
+                    <Tooltip
+                      title="Create rules for automatic incident escalation when they're not resolved quickly enough"
+                      placement="left"
                     >
-                      Add More Monitoring
-                    </Button>
+                      <Button
+                        component={Link}
+                        href="/escalation-policies/new"
+                        variant="outlined"
+                        startIcon={<NotificationsIcon />}
+                        fullWidth
+                        sx={{ justifyContent: 'space-between' }}
+                        endIcon={
+                          <Typography variant="caption" color="text.secondary">
+                            ~4 min
+                          </Typography>
+                        }
+                      >
+                        Create Escalation Policy
+                      </Button>
+                    </Tooltip>
+                  </Box>
+
+                  {monitoringStats.total > 0 && (
+                    <Box>
+                      <Tooltip
+                        title="Add additional monitoring checks for more comprehensive coverage"
+                        placement="left"
+                      >
+                        <Button
+                          component={Link}
+                          href="/monitoring/new"
+                          variant="outlined"
+                          startIcon={<MonitorIcon />}
+                          fullWidth
+                          sx={{ justifyContent: 'space-between' }}
+                          endIcon={
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              ~3 min
+                            </Typography>
+                          }
+                        >
+                          Add More Monitoring
+                        </Button>
+                      </Tooltip>
+                    </Box>
                   )}
+
+                  <Box>
+                    <Tooltip
+                      title="Invite team members or create additional organizations for multi-tenant management"
+                      placement="left"
+                    >
+                      <Button
+                        component={Link}
+                        href="/organizations/new"
+                        variant="outlined"
+                        startIcon={<AddIcon />}
+                        fullWidth
+                        sx={{ justifyContent: 'space-between' }}
+                        endIcon={
+                          <Typography variant="caption" color="text.secondary">
+                            ~2 min
+                          </Typography>
+                        }
+                      >
+                        Add Organization
+                      </Button>
+                    </Tooltip>
+                  </Box>
                 </Box>
               </Box>
             </CardContent>
