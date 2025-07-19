@@ -1494,50 +1494,180 @@ export default function IncidentDashboard() {
 
                 {/* Setup Progress Bar */}
                 <Box sx={{ mb: 3 }}>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    gutterBottom
-                  >
-                    Platform Setup Progress
-                  </Typography>
                   <Box
                     sx={{
                       display: 'flex',
                       alignItems: 'center',
                       gap: 1,
-                      mt: 0.5,
+                      mb: 1,
                     }}
                   >
-                    <Box
-                      sx={{
-                        flex: 1,
-                        height: 6,
-                        backgroundColor: 'grey.200',
-                        borderRadius: 3,
-                        overflow: 'hidden',
-                      }}
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      gutterBottom
                     >
+                      Platform Setup Progress
+                    </Typography>
+                    <Tooltip
+                      title={
+                        <Box>
+                          <Typography
+                            variant="subtitle2"
+                            gutterBottom
+                            sx={{ fontWeight: 600 }}
+                          >
+                            Setup Checklist
+                          </Typography>
+                          {/* Essential Steps */}
+                          <Typography
+                            variant="body2"
+                            sx={{ mb: 1, fontWeight: 500 }}
+                          >
+                            Essential Foundation:
+                          </Typography>
+                          <Box sx={{ ml: 1, mb: 1 }}>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1,
+                              }}
+                            >
+                              {monitoringStats.total > 0 ? '✅' : '⏳'}
+                              <span
+                                style={{
+                                  color:
+                                    monitoringStats.total > 0
+                                      ? '#4caf50'
+                                      : '#ff9800',
+                                }}
+                              >
+                                1. Add Monitoring
+                              </span>
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1,
+                              }}
+                            >
+                              {currentlyOnCall.length > 0 ? '✅' : '⏳'}
+                              <span
+                                style={{
+                                  color:
+                                    currentlyOnCall.length > 0
+                                      ? '#4caf50'
+                                      : '#ff9800',
+                                }}
+                              >
+                                2. Set Up On-Call
+                              </span>
+                            </Typography>
+                          </Box>
+                          {/* Advanced Step */}
+                          {monitoringStats.total > 0 &&
+                            currentlyOnCall.length > 0 && (
+                              <>
+                                <Typography
+                                  variant="body2"
+                                  sx={{ mb: 1, mt: 1, fontWeight: 500 }}
+                                >
+                                  Advanced Configuration:
+                                </Typography>
+                                <Box sx={{ ml: 1 }}>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: 1,
+                                    }}
+                                  >
+                                    ⏳{' '}
+                                    <span style={{ color: '#2196f3' }}>
+                                      3. Create Escalation Policy
+                                    </span>
+                                  </Typography>
+                                </Box>
+                              </>
+                            )}
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ mt: 1, display: 'block' }}
+                          >
+                            Complete essential steps for effective incident
+                            management
+                          </Typography>
+                        </Box>
+                      }
+                      arrow
+                      placement="top"
+                    >
+                      <InfoIcon
+                        fontSize="small"
+                        color="action"
+                        sx={{ cursor: 'help', opacity: 0.7 }}
+                      />
+                    </Tooltip>
+                  </Box>
+
+                  {/* Progress calculation with 3rd milestone */}
+                  {(() => {
+                    const essentialComplete =
+                      (monitoringStats.total > 0 ? 1 : 0) +
+                      (currentlyOnCall.length > 0 ? 1 : 0);
+                    const totalSteps = essentialComplete === 2 ? 3 : 2; // Add 3rd step when essential complete
+                    const progressPercent =
+                      (essentialComplete / totalSteps) * 100;
+
+                    return (
                       <Box
                         sx={{
-                          height: '100%',
-                          width: `${(((monitoringStats.total > 0 ? 1 : 0) + (currentlyOnCall.length > 0 ? 1 : 0)) / 2) * 100}%`,
-                          backgroundColor:
-                            (monitoringStats.total > 0 ? 1 : 0) +
-                              (currentlyOnCall.length > 0 ? 1 : 0) ===
-                            2
-                              ? '#4caf50'
-                              : '#2196f3',
-                          transition: 'width 0.3s ease',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
+                          mt: 0.5,
                         }}
-                      />
-                    </Box>
-                    <Typography variant="caption" color="text.secondary">
-                      {(monitoringStats.total > 0 ? 1 : 0) +
-                        (currentlyOnCall.length > 0 ? 1 : 0)}
-                      /2
-                    </Typography>
-                  </Box>
+                      >
+                        <Box
+                          sx={{
+                            flex: 1,
+                            height: 6,
+                            backgroundColor: 'grey.200',
+                            borderRadius: 3,
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              height: '100%',
+                              width: `${progressPercent}%`,
+                              backgroundColor:
+                                essentialComplete === 2 ? '#4caf50' : '#2196f3',
+                              transition: 'width 0.3s ease',
+                            }}
+                          />
+                        </Box>
+                        <Typography variant="caption" color="text.secondary">
+                          {essentialComplete}/{totalSteps}
+                        </Typography>
+                        {essentialComplete === 2 && (
+                          <Chip
+                            label="Ready for Advanced"
+                            size="small"
+                            color="success"
+                            variant="outlined"
+                            sx={{ fontSize: '0.7rem', height: 20 }}
+                          />
+                        )}
+                      </Box>
+                    );
+                  })()}
                 </Box>
 
                 {/* Initial Setup Section */}
