@@ -334,6 +334,16 @@ export default function NavBar() {
                   </ListItemIcon>
                   <ListItemText>Escalation Policies</ListItemText>
                 </MenuItem>
+                <MenuItem
+                  component={Link}
+                  href="/teams"
+                  onClick={handleMenuClose}
+                >
+                  <ListItemIcon>
+                    <PeopleIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>Teams</ListItemText>
+                </MenuItem>
               </Menu>
 
               {/* Monitoring Dropdown */}

@@ -33,6 +33,7 @@ import {
   Save as SaveIcon,
   Close as CloseIcon,
 } from '@mui/icons-material';
+import UserTeamSelector from './UserTeamSelector';
 
 export default function EscalationPolicyForm({
   open,
@@ -56,14 +57,6 @@ export default function EscalationPolicyForm({
     escalation_rules: [],
   });
 
-  // Available team members for escalation
-  const [teamMembers, setTeamMembers] = useState([]);
-
-  useEffect(() => {
-    if (organizationId) {
-      fetchTeamMembers();
-    }
-  }, [organizationId]);
 
   useEffect(() => {
     if (escalationPolicy) {
@@ -91,19 +84,6 @@ export default function EscalationPolicyForm({
     setSuccess(false);
   }, [escalationPolicy, open]);
 
-  const fetchTeamMembers = async () => {
-    try {
-      const response = await fetch(
-        `/api/organizations/${organizationId}/members`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setTeamMembers(data.members || []);
-      }
-    } catch (err) {
-      console.error('Error fetching team members:', err);
-    }
-  };
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -145,37 +125,6 @@ export default function EscalationPolicyForm({
     }));
   };
 
-  const addTargetToRule = (ruleIndex, target) => {
-    if (!target) return;
-
-    setFormData(prev => ({
-      ...prev,
-      escalation_rules: prev.escalation_rules.map((rule, index) =>
-        index === ruleIndex
-          ? {
-              ...rule,
-              targets: rule.targets.includes(target)
-                ? rule.targets
-                : [...rule.targets, target],
-            }
-          : rule
-      ),
-    }));
-  };
-
-  const removeTargetFromRule = (ruleIndex, target) => {
-    setFormData(prev => ({
-      ...prev,
-      escalation_rules: prev.escalation_rules.map((rule, index) =>
-        index === ruleIndex
-          ? {
-              ...rule,
-              targets: rule.targets.filter(t => t !== target),
-            }
-          : rule
-      ),
-    }));
-  };
 
   const validateForm = () => {
     if (!formData.name.trim()) {
@@ -190,7 +139,7 @@ export default function EscalationPolicyForm({
 
     for (let i = 0; i < formData.escalation_rules.length; i++) {
       const rule = formData.escalation_rules[i];
-      if (rule.targets.length === 0) {
+      if (!rule.targets || rule.targets.length === 0) {
         setError(
           `Escalation level ${rule.level} must have at least one target`
         );
@@ -249,12 +198,6 @@ export default function EscalationPolicyForm({
     }
   };
 
-  const getTeamMemberName = userId => {
-    const member = teamMembers.find(
-      m => m.user_id === userId || m.id === userId
-    );
-    return member?.users?.name || member?.name || userId;
-  };
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -460,48 +403,18 @@ export default function EscalationPolicyForm({
                       <Typography variant="subtitle2" gutterBottom>
                         Escalation Targets
                       </Typography>
-                      <Box mb={2}>
-                        <FormControl size="small" sx={{ minWidth: 200, mr: 1 }}>
-                          <InputLabel>Add Team Member</InputLabel>
-                          <Select
-                            value=""
-                            label="Add Team Member"
-                            onChange={e =>
-                              addTargetToRule(ruleIndex, e.target.value)
-                            }
-                          >
-                            {teamMembers
-                              .filter(
-                                member =>
-                                  !rule.targets.includes(
-                                    member.user_id || member.id
-                                  )
-                              )
-                              .map(member => (
-                                <MenuItem
-                                  key={member.user_id || member.id}
-                                  value={member.user_id || member.id}
-                                >
-                                  {member.users?.name || member.name}
-                                </MenuItem>
-                              ))}
-                          </Select>
-                        </FormControl>
-                      </Box>
-
-                      <Box display="flex" flexWrap="wrap" gap={1}>
-                        {rule.targets.map(target => (
-                          <Chip
-                            key={target}
-                            label={getTeamMemberName(target)}
-                            onDelete={() =>
-                              removeTargetFromRule(ruleIndex, target)
-                            }
-                            icon={<PersonIcon />}
-                            size="small"
-                          />
-                        ))}
-                      </Box>
+                      <UserTeamSelector
+                        organizationId={organizationId}
+                        value={rule.targets || []}
+                        onChange={(newTargets) => 
+                          updateEscalationRule(ruleIndex, 'targets', newTargets)
+                        }
+                        label="Select users or teams to notify"
+                        placeholder="Search for users or teams to escalate to..."
+                        multiple={true}
+                        showTeams={true}
+                        showUsers={true}
+                      />
                     </CardContent>
                   </Card>
                 ))
