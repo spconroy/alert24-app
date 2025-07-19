@@ -1,1 +1,0 @@
-var e={},d=(_,n,r)=>(e.__chunk_4041=(c,o,t)=>{t.d(o,{Z:()=>s});var l=t(8560),a=t(926);let s=(0,l.Z)((0,a.jsx)("path",{d:"M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z"}),"ArrowBack")},e);export{d as __getNamedExports};
