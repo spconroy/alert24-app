@@ -32,6 +32,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import FilterListIcon from '@mui/icons-material/FilterList';
+import WarningIcon from '@mui/icons-material/Warning';
+import MonitorIcon from '@mui/icons-material/Monitor';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useOrganization } from '@/contexts/OrganizationContext';
 
@@ -202,15 +204,18 @@ export default function IncidentsPage() {
                 <RefreshIcon />
               </IconButton>
             </Tooltip>
-            <Button
-              component={Link}
-              href="/incidents/new"
-              variant="contained"
-              startIcon={<AddIcon />}
-              color="error"
-            >
-              Create Incident
-            </Button>
+            {/* Only show create button when there are incidents */}
+            {incidents.length > 0 && (
+              <Button
+                component={Link}
+                href="/incidents/new"
+                variant="outlined"
+                startIcon={<AddIcon />}
+                color="primary"
+              >
+                Create Incident
+              </Button>
+            )}
           </Box>
         </Box>
 
@@ -316,24 +321,130 @@ export default function IncidentsPage() {
                 <CircularProgress />
               </Box>
             ) : incidents.length === 0 ? (
-              <Box textAlign="center" py={6}>
-                <Typography variant="h6" color="text.secondary" gutterBottom>
-                  No incidents found
-                </Typography>
-                <Typography variant="body2" color="text.secondary" mb={3}>
-                  {Object.values(filters).some(v => v)
-                    ? 'Try adjusting your filters or create a new incident.'
-                    : 'Create your first incident to get started.'}
-                </Typography>
-                <Button
-                  component={Link}
-                  href="/incidents/new"
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  color="error"
-                >
-                  Create Incident
-                </Button>
+              <Box textAlign="center" py={8} px={4}>
+                {/* Visual Icon */}
+                <Box sx={{ mb: 3 }}>
+                  <WarningIcon
+                    sx={{
+                      fontSize: 80,
+                      color: 'text.disabled',
+                      opacity: 0.5,
+                    }}
+                  />
+                </Box>
+
+                {Object.values(filters).some(v => v) ? (
+                  // Filtered state
+                  <>
+                    <Typography
+                      variant="h6"
+                      color="text.secondary"
+                      gutterBottom
+                    >
+                      No incidents match your filters
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" mb={3}>
+                      Try adjusting your filters or create a new incident.
+                    </Typography>
+                    <Box
+                      sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}
+                    >
+                      <Button variant="outlined" onClick={clearFilters}>
+                        Clear Filters
+                      </Button>
+                      <Button
+                        component={Link}
+                        href="/incidents/new"
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        color="error"
+                      >
+                        Create Incident
+                      </Button>
+                    </Box>
+                  </>
+                ) : (
+                  // Empty state
+                  <>
+                    <Typography
+                      variant="h5"
+                      gutterBottom
+                      sx={{ fontWeight: 600 }}
+                    >
+                      No incidents yet
+                    </Typography>
+                    <Typography
+                      variant="body1"
+                      color="text.secondary"
+                      sx={{ mb: 2, maxWidth: 500, mx: 'auto' }}
+                    >
+                      Incidents help you track outages, degraded services, or
+                      operational alerts. They provide a central place to
+                      coordinate response efforts and communicate status
+                      updates.
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mb: 4, maxWidth: 500, mx: 'auto' }}
+                    >
+                      Get started by creating your first incident, or integrate
+                      with your monitoring tools to automatically detect issues.
+                    </Typography>
+
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        gap: 2,
+                        justifyContent: 'center',
+                        mb: 3,
+                      }}
+                    >
+                      <Button
+                        component={Link}
+                        href="/incidents/new"
+                        variant="contained"
+                        size="large"
+                        startIcon={<AddIcon />}
+                        color="error"
+                      >
+                        Create Incident
+                      </Button>
+                      <Button
+                        component={Link}
+                        href="/monitoring"
+                        variant="outlined"
+                        size="large"
+                        startIcon={<MonitorIcon />}
+                      >
+                        Setup Monitoring
+                      </Button>
+                    </Box>
+
+                    <Box
+                      sx={{
+                        mt: 4,
+                        p: 2,
+                        backgroundColor: 'grey.50',
+                        borderRadius: 2,
+                        maxWidth: 600,
+                        mx: 'auto',
+                      }}
+                    >
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mb: 1, fontWeight: 600 }}
+                      >
+                        💡 Common incident types:
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        • Service outages or downtime • Performance degradation
+                        • Security incidents • Planned maintenance
+                      </Typography>
+                    </Box>
+                  </>
+                )}
               </Box>
             ) : (
               <TableContainer>
