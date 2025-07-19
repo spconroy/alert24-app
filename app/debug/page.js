@@ -97,9 +97,15 @@ export default function DebugPage() {
       icon: <SettingsIcon />,
     },
     {
-      name: 'Monitoring Checks',
-      description: 'Test monitoring checks API and database connection',
+      name: 'Monitoring Checks (Auth Required)',
+      description: 'Test monitoring checks API with authentication',
       endpoint: '/api/monitoring',
+      icon: <MonitorIcon />,
+    },
+    {
+      name: 'Monitoring Debug (No Auth)',
+      description: 'Test database connection without authentication',
+      endpoint: '/api/debug-monitoring',
       icon: <MonitorIcon />,
     },
     {
@@ -150,12 +156,12 @@ export default function DebugPage() {
               </Button>
               <Button
                 variant="outlined"
-                href="/api/monitoring"
+                href="/api/debug-monitoring"
                 target="_blank"
                 rel="noopener noreferrer"
                 startIcon={<StorageIcon />}
               >
-                Monitoring API
+                Monitoring Debug
               </Button>
               <Button
                 variant="outlined"
@@ -265,7 +271,7 @@ export default function DebugPage() {
                         </Box>
                       ) : null}
                       
-                      {test.name === 'Monitoring Checks' && debugResults[test.name].data ? (
+                      {(test.name === 'Monitoring Checks (Auth Required)' || test.name === 'Monitoring Debug (No Auth)') && debugResults[test.name].data ? (
                         <Box>
                           <Typography variant="h6" gutterBottom>
                             Monitoring Status
@@ -279,10 +285,26 @@ export default function DebugPage() {
                             </Paper>
                             <Paper sx={{ p: 2, textAlign: 'center' }}>
                               <Typography variant="h4" color="info.main">
-                                {debugResults[test.name].data.count || 0}
+                                {debugResults[test.name].data.count || debugResults[test.name].data.monitoring_checks?.length || 0}
                               </Typography>
                               <Typography variant="body2">Total Checks</Typography>
                             </Paper>
+                            {debugResults[test.name].data.database && (
+                              <Paper sx={{ p: 2, textAlign: 'center' }}>
+                                <Typography variant="h4" color={debugResults[test.name].data.database.success ? 'success.main' : 'error.main'}>
+                                  {debugResults[test.name].data.database.success ? '✅' : '❌'}
+                                </Typography>
+                                <Typography variant="body2">Database</Typography>
+                              </Paper>
+                            )}
+                            {debugResults[test.name].data.tableAccess && (
+                              <Paper sx={{ p: 2, textAlign: 'center' }}>
+                                <Typography variant="h4" color={debugResults[test.name].data.tableAccess.success ? 'success.main' : 'error.main'}>
+                                  {debugResults[test.name].data.tableAccess.success ? '✅' : '❌'}
+                                </Typography>
+                                <Typography variant="body2">Table Access</Typography>
+                              </Paper>
+                            )}
                           </Box>
                           {debugResults[test.name].data.error && (
                             <Alert severity="error" sx={{ mb: 2 }}>
@@ -293,6 +315,25 @@ export default function DebugPage() {
                                 <Typography variant="body2">
                                   <strong>Details:</strong> {debugResults[test.name].data.details}
                                 </Typography>
+                              )}
+                            </Alert>
+                          )}
+                          {debugResults[test.name].data.diagnostics && (
+                            <Alert severity="info" sx={{ mb: 2 }}>
+                              <Typography variant="body2">
+                                <strong>Diagnosis:</strong> {debugResults[test.name].data.diagnostics.message}
+                              </Typography>
+                              {debugResults[test.name].data.diagnostics.nextSteps && (
+                                <Box sx={{ mt: 1 }}>
+                                  <Typography variant="body2"><strong>Next Steps:</strong></Typography>
+                                  <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                                    {debugResults[test.name].data.diagnostics.nextSteps.map((step, index) => (
+                                      <li key={index}>
+                                        <Typography variant="body2">{step}</Typography>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </Box>
                               )}
                             </Alert>
                           )}
