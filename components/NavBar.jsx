@@ -34,6 +34,7 @@ import HelpIcon from '@mui/icons-material/Help';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import PaymentIcon from '@mui/icons-material/Payment';
+import AnalyticsIcon from '@mui/icons-material/Analytics';
 import { usePathname } from 'next/navigation';
 import { useOrganization, useSession } from '@/contexts/OrganizationContext';
 
@@ -414,6 +415,22 @@ export default function NavBar() {
                 }}
               >
                 On-Call
+              </Button>
+              
+              {/* Analytics */}
+              <Button
+                component={Link}
+                href="/analytics"
+                color="inherit"
+                startIcon={<AnalyticsIcon />}
+                sx={{
+                  backgroundColor: pathname.startsWith('/analytics')
+                    ? 'rgba(255,255,255,0.1)'
+                    : 'transparent',
+                  '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
+                }}
+              >
+                Analytics
               </Button>
             </Box>
 
