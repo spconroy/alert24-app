@@ -35,7 +35,7 @@ import {
 } from '@mui/icons-material';
 
 export default function TeamsPage() {
-  const { currentOrganization } = useOrganization();
+  const { selectedOrganization: currentOrganization } = useOrganization();
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
