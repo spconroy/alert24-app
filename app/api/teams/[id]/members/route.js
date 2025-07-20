@@ -24,8 +24,9 @@ export async function GET(request, { params }) {
 
 export async function POST(request, { params }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(request);
+    if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -36,7 +37,7 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
-    const membership = await addTeamMember(params.id, userId, role);
+    const membership = await db.addTeamMember(params.id, userId, role);
     return NextResponse.json(membership, { status: 201 });
   } catch (error) {
     console.error('Error adding team member:', error);
@@ -46,8 +47,9 @@ export async function POST(request, { params }) {
 
 export async function PUT(request, { params }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(request);
+    if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -58,7 +60,7 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Membership ID required' }, { status: 400 });
     }
 
-    const membership = await updateTeamMembership(membershipId, { role, is_active: isActive });
+    const membership = await db.updateTeamMembership(membershipId, { role, is_active: isActive });
     return NextResponse.json(membership);
   } catch (error) {
     console.error('Error updating team membership:', error);
@@ -68,8 +70,9 @@ export async function PUT(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(request);
+    if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -80,7 +83,7 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ error: 'Membership ID required' }, { status: 400 });
     }
 
-    await removeTeamMember(membershipId);
+    await db.removeTeamMember(membershipId);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error removing team member:', error);

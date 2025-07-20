@@ -91,7 +91,7 @@ export default function EscalationPoliciesPage() {
     }
 
     try {
-      const response = await fetch(`/api/escalation-policies/${policyId}`, {
+      const response = await fetch(`/api/escalation-policies?id=${policyId}`, {
         method: 'DELETE',
       });
 

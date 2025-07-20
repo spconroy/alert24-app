@@ -37,8 +37,6 @@ import {
 } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -724,8 +722,7 @@ export default function CreateOnCallSchedulePage() {
 
   return (
     <ProtectedRoute>
-      <LocalizationProvider dateAdapter={AdapterDayjs}>
-        <Box sx={{ p: 3 }}>
+      <Box sx={{ p: 3 }}>
           {/* Header */}
           <Box display="flex" alignItems="center" gap={2} mb={4}>
             <Button
@@ -823,7 +820,6 @@ export default function CreateOnCallSchedulePage() {
             </Box>
           </Paper>
         </Box>
-      </LocalizationProvider>
     </ProtectedRoute>
   );
 }

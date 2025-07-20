@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { SessionManager } from '@/lib/session-manager';
 import { SupabaseClient } from '@/lib/db-supabase';
+import { rbac } from '@/lib/rbac-middleware';
 
 const db = new SupabaseClient();
 

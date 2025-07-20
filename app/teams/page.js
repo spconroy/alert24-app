@@ -12,7 +12,9 @@ import {
   ListItem,
   ListItemText,
   ListItemAvatar,
+  ListItemSecondaryAction,
   Avatar,
+  Autocomplete,
   Chip,
   IconButton,
   Dialog,
@@ -25,6 +27,7 @@ import {
   Select,
   MenuItem,
   Alert,
+  CircularProgress,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -46,6 +49,11 @@ export default function TeamsPage() {
     description: '',
     color: '#0066CC',
   });
+  const [memberDialogOpen, setMemberDialogOpen] = useState(false);
+  const [selectedTeam, setSelectedTeam] = useState(null);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [organizationMembers, setOrganizationMembers] = useState([]);
+  const [memberLoading, setMemberLoading] = useState(false);
 
   useEffect(() => {
     if (currentOrganization?.id) {
@@ -155,6 +163,72 @@ export default function TeamsPage() {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleManageMembers = async (team) => {
+    setSelectedTeam(team);
+    setMemberDialogOpen(true);
+    await fetchTeamMembers(team.id);
+    await fetchOrganizationMembers();
+  };
+
+  const fetchTeamMembers = async (teamId) => {
+    try {
+      setMemberLoading(true);
+      const response = await fetch(`/api/teams/${teamId}/members`);
+      if (!response.ok) throw new Error('Failed to fetch team members');
+      const data = await response.json();
+      setTeamMembers(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setMemberLoading(false);
+    }
+  };
+
+  const fetchOrganizationMembers = async () => {
+    try {
+      const response = await fetch(`/api/organizations/${currentOrganization.id}/members`);
+      if (!response.ok) throw new Error('Failed to fetch organization members');
+      const data = await response.json();
+      setOrganizationMembers(data.members || []);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleAddMember = async (userId) => {
+    try {
+      setMemberLoading(true);
+      const response = await fetch(`/api/teams/${selectedTeam.id}/members`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, role: 'member' })
+      });
+      if (!response.ok) throw new Error('Failed to add member');
+      await fetchTeamMembers(selectedTeam.id);
+      await fetchTeams(); // Refresh teams to update member counts
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setMemberLoading(false);
+    }
+  };
+
+  const handleRemoveMember = async (membershipId) => {
+    try {
+      setMemberLoading(true);
+      const response = await fetch(`/api/teams/${selectedTeam.id}/members?membershipId=${membershipId}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) throw new Error('Failed to remove member');
+      await fetchTeamMembers(selectedTeam.id);
+      await fetchTeams(); // Refresh teams to update member counts
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setMemberLoading(false);
     }
   };
 
@@ -287,9 +361,7 @@ export default function TeamsPage() {
                   <Button
                     size="small"
                     startIcon={<PersonAddIcon />}
-                    onClick={() => {
-                      /* TODO: Open member management dialog */
-                    }}
+                    onClick={() => handleManageMembers(team)}
                   >
                     Manage Members
                   </Button>
@@ -386,6 +458,128 @@ export default function TeamsPage() {
             disabled={!formData.name.trim()}
           >
             {editingTeam ? 'Save Changes' : 'Create Team'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Team Member Management Dialog */}
+      <Dialog
+        open={memberDialogOpen}
+        onClose={() => setMemberDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          Manage Members - {selectedTeam?.name}
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 1 }}>
+            {/* Add Member Section */}
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                Add Member
+              </Typography>
+              <Autocomplete
+                options={organizationMembers.filter(member => 
+                  !teamMembers.some(teamMember => 
+                    (teamMember.users?.id || teamMember.user_id) === (member.users?.id || member.user_id)
+                  )
+                )}
+                getOptionLabel={(option) => 
+                  `${option.users?.name || option.name} (${option.users?.email || option.email})`
+                }
+                renderOption={(props, option) => (
+                  <Box component="li" {...props}>
+                    <Avatar sx={{ mr: 2, width: 32, height: 32 }}>
+                      {(option.users?.name || option.name)?.charAt(0)}
+                    </Avatar>
+                    <Box>
+                      <Typography variant="body2">
+                        {option.users?.name || option.name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {option.users?.email || option.email}
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+                onChange={(event, newValue) => {
+                  if (newValue) {
+                    handleAddMember(newValue.users?.id || newValue.user_id);
+                  }
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Select member to add"
+                    placeholder="Search by name or email..."
+                  />
+                )}
+                value={null}
+                disabled={memberLoading}
+              />
+            </Box>
+
+            {/* Current Members Section */}
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                Current Members ({teamMembers.length})
+              </Typography>
+              {memberLoading ? (
+                <Box display="flex" justifyContent="center" p={2}>
+                  <CircularProgress />
+                </Box>
+              ) : teamMembers.length === 0 ? (
+                <Typography color="text.secondary" sx={{ p: 2, textAlign: 'center' }}>
+                  No members in this team yet
+                </Typography>
+              ) : (
+                <List>
+                  {teamMembers.map((member) => (
+                    <ListItem key={member.id} divider>
+                      <ListItemAvatar>
+                        <Avatar>
+                          {(member.users?.name || member.name)?.charAt(0)}
+                        </Avatar>
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={member.users?.name || member.name}
+                        secondary={
+                          <Box>
+                            <Typography variant="body2" color="text.secondary">
+                              {member.users?.email || member.email}
+                            </Typography>
+                            <Chip 
+                              label={member.role || 'member'} 
+                              size="small" 
+                              sx={{ mt: 0.5 }}
+                            />
+                          </Box>
+                        }
+                      />
+                      <ListItemSecondaryAction>
+                        <IconButton
+                          edge="end"
+                          onClick={() => {
+                            if (confirm(`Remove ${member.users?.name || member.name} from this team?`)) {
+                              handleRemoveMember(member.id);
+                            }
+                          }}
+                          disabled={memberLoading}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </ListItemSecondaryAction>
+                    </ListItem>
+                  ))}
+                </List>
+              )}
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setMemberDialogOpen(false)}>
+            Close
           </Button>
         </DialogActions>
       </Dialog>
