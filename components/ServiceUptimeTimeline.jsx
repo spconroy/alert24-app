@@ -23,7 +23,7 @@ const statusLabels = {
   up: 'Up',
 };
 
-export default function ServiceUptimeTimeline({ serviceId, days = 30 }) {
+export default function ServiceUptimeTimeline({ serviceId, days = 30, isPublic = false }) {
   const [timelineData, setTimelineData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -39,14 +39,22 @@ export default function ServiceUptimeTimeline({ serviceId, days = 30 }) {
     setError(null);
 
     try {
-      const response = await fetch(
-        `/api/services/${serviceId}/sla?days=${days}`
-      );
+      const endpoint = isPublic 
+        ? `/api/services/${serviceId}/sla/public?days=${days}`
+        : `/api/services/${serviceId}/sla?days=${days}`;
+      
+      const response = await fetch(endpoint);
       if (!response.ok) {
         throw new Error('Failed to fetch SLA data');
       }
 
       const data = await response.json();
+      console.log('📊 ServiceUptimeTimeline data received:', {
+        serviceId,
+        days,
+        timeline: data.timeline,
+        timelineLength: data.timeline?.length,
+      });
       setTimelineData(data);
     } catch (err) {
       console.error('Error fetching timeline data:', err);
@@ -102,6 +110,8 @@ export default function ServiceUptimeTimeline({ serviceId, days = 30 }) {
         {timelineData.timeline.map((period, index) => {
           const periodStart = new Date(period.periodStart);
           const periodEnd = new Date(period.periodEnd);
+          
+          console.log(`📊 Period ${index}: status=${period.status}, color=${statusColors[period.status]}, duration=${period.durationHours}h`);
 
           // Calculate position and width as percentage of total period
           const startOffset =
@@ -109,6 +119,8 @@ export default function ServiceUptimeTimeline({ serviceId, days = 30 }) {
           const endOffset =
             Math.min(100, (periodEnd - startDate) / (now - startDate)) * 100;
           const width = endOffset - startOffset;
+          
+          console.log(`📊 Period ${index} render: left=${startOffset.toFixed(1)}%, width=${width.toFixed(1)}%, bgColor=${statusColors[period.status]}, willRender=${width > 0}`);
 
           if (width <= 0) return null;
 
@@ -141,6 +153,7 @@ export default function ServiceUptimeTimeline({ serviceId, days = 30 }) {
                   height: '100%',
                   backgroundColor: statusColors[period.status],
                   cursor: 'pointer',
+                  zIndex: index + 1, // Ensure later periods render on top
                   '&:hover': {
                     opacity: 0.8,
                   },

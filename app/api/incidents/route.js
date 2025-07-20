@@ -8,6 +8,7 @@ import {
   parseRequestBody,
 } from '@/lib/api-utils';
 import { emailService } from '@/lib/email-service';
+import { notificationService } from '@/lib/notification-service';
 
 // Use the singleton instance instead of creating a new one
 // const db = new SupabaseClient();
@@ -23,11 +24,15 @@ async function sendIncidentPaging(incident, organizationId) {
 
     // Get escalation policy for the incident
     let escalationPolicy = null;
+    const createdBy = incident.created_by;
+    
     if (incident.escalation_policy_id) {
-      escalationPolicy = await db.getEscalationPolicyById(incident.escalation_policy_id);
+      escalationPolicy = await db.getEscalationPolicyById(incident.escalation_policy_id, createdBy);
     } else {
       // Get default escalation policy for organization
-      const policies = await db.getEscalationPoliciesByOrganization(organizationId);
+      // Note: We need a user ID for the getEscalationPolicies method
+      // For now, use the incident creator's ID to get accessible policies
+      const policies = await db.getEscalationPolicies(createdBy, { organization_id: organizationId });
       escalationPolicy = policies.find(p => p.is_default);
     }
 
@@ -43,7 +48,13 @@ async function sendIncidentPaging(incident, organizationId) {
       // Page the assigned person
       const assignedUser = await db.getUserById(incident.assigned_to);
       if (assignedUser) {
-        targets.push({ type: 'user', id: assignedUser.id, email: assignedUser.email, name: assignedUser.name });
+        targets.push({ 
+          type: 'user', 
+          id: assignedUser.id, 
+          email: assignedUser.email, 
+          name: assignedUser.name,
+          phone: assignedUser.phone
+        });
       }
     } else if (escalationPolicy.rules && escalationPolicy.rules.length > 0) {
       // Page based on escalation policy first level
@@ -54,18 +65,30 @@ async function sendIncidentPaging(incident, organizationId) {
           if (target.type === 'user') {
             const user = await db.getUserById(target.id);
             if (user) {
-              targets.push({ type: 'user', id: user.id, email: user.email, name: user.name });
+              targets.push({ 
+                type: 'user', 
+                id: user.id, 
+                email: user.email, 
+                name: user.name,
+                phone: user.phone
+              });
             }
           } else if (target.type === 'schedule') {
             // Get current on-call person from schedule
-            const schedule = await db.getOnCallScheduleById(target.id);
+            const schedule = await db.getOnCallScheduleById(target.id, createdBy);
             if (schedule) {
               // For now, get first member - in real implementation, calculate current on-call
               if (schedule.members && schedule.members.length > 0) {
                 const onCallUserId = schedule.members[0].user_id;
                 const user = await db.getUserById(onCallUserId);
                 if (user) {
-                  targets.push({ type: 'user', id: user.id, email: user.email, name: user.name });
+                  targets.push({ 
+                    type: 'user', 
+                    id: user.id, 
+                    email: user.email, 
+                    name: user.name,
+                    phone: user.phone
+                  });
                 }
               }
             }
@@ -74,22 +97,57 @@ async function sendIncidentPaging(incident, organizationId) {
       }
     }
 
-    // Send urgent notifications/pages to targets
+    // Send urgent notifications/pages to targets via multiple channels
     for (const target of targets) {
       try {
-        await emailService.sendIncidentPaging({
-          toEmail: target.email,
-          toName: target.name,
-          incidentTitle: incident.title,
-          incidentDescription: incident.description || 'No description provided',
-          severity: incident.severity,
-          incidentId: incident.id,
-          incidentUrl: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/incidents/${incident.id}`,
+        // Use notification service for multi-channel paging (email, SMS, call)
+        const channels = ['email'];
+        
+        // Add SMS and call for critical and high severity incidents
+        if (['critical', 'high'].includes(incident.severity)) {
+          if (target.phone) channels.push('sms');
+          if (target.phone) channels.push('call');
+        }
+
+        await notificationService.sendNotification({
+          channels,
+          recipient: {
+            email: target.email,
+            name: target.name,
+            phone: target.phone, // Will be fetched from user profile if available
+          },
+          subject: `🚨 URGENT: Incident Page - ${incident.title}`,
+          message: `URGENT INCIDENT: ${incident.title}\n\nSeverity: ${incident.severity.toUpperCase()}\nDescription: ${incident.description || 'No description provided'}\n\nPlease acknowledge immediately: ${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/incidents/${incident.id}`,
+          incidentData: {
+            id: incident.id,
+            title: incident.title,
+            description: incident.description,
+            severity: incident.severity,
+            url: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/incidents/${incident.id}`,
+          },
+          priority: incident.severity === 'critical' ? 'urgent' : 'high',
+          organizationId,
         });
 
-        console.log(`📟 Incident paging sent to ${target.email}`);
-      } catch (emailError) {
-        console.error(`Failed to send incident paging to ${target.email}:`, emailError);
+        console.log(`📟 Multi-channel incident paging sent to ${target.email} via ${channels.join(', ')}`);
+      } catch (pagingError) {
+        console.error(`Failed to send incident paging to ${target.email}:`, pagingError);
+        
+        // Fallback to email-only if multi-channel fails
+        try {
+          await emailService.sendIncidentPaging({
+            toEmail: target.email,
+            toName: target.name,
+            incidentTitle: incident.title,
+            incidentDescription: incident.description || 'No description provided',
+            severity: incident.severity,
+            incidentId: incident.id,
+            incidentUrl: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/incidents/${incident.id}`,
+          });
+          console.log(`📧 Fallback email paging sent to ${target.email}`);
+        } catch (fallbackError) {
+          console.error(`Failed to send fallback email paging to ${target.email}:`, fallbackError);
+        }
       }
     }
 
@@ -126,8 +184,7 @@ async function sendIncidentNotifications(incident, organizationId) {
     }
 
     // Get organization members who should be notified
-    const members =
-      await db.getOrganizationMembersByOrganization(organizationId);
+    const members = await db.getOrganizationMembers(organizationId);
     const notificationTargets = members.filter(
       member =>
         ['admin', 'owner', 'responder'].includes(member.role) &&

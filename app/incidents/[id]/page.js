@@ -17,6 +17,17 @@ import {
   ListItem,
   ListItemText,
   ListItemIcon,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  TextField,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -63,9 +74,42 @@ export default function IncidentDetailPage() {
   const [statusForm, setStatusForm] = useState({
     status: '',
     resolution_notes: '',
+    update_service_status: false,
+    service_status_updates: {},
   });
 
   const [submitting, setSubmitting] = useState(false);
+
+  // Utility function to safely extract service names from potentially mixed data
+  const safeGetServiceName = (service) => {
+    if (typeof service === 'string') return service;
+    if (typeof service === 'object' && service !== null) {
+      return typeof service.name === 'string' ? service.name : 
+             typeof service.id === 'string' ? service.id : 
+             'Unknown Service';
+    }
+    return 'Unknown Service';
+  };
+
+  // Utility function to safely extract service status
+  const safeGetServiceStatus = (service) => {
+    if (typeof service === 'string') return 'operational';
+    if (typeof service === 'object' && service !== null) {
+      return typeof service.status === 'string' ? service.status : 'operational';
+    }
+    return 'operational';
+  };
+
+  // Utility function to safely extract service ID
+  const safeGetServiceId = (service) => {
+    if (typeof service === 'string') return service;
+    if (typeof service === 'object' && service !== null) {
+      return typeof service.id === 'string' ? service.id : 
+             typeof service.name === 'string' ? service.name : 
+             JSON.stringify(service).substring(0, 20);
+    }
+    return 'unknown';
+  };
 
   useEffect(() => {
     if (incidentId && session) {
@@ -79,6 +123,24 @@ export default function IncidentDetailPage() {
       fetchAffectedServicesWithStatus();
     }
   }, [incident]);
+
+  useEffect(() => {
+    if (affectedServicesWithStatus.length > 0) {
+      // Initialize service status updates with current status using safe utilities
+      const initialStatusUpdates = {};
+      affectedServicesWithStatus.forEach(service => {
+        const safeId = safeGetServiceId(service);
+        const safeStatus = safeGetServiceStatus(service);
+        if (safeId) {
+          initialStatusUpdates[safeId] = safeStatus;
+        }
+      });
+      setStatusForm(prev => ({
+        ...prev,
+        service_status_updates: initialStatusUpdates
+      }));
+    }
+  }, [affectedServicesWithStatus]);
 
   const fetchIncident = async () => {
     try {
@@ -124,34 +186,53 @@ export default function IncidentDetailPage() {
     try {
       // Fetch all services for the organization to resolve service names to full service objects
       const response = await fetch('/api/services');
-      if (response.ok) {
-        const data = await response.json();
-        const allServices = data.services || [];
-        
-        // Map affected service names/IDs to full service objects with status
-        const servicesWithStatus = incident.affected_services.map(serviceName => {
-          // First try to find by name, then by ID
-          const service = allServices.find(s => s.name === serviceName || s.id === serviceName);
-          return service || { 
-            id: serviceName, 
-            name: serviceName, 
-            status: 'operational',
-            isUnknown: true 
+      const allServices = response.ok ? (await response.json()).services || [] : [];
+      
+      // Map affected services (which could be strings, IDs, or full objects) to normalized service objects
+      const servicesWithStatus = incident.affected_services.map(serviceItem => {
+        // If it's already a service object, use our utility functions to normalize it
+        if (typeof serviceItem === 'object' && serviceItem !== null) {
+          return {
+            id: safeGetServiceId(serviceItem),
+            name: safeGetServiceName(serviceItem),
+            status: safeGetServiceStatus(serviceItem),
+            isUnknown: false
           };
-        });
+        }
         
-        setAffectedServicesWithStatus(servicesWithStatus);
-      }
+        // If it's a string (service name or ID), try to find the full service
+        const serviceName = typeof serviceItem === 'string' ? serviceItem : 'Unknown Service';
+        const foundService = allServices.find(s => s.name === serviceName || s.id === serviceName);
+        
+        if (foundService) {
+          return {
+            id: safeGetServiceId(foundService),
+            name: safeGetServiceName(foundService),
+            status: safeGetServiceStatus(foundService),
+            isUnknown: false
+          };
+        }
+        
+        // Fallback for unknown services
+        return { 
+          id: serviceName, 
+          name: serviceName, 
+          status: 'operational',
+          isUnknown: true 
+        };
+      });
+      
+      setAffectedServicesWithStatus(servicesWithStatus);
     } catch (err) {
       console.error('Error fetching affected services:', err);
-      setAffectedServicesWithStatus(
-        incident.affected_services.map(serviceName => ({
-          id: serviceName,
-          name: serviceName,
-          status: 'operational',
-          isUnknown: true
-        }))
-      );
+      // Safe fallback using utility functions
+      const fallbackServices = incident.affected_services.map(serviceItem => ({
+        id: safeGetServiceId(serviceItem),
+        name: safeGetServiceName(serviceItem),
+        status: safeGetServiceStatus(serviceItem),
+        isUnknown: true
+      }));
+      setAffectedServicesWithStatus(fallbackServices);
     }
   };
 
@@ -198,9 +279,6 @@ export default function IncidentDetailPage() {
           statusForm.resolution_notes && {
             resolution_notes: statusForm.resolution_notes,
           }),
-        ...(statusForm.status === 'acknowledged' && {
-          acknowledgedAt: new Date().toISOString(),
-        }),
       };
 
       const response = await fetch(`/api/incidents/${incidentId}`, {
@@ -212,9 +290,15 @@ export default function IncidentDetailPage() {
       });
 
       if (response.ok) {
+        // Update service statuses if requested
+        if (statusForm.update_service_status && Object.keys(statusForm.service_status_updates).length > 0) {
+          await updateServiceStatuses();
+        }
+
         setStatusUpdateDialogOpen(false);
         await fetchIncident();
         await fetchIncidentUpdates();
+        await fetchAffectedServicesWithStatus();
       } else {
         const errorData = await response.json();
         setError(errorData.error || 'Failed to update status');
@@ -225,6 +309,31 @@ export default function IncidentDetailPage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const updateServiceStatuses = async () => {
+    const statusUpdatePromises = Object.entries(statusForm.service_status_updates).map(async ([serviceId, newStatus]) => {
+      const service = affectedServicesWithStatus.find(s => s.id === serviceId);
+      if (service && service.status !== newStatus && !service.isUnknown) {
+        try {
+          const response = await fetch(`/api/services/${serviceId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ status: newStatus }),
+          });
+          
+          if (!response.ok) {
+            console.error(`Failed to update status for service ${typeof service.name === 'string' ? service.name : service.id}`);
+          }
+        } catch (err) {
+          console.error(`Error updating service ${typeof service.name === 'string' ? service.name : service.id}:`, err);
+        }
+      }
+    });
+
+    await Promise.all(statusUpdatePromises);
   };
 
   const getSeverityColor = severity => {
@@ -389,24 +498,24 @@ export default function IncidentDetailPage() {
                 mb={2}
               >
                 <Typography variant="h5" gutterBottom>
-                  {incident.title}
+                  {typeof incident.title === 'string' ? incident.title : 'Untitled Incident'}
                 </Typography>
                 <Box display="flex" gap={1}>
                   <Chip
-                    label={incident.severity.toUpperCase()}
-                    color={getSeverityColor(incident.severity)}
+                    label={typeof incident.severity === 'string' ? incident.severity.toUpperCase() : 'UNKNOWN'}
+                    color={getSeverityColor(typeof incident.severity === 'string' ? incident.severity : 'medium')}
                     size="small"
                   />
                   <Chip
-                    label={incident.status.toUpperCase()}
-                    color={getStatusColor(incident.status)}
+                    label={typeof incident.status === 'string' ? incident.status.toUpperCase() : 'UNKNOWN'}
+                    color={getStatusColor(typeof incident.status === 'string' ? incident.status : 'investigating')}
                     size="small"
                   />
                 </Box>
               </Box>
 
               <Typography variant="body1" paragraph>
-                {incident.description}
+                {typeof incident.description === 'string' ? incident.description : 'No description available'}
               </Typography>
 
               {incident.impact_description && (
@@ -415,7 +524,7 @@ export default function IncidentDetailPage() {
                     Impact Description
                   </Typography>
                   <Typography variant="body2">
-                    {incident.impact_description}
+                    {typeof incident.impact_description === 'string' ? incident.impact_description : 'No impact description'}
                   </Typography>
                 </Box>
               )}
@@ -426,7 +535,7 @@ export default function IncidentDetailPage() {
                     Resolution Notes
                   </Typography>
                   <Typography variant="body2">
-                    {incident.resolution_notes}
+                    {typeof incident.resolution_notes === 'string' ? incident.resolution_notes : 'No resolution notes'}
                   </Typography>
                 </Box>
               )}
@@ -532,7 +641,7 @@ export default function IncidentDetailPage() {
                   </ListItemIcon>
                   <ListItemText
                     primary="Created By"
-                    secondary={incident.created_by_name || 'System'}
+                    secondary={typeof incident.created_by_name === 'string' ? incident.created_by_name : 'System'}
                   />
                 </ListItem>
                 {incident.assigned_to_name && (
@@ -542,7 +651,7 @@ export default function IncidentDetailPage() {
                     </ListItemIcon>
                     <ListItemText
                       primary="Assigned To"
-                      secondary={incident.assigned_to_name}
+                      secondary={typeof incident.assigned_to_name === 'string' ? incident.assigned_to_name : 'Unknown User'}
                     />
                   </ListItem>
                 )}
@@ -607,7 +716,140 @@ export default function IncidentDetailPage() {
         </Grid>
       </Grid>
 
-      {/* Add Update Dialog */}
+      {/* Status Update Dialog */}
+      <Dialog
+        open={statusUpdateDialogOpen}
+        onClose={() => setStatusUpdateDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Update Incident Status</DialogTitle>
+        <DialogContent>
+          <Box sx={{ mt: 2 }}>
+            <FormControl fullWidth sx={{ mb: 3 }}>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={statusForm.status}
+                label="Status"
+                onChange={e =>
+                  setStatusForm(prev => ({ ...prev, status: e.target.value }))
+                }
+              >
+                <MenuItem value="investigating">Investigating</MenuItem>
+                <MenuItem value="identified">Identified</MenuItem>
+                <MenuItem value="monitoring">Monitoring</MenuItem>
+                <MenuItem value="resolved">Resolved</MenuItem>
+                <MenuItem value="acknowledged">Acknowledged</MenuItem>
+              </Select>
+            </FormControl>
+
+            {statusForm.status === 'resolved' && (
+              <>
+                <TextField
+                  label="Resolution Notes"
+                  multiline
+                  rows={3}
+                  fullWidth
+                  value={statusForm.resolution_notes}
+                  onChange={e =>
+                    setStatusForm(prev => ({
+                      ...prev,
+                      resolution_notes: e.target.value,
+                    }))
+                  }
+                  placeholder="Describe how the incident was resolved..."
+                  sx={{ mb: 3 }}
+                />
+
+                {/* Service Status Update Section */}
+                {affectedServicesWithStatus.length > 0 && (
+                  <Box>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={statusForm.update_service_status}
+                          onChange={e =>
+                            setStatusForm(prev => ({
+                              ...prev,
+                              update_service_status: e.target.checked,
+                            }))
+                          }
+                          color="primary"
+                        />
+                      }
+                      label="Update status of affected services"
+                      sx={{ mb: 2 }}
+                    />
+
+                    {statusForm.update_service_status && (
+                      <Box sx={{ ml: 4, mt: 2 }}>
+                        <Typography variant="subtitle2" gutterBottom>
+                          Service Status Updates
+                        </Typography>
+                        {affectedServicesWithStatus.filter(service => service.id).map(service => (
+                          <Box key={service.id} sx={{ mb: 2 }}>
+                            <Box display="flex" alignItems="center" gap={2}>
+                              <Chip
+                                label={typeof service.name === 'string' ? service.name : service.id || 'Unknown Service'}
+                                color={getServiceStatusColor(typeof service.status === 'string' ? service.status : 'operational')}
+                                size="small"
+                                sx={{ minWidth: 120 }}
+                              />
+                              {service.isUnknown && (
+                                <Typography variant="caption" color="text.secondary">
+                                  (Unknown service - cannot update)
+                                </Typography>
+                              )}
+                              {!service.isUnknown && (
+                                <FormControl size="small" sx={{ minWidth: 140 }}>
+                                  <InputLabel>New Status</InputLabel>
+                                  <Select
+                                    value={statusForm.service_status_updates?.[service.id] || (typeof service.status === 'string' ? service.status : 'operational')}
+                                    label="New Status"
+                                    onChange={e =>
+                                      setStatusForm(prev => ({
+                                        ...prev,
+                                        service_status_updates: {
+                                          ...(prev.service_status_updates || {}),
+                                          [service.id]: e.target.value,
+                                        },
+                                      }))
+                                    }
+                                  >
+                                    <MenuItem value="operational">Operational</MenuItem>
+                                    <MenuItem value="degraded">Degraded</MenuItem>
+                                    <MenuItem value="down">Down</MenuItem>
+                                    <MenuItem value="maintenance">Maintenance</MenuItem>
+                                  </Select>
+                                </FormControl>
+                              )}
+                            </Box>
+                          </Box>
+                        ))}
+                      </Box>
+                    )}
+                  </Box>
+                )}
+              </>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setStatusUpdateDialogOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleStatusUpdate}
+            variant="contained"
+            disabled={submitting}
+            startIcon={
+              submitting ? <CircularProgress size={16} /> : <SaveIcon />
+            }
+          >
+            {submitting ? 'Updating...' : 'Update Status'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

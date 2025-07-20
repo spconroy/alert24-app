@@ -496,7 +496,7 @@ export default function NavBar() {
                                   whiteSpace: 'nowrap',
                                 }}
                               >
-                                {org.name}
+                                {typeof org.name === 'string' ? org.name : org.id || 'Unknown Organization'}
                               </Typography>
 
                               {org.domain && (
@@ -826,7 +826,7 @@ export default function NavBar() {
                       <Box>
                         <Typography variant="body2">
                           {selectedOrganization
-                            ? `Current: ${selectedOrganization.name}`
+                            ? `Current: ${typeof selectedOrganization.name === 'string' ? selectedOrganization.name : selectedOrganization.id || 'Unknown Organization'}`
                             : 'Switch Organization'}
                         </Typography>
                         {error && networkError && (
@@ -904,7 +904,7 @@ export default function NavBar() {
                           'Switching...'
                         ) : (
                           <>
-                            {selectedOrganization?.name || 'Select Org'}
+                            {typeof selectedOrganization?.name === 'string' ? selectedOrganization.name : selectedOrganization?.id || 'Select Org'}
                             {error && networkError && (
                               <AlertIcon
                                 fontSize="small"
@@ -1269,7 +1269,7 @@ export default function NavBar() {
                                       whiteSpace: 'nowrap',
                                     }}
                                   >
-                                    {org.name}
+                                    {typeof org.name === 'string' ? org.name : org.id || 'Unknown Organization'}
                                   </Typography>
 
                                   {isSelected && (

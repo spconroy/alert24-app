@@ -249,14 +249,14 @@ export default function PublicStatusPage({
                       color="text.secondary"
                       mb={1}
                     >
-                      90 days uptime history
+                      7 days uptime history
                     </Typography>
-                    <ServiceUptimeTimeline serviceId={service.id} days={90} />
+                    <ServiceUptimeTimeline serviceId={service.id} days={7} isPublic={true} />
                   </Grid>
 
                   {/* Uptime Stats */}
                   <Grid item xs={12} md={4}>
-                    <ServiceUptimeStats serviceId={service.id} compact={true} />
+                    <ServiceUptimeStats serviceId={service.id} compact={true} isPublic={true} days={7} />
                   </Grid>
                 </Grid>
               </Paper>

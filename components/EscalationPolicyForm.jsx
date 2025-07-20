@@ -58,7 +58,7 @@ export default function EscalationPolicyForm({
     is_active: true,
     escalation_delay_minutes: 15,
     max_escalation_level: 3,
-    escalation_rules: [],
+    rules: [],
   });
 
 
@@ -71,7 +71,7 @@ export default function EscalationPolicyForm({
         escalation_delay_minutes:
           escalationPolicy.escalation_delay_minutes || 15,
         max_escalation_level: escalationPolicy.max_escalation_level || 3,
-        escalation_rules: escalationPolicy.escalation_rules || [],
+        rules: escalationPolicy.rules || [],
       });
     } else {
       // Reset form for new policy
@@ -81,7 +81,7 @@ export default function EscalationPolicyForm({
         is_active: true,
         escalation_delay_minutes: 15,
         max_escalation_level: 3,
-        escalation_rules: [],
+        rules: [],
       });
     }
     setError(null);
@@ -99,7 +99,7 @@ export default function EscalationPolicyForm({
 
   const addEscalationRule = () => {
     const newRule = {
-      level: formData.escalation_rules.length + 1,
+      level: formData.rules.length + 1,
       delay_minutes: 15,
       notification_channels: ['email'],
       targets: [],
@@ -107,14 +107,14 @@ export default function EscalationPolicyForm({
 
     setFormData(prev => ({
       ...prev,
-      escalation_rules: [...prev.escalation_rules, newRule],
+      rules: [...prev.rules, newRule],
     }));
   };
 
   const updateEscalationRule = (ruleIndex, field, value) => {
     setFormData(prev => ({
       ...prev,
-      escalation_rules: prev.escalation_rules.map((rule, index) =>
+      rules: prev.rules.map((rule, index) =>
         index === ruleIndex ? { ...rule, [field]: value } : rule
       ),
     }));
@@ -123,7 +123,7 @@ export default function EscalationPolicyForm({
   const removeEscalationRule = ruleIndex => {
     setFormData(prev => ({
       ...prev,
-      escalation_rules: prev.escalation_rules
+      rules: prev.rules
         .filter((_, index) => index !== ruleIndex)
         .map((rule, index) => ({ ...rule, level: index + 1 })),
     }));
@@ -136,13 +136,13 @@ export default function EscalationPolicyForm({
       return false;
     }
 
-    if (formData.escalation_rules.length === 0) {
+    if (formData.rules.length === 0) {
       setError('At least one escalation rule is required');
       return false;
     }
 
-    for (let i = 0; i < formData.escalation_rules.length; i++) {
-      const rule = formData.escalation_rules[i];
+    for (let i = 0; i < formData.rules.length; i++) {
+      const rule = formData.rules[i];
       if (!rule.targets || rule.targets.length === 0) {
         setError(
           `Escalation level ${rule.level} must have at least one target`
@@ -327,14 +327,14 @@ export default function EscalationPolicyForm({
                 </Button>
               </Box>
 
-              {formData.escalation_rules.length === 0 ? (
+              {formData.rules.length === 0 ? (
                 <Box textAlign="center" py={3}>
                   <Typography variant="body2" color="text.secondary">
                     No escalation rules defined. Add a level to get started.
                   </Typography>
                 </Box>
               ) : (
-                formData.escalation_rules.map((rule, ruleIndex) => (
+                formData.rules.map((rule, ruleIndex) => (
                   <Card key={ruleIndex} variant="outlined" sx={{ mb: 2 }}>
                     <CardContent>
                       <Box

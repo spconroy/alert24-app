@@ -233,7 +233,7 @@ export default function ServiceMonitoringConfig({
         <Box display="flex" alignItems="center" justifyContent="space-between">
           <Box>
             <Typography variant="h6">
-              Configure Monitoring for &quot;{service.name}&quot;
+              Configure Monitoring for &quot;{typeof service.name === 'string' ? service.name : service.id || 'Unknown Service'}&quot;
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Associate monitoring checks to automatically update service status
@@ -448,7 +448,7 @@ export default function ServiceMonitoringConfig({
                                   )
                                 }
                                 helperText="Optional custom message to display when this check fails (leave empty for default)"
-                                placeholder={`${service.name} is experiencing issues`}
+                                placeholder={`${typeof service.name === 'string' ? service.name : service.id || 'Service'} is experiencing issues`}
                               />
                             </Grid>
                           </Grid>

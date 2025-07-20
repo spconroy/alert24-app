@@ -78,9 +78,13 @@ export async function POST(req) {
       organization_id,
       escalation_timeout_minutes = 30,
       escalation_steps = [],
+      rules = [],
       notification_config = {},
       is_active = true,
     } = body;
+
+    // Use rules field (new) if provided, otherwise fall back to escalation_steps (legacy)
+    const policyRules = rules.length > 0 ? rules : escalation_steps;
 
     // Validation
     if (!name || !organization_id) {
@@ -114,7 +118,7 @@ export async function POST(req) {
       description,
       organization_id,
       escalation_timeout_minutes,
-      escalation_steps,
+      rules: policyRules,
       notification_config,
       is_active,
       created_by: user.id,
@@ -143,144 +147,3 @@ export async function POST(req) {
   }
 }
 
-export async function PUT(req) {
-  try {
-    const sessionManager = new SessionManager();
-    const session = await sessionManager.getSessionFromRequest(req);
-    if (!session || !session.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { searchParams } = new URL(req.url);
-    const policyId = searchParams.get('id');
-
-    if (!policyId) {
-      return NextResponse.json(
-        { error: 'Escalation policy ID is required' },
-        { status: 400 }
-      );
-    }
-
-    const body = await req.json();
-
-    // Get user
-    const user = await db.getUserByEmail(session.user.email);
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    // Check if policy exists and user has access
-    const existingPolicy = await db.getEscalationPolicyById(policyId, user.id);
-    if (!existingPolicy) {
-      return NextResponse.json(
-        { error: 'Escalation policy not found or access denied' },
-        { status: 404 }
-      );
-    }
-
-    // Check permissions
-    const membership = await db.getOrganizationMember(
-      existingPolicy.organization_id,
-      user.id
-    );
-    if (!membership || !['owner', 'admin'].includes(membership.role)) {
-      return NextResponse.json(
-        {
-          error:
-            'Access denied - only owners and admins can update escalation policies',
-        },
-        { status: 403 }
-      );
-    }
-
-    // Update escalation policy
-    const updatedPolicy = await db.updateEscalationPolicy(policyId, {
-      ...body,
-      updated_at: new Date().toISOString(),
-    });
-
-    return NextResponse.json({
-      success: true,
-      escalation_policy: updatedPolicy,
-      message: 'Escalation policy updated successfully',
-    });
-  } catch (error) {
-    console.error('Error updating escalation policy:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to update escalation policy',
-        details: error.message,
-      },
-      { status: 500 }
-    );
-  }
-}
-
-export async function DELETE(req) {
-  try {
-    const sessionManager = new SessionManager();
-    const session = await sessionManager.getSessionFromRequest(req);
-    if (!session || !session.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { searchParams } = new URL(req.url);
-    const policyId = searchParams.get('id');
-
-    if (!policyId) {
-      return NextResponse.json(
-        { error: 'Escalation policy ID is required' },
-        { status: 400 }
-      );
-    }
-
-    // Get user
-    const user = await db.getUserByEmail(session.user.email);
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    // Check if policy exists and user has access
-    const existingPolicy = await db.getEscalationPolicyById(policyId, user.id);
-    if (!existingPolicy) {
-      return NextResponse.json(
-        { error: 'Escalation policy not found or access denied' },
-        { status: 404 }
-      );
-    }
-
-    // Check permissions
-    const membership = await db.getOrganizationMember(
-      existingPolicy.organization_id,
-      user.id
-    );
-    if (!membership || !['owner', 'admin'].includes(membership.role)) {
-      return NextResponse.json(
-        {
-          error:
-            'Access denied - only owners and admins can delete escalation policies',
-        },
-        { status: 403 }
-      );
-    }
-
-    // Delete escalation policy
-    await db.deleteEscalationPolicy(policyId);
-
-    return NextResponse.json({
-      success: true,
-      message: 'Escalation policy deleted successfully',
-    });
-  } catch (error) {
-    console.error('Error deleting escalation policy:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to delete escalation policy',
-        details: error.message,
-      },
-      { status: 500 }
-    );
-  }
-}

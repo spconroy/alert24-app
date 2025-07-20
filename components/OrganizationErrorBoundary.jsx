@@ -71,7 +71,7 @@ class OrganizationErrorBoundary extends Component {
             
             {this.state.error && (
               <Box mt={2} fontSize="0.875rem" color="text.secondary">
-                Error details: {this.state.error.message}
+                Error details: {typeof this.state.error.message === 'string' ? this.state.error.message : String(this.state.error)}
               </Box>
             )}
           </Alert>

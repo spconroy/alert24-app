@@ -94,10 +94,10 @@ export default function OrganizationList({
                   width="100%"
                 >
                   <Box>
-                    <Typography variant="body1">{org.name}</Typography>
+                    <Typography variant="body1">{typeof org.name === 'string' ? org.name : org.id || 'Unknown Organization'}</Typography>
                     {org.role && (
                       <Typography variant="caption" color="text.secondary">
-                        Role: {org.role}
+                        Role: {typeof org.role === 'string' ? org.role : 'Unknown Role'}
                       </Typography>
                     )}
                   </Box>

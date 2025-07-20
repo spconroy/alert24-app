@@ -384,7 +384,7 @@ export default function EscalationPoliciesPage() {
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2">
-                          {policy.escalation_rules?.length || 0} step(s)
+                          {policy.rules?.length || 0} step(s)
                         </Typography>
                       </TableCell>
                       <TableCell

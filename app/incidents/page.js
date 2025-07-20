@@ -939,7 +939,15 @@ export default function IncidentsPage() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {incidents.map((incident, index) => (
+                    {incidents
+                      .sort((a, b) => {
+                        // Move resolved incidents to bottom
+                        if (a.status === 'resolved' && b.status !== 'resolved') return 1;
+                        if (a.status !== 'resolved' && b.status === 'resolved') return -1;
+                        // Keep original order for non-resolved incidents
+                        return 0;
+                      })
+                      .map((incident, index) => (
                       <TableRow
                         key={incident.id}
                         hover

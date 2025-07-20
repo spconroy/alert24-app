@@ -9,7 +9,7 @@ import {
   Chip,
 } from '@mui/material';
 
-export default function ServiceUptimeStats({ serviceId, compact = false }) {
+export default function ServiceUptimeStats({ serviceId, compact = false, isPublic = false, days = 90 }) {
   const [uptimeData, setUptimeData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -18,14 +18,18 @@ export default function ServiceUptimeStats({ serviceId, compact = false }) {
     if (serviceId) {
       fetchUptimeData();
     }
-  }, [serviceId]);
+  }, [serviceId, days]);
 
   const fetchUptimeData = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(`/api/services/${serviceId}/sla?days=90`);
+      const endpoint = isPublic 
+        ? `/api/services/${serviceId}/sla/public?days=${days}`
+        : `/api/services/${serviceId}/sla?days=${days}`;
+      
+      const response = await fetch(endpoint);
       if (!response.ok) {
         throw new Error('Failed to fetch SLA data');
       }

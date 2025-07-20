@@ -364,7 +364,7 @@ const ServiceList = forwardRef(function ServiceList({ statusPageId }, ref) {
                 >
                   <Box display="flex" alignItems="center" gap={1}>
                     <Typography variant="h6" fontWeight="medium">
-                      {service.name}
+                      {typeof service.name === 'string' ? service.name : service.id || 'Unknown Service'}
                     </Typography>
                     <Chip
                       label={statusLabels[service.status]}
@@ -436,7 +436,7 @@ const ServiceList = forwardRef(function ServiceList({ statusPageId }, ref) {
                 {/* Service Description */}
                 {service.description && (
                   <Typography variant="body2" color="text.secondary" mb={2}>
-                    {service.description}
+                    {typeof service.description === 'string' ? service.description : ''}
                   </Typography>
                 )}
 

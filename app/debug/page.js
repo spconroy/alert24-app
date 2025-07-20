@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import {
   Container,
   Paper,
@@ -14,6 +15,10 @@ import {
   AccordionSummary,
   AccordionDetails,
   TextField,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Select,
 } from '@mui/material';
 import {
   ExpandMore as ExpandMoreIcon,
@@ -26,14 +31,89 @@ import {
   Email as EmailIcon,
   Sms as SmsIcon,
   Phone as PhoneIcon,
+  NotificationsActive as NotificationsIcon,
+  PlayArrow as PlayArrowIcon,
 } from '@mui/icons-material';
 
 export default function DebugPage() {
+  const { selectedOrganization } = useOrganization();
   const [debugResults, setDebugResults] = useState({});
   const [loading, setLoading] = useState({});
   const [testEmail, setTestEmail] = useState('');
   const [testPhone, setTestPhone] = useState('');
   const [testCallPhone, setTestCallPhone] = useState('');
+  
+  // Escalation test state
+  const [escalationPolicies, setEscalationPolicies] = useState([]);
+  const [selectedPolicy, setSelectedPolicy] = useState('');
+  const [selectedStep, setSelectedStep] = useState('');
+  const [escalationResults, setEscalationResults] = useState(null);
+  const [escalationLoading, setEscalationLoading] = useState(false);
+  const [debugResponse, setDebugResponse] = useState(null);
+
+  // Load escalation policies on page load
+  const loadEscalationPolicies = async () => {
+    if (!selectedOrganization?.id) {
+      alert('Please select an organization first');
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/debug/incident-paging?organization_id=${selectedOrganization.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setDebugResponse(data); // Store full response for display
+        console.log('Debug API Response:', data);
+        console.log('Escalation Policies:', data.escalationPolicies?.policies);
+        setEscalationPolicies(data.escalationPolicies?.policies || []);
+        if (data.escalationPolicies?.policies?.length > 0) {
+          setSelectedPolicy(data.escalationPolicies.policies[0].id);
+          console.log('Selected Policy:', data.escalationPolicies.policies[0]);
+          console.log('Policy Rules:', data.escalationPolicies.policies[0].rules);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load escalation policies:', error);
+      setDebugResponse({ error: error.message });
+    }
+  };
+
+  // Test escalation policy
+  const testEscalationPolicy = async () => {
+    if (!selectedPolicy || selectedStep === '') return;
+    
+    setEscalationLoading(true);
+    try {
+      const response = await fetch('/api/debug/test-escalation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          policyId: selectedPolicy,
+          stepIndex: parseInt(selectedStep),
+          testData: {
+            title: 'Test Escalation Policy',
+            description: 'This is a test of the escalation policy system.',
+            severity: 'high',
+          },
+        }),
+      });
+      
+      const result = await response.json();
+      setEscalationResults(result);
+    } catch (error) {
+      setEscalationResults({ success: false, error: error.message });
+    } finally {
+      setEscalationLoading(false);
+    }
+  };
+
+  const getSelectedPolicySteps = () => {
+    const policy = escalationPolicies.find(p => p.id === selectedPolicy);
+    console.log('getSelectedPolicySteps - Selected Policy ID:', selectedPolicy);
+    console.log('getSelectedPolicySteps - Found Policy:', policy);
+    console.log('getSelectedPolicySteps - Policy Rules:', policy?.rules);
+    return policy?.rules || [];
+  };
 
   const runTest = async (testName, endpoint) => {
     setLoading(prev => ({ ...prev, [testName]: true }));
@@ -291,6 +371,13 @@ export default function DebugPage() {
       endpoint: '/api/debug/status-page-health?quick=true',
       icon: <HealthIcon />,
     },
+    {
+      name: 'Escalation Policy Test',
+      description: 'Test escalation policy configuration and notifications',
+      endpoint: '/api/debug/incident-paging',
+      icon: <NotificationsIcon />,
+      isEscalationTest: true,
+    },
   ];
 
   return (
@@ -373,20 +460,138 @@ export default function DebugPage() {
                       </Typography>
                     </Box>
                   </Box>
-                  <Button
-                    variant="contained"
-                    onClick={() => {
-                      console.log(`Button clicked for: ${test.name}`);
-                      runTest(test.name, test.endpoint);
-                    }}
-                    disabled={loading[test.name]}
-                    startIcon={
-                      loading[test.name] && <CircularProgress size={16} />
-                    }
-                  >
-                    {loading[test.name] ? 'Running...' : 'Run Test'}
-                  </Button>
+                  {test.isEscalationTest ? (
+                    <Button
+                      variant="contained"
+                      onClick={loadEscalationPolicies}
+                      disabled={loading[test.name]}
+                      startIcon={<NotificationsIcon />}
+                    >
+                      Load Policies
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="contained"
+                      onClick={() => {
+                        console.log(`Button clicked for: ${test.name}`);
+                        runTest(test.name, test.endpoint);
+                      }}
+                      disabled={loading[test.name]}
+                      startIcon={
+                        loading[test.name] && <CircularProgress size={16} />
+                      }
+                    >
+                      {loading[test.name] ? 'Running...' : 'Run Test'}
+                    </Button>
+                  )}
                 </Box>
+
+                {/* Escalation Test UI */}
+                {test.isEscalationTest && escalationPolicies.length > 0 && (
+                  <Box sx={{ mt: 3, p: 3, bgcolor: 'grey.50', borderRadius: 1 }}>
+                    <Typography variant="h6" gutterBottom>
+                      Test Escalation Policy
+                    </Typography>
+                    
+                    <Box display="grid" gridTemplateColumns="1fr 1fr 120px" gap={2} alignItems="end">
+                      <TextField
+                        select
+                        label="Escalation Policy"
+                        value={selectedPolicy}
+                        onChange={(e) => {
+                          setSelectedPolicy(e.target.value);
+                          setSelectedStep('');
+                        }}
+                        size="small"
+                      >
+                        {escalationPolicies.map((policy) => (
+                          <MenuItem key={policy.id} value={policy.id}>
+                            {policy.name} ({(policy.rules && Array.isArray(policy.rules)) ? policy.rules.length : 0} steps)
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                      
+                      <TextField
+                        select
+                        label="Step"
+                        value={selectedStep}
+                        onChange={(e) => setSelectedStep(e.target.value)}
+                        disabled={!selectedPolicy}
+                        size="small"
+                      >
+                        {getSelectedPolicySteps().map((step, index) => (
+                          <MenuItem key={index} value={index}>
+                            Step {step.level || index + 1} ({step.targets?.length || 0} targets)
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                      
+                      <Button
+                        variant="contained"
+                        color="warning"
+                        onClick={testEscalationPolicy}
+                        disabled={!selectedPolicy || selectedStep === '' || escalationLoading}
+                        startIcon={escalationLoading ? <CircularProgress size={16} /> : <PlayArrowIcon />}
+                        size="small"
+                      >
+                        {escalationLoading ? 'Testing...' : 'Test'}
+                      </Button>
+                    </Box>
+                    
+                    {escalationResults && (
+                      <Box sx={{ mt: 2 }}>
+                        <Alert severity={escalationResults.success ? "success" : "error"}>
+                          {escalationResults.message || escalationResults.error}
+                        </Alert>
+                        
+                        {escalationResults.results && (
+                          <Box sx={{ mt: 2 }}>
+                            <Typography variant="subtitle2">
+                              Notifications sent: {escalationResults.results.notifications.length}
+                            </Typography>
+                            {escalationResults.results.notifications.map((notification, index) => (
+                              <Box key={index} sx={{ ml: 2, mt: 1 }}>
+                                <Typography variant="body2">
+                                  📧 {notification.target.name} via {notification.channels.join(', ')}
+                                </Typography>
+                              </Box>
+                            ))}
+                          </Box>
+                        )}
+                      </Box>
+                    )}
+                    
+                    {/* Debug Response JSON Display */}
+                    {debugResponse && (
+                      <Box sx={{ mt: 3 }}>
+                        <Typography variant="subtitle2" gutterBottom>
+                          Debug API Response (Raw JSON)
+                        </Typography>
+                        <TextField
+                          multiline
+                          rows={12}
+                          fullWidth
+                          value={JSON.stringify(debugResponse, null, 2)}
+                          variant="outlined"
+                          size="small"
+                          InputProps={{
+                            readOnly: true,
+                            style: {
+                              fontFamily: 'monospace',
+                              fontSize: '0.75rem',
+                              backgroundColor: '#f5f5f5',
+                            },
+                          }}
+                          sx={{
+                            '& .MuiInputBase-root': {
+                              padding: '8px',
+                            },
+                          }}
+                        />
+                      </Box>
+                    )}
+                  </Box>
+                )}
 
                 {debugResults[test.name] && (
                   <Accordion>
