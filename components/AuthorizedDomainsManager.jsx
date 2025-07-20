@@ -63,7 +63,7 @@ export default function AuthorizedDomainsManager() {
   const [formData, setFormData] = useState({
     domain: '',
     description: '',
-    autoRole: 'stakeholder',
+    autoRole: 'member',
     maxAutoEnrollments: '',
     requireVerification: true,
     isActive: true,
@@ -110,7 +110,7 @@ export default function AuthorizedDomainsManager() {
     setFormData({
       domain: '',
       description: '',
-      autoRole: 'stakeholder',
+      autoRole: 'member',
       maxAutoEnrollments: '',
       requireVerification: true,
       isActive: true,
@@ -165,6 +165,8 @@ export default function AuthorizedDomainsManager() {
         isActive: formData.isActive,
       };
 
+      console.log('Sending authorized domain payload:', payload);
+      
       const response = await fetch(url, {
         method,
         headers: {
@@ -173,8 +175,11 @@ export default function AuthorizedDomainsManager() {
         body: JSON.stringify(payload),
       });
 
+      console.log('Response status:', response.status);
+      
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('Error response:', errorData);
         throw new Error(
           errorData.error ||
             `Failed to ${editingDomain ? 'update' : 'create'} domain`
@@ -500,8 +505,7 @@ export default function AuthorizedDomainsManager() {
                 }
                 label="Auto-assigned Role"
               >
-                <MenuItem value="stakeholder">Stakeholder</MenuItem>
-                <MenuItem value="responder">Responder</MenuItem>
+                <MenuItem value="member">Member</MenuItem>
                 <MenuItem value="admin">Admin</MenuItem>
               </Select>
             </FormControl>

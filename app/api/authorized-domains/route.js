@@ -167,8 +167,24 @@ export async function POST(request) {
         );
       }
 
+      if (createError.code === '23514') {
+        // Check constraint violation (likely invalid role)
+        return Response.json(
+          { error: 'Invalid role specified. Please use stakeholder, responder, admin, or owner.' },
+          { status: 400 }
+        );
+      }
+
+      // Log the full error for debugging
+      console.error('Full create error details:', {
+        code: createError.code,
+        message: createError.message,
+        details: createError.details,
+        hint: createError.hint
+      });
+
       return Response.json(
-        { error: 'Failed to create authorized domain' },
+        { error: `Failed to create authorized domain: ${createError.message}` },
         { status: 500 }
       );
     }
