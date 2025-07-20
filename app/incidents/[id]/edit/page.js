@@ -236,7 +236,7 @@ export default function EditIncidentPage() {
       const submitData = {
         ...formData,
         affected_services: formData.affected_services.map(service =>
-          typeof service === 'string' ? service : service.id || service.name
+          typeof service === 'string' ? service : service.name || service.id
         ),
       };
 

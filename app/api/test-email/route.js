@@ -13,7 +13,7 @@ function checkEmailConfig() {
     hasApiKey: !!apiKey,
     apiKeyValid: apiKey && apiKey.startsWith('SG.') && apiKey.length > 20,
     hasFromEmail: !!fromEmail,
-    fromEmail: fromEmail || 'noreply@alert24.io',
+    fromEmail: fromEmail || 'noreply@alert24.net',
     configStatus: !apiKey
       ? 'missing_api_key'
       : !fromEmail

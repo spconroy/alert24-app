@@ -20,6 +20,8 @@ import {
   Alert,
   CircularProgress,
   Paper,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 // Timeline components can be problematic, using simple layout instead
 // import {
@@ -52,6 +54,7 @@ export default function IncidentTimeline({
   const [error, setError] = useState(null);
   const [addUpdateDialogOpen, setAddUpdateDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [publicUpdatesMap, setPublicUpdatesMap] = useState(new Map());
 
   // Form state for new update
   const [newUpdate, setNewUpdate] = useState({
@@ -59,11 +62,22 @@ export default function IncidentTimeline({
     status: incident?.status || 'investigating',
     update_type: 'update',
     visible_to_subscribers: true,
+    post_as_public_update: false,
   });
 
   useEffect(() => {
     if (incidentId) {
       fetchUpdates();
+      // Load public updates map from localStorage
+      const savedPublicUpdates = localStorage.getItem(`publicUpdates_${incidentId}`);
+      if (savedPublicUpdates) {
+        try {
+          const parsed = JSON.parse(savedPublicUpdates);
+          setPublicUpdatesMap(new Map(Object.entries(parsed)));
+        } catch (e) {
+          console.error('Error parsing saved public updates:', e);
+        }
+      }
     }
   }, [incidentId]);
 
@@ -105,12 +119,25 @@ export default function IncidentTimeline({
 
       if (response.ok) {
         const data = await response.json();
-        setUpdates(prev => [...prev, data.update]);
+        
+        // Save public status to localStorage if it was marked as public
+        if (newUpdate.post_as_public_update) {
+          const newMap = new Map(publicUpdatesMap);
+          newMap.set(data.update.id, true);
+          setPublicUpdatesMap(newMap);
+          
+          // Persist to localStorage
+          const mapObj = Object.fromEntries(newMap);
+          localStorage.setItem(`publicUpdates_${incidentId}`, JSON.stringify(mapObj));
+        }
+        
+        setUpdates(prev => [data.update, ...prev]);
         setNewUpdate({
           message: '',
           status: incident?.status || 'investigating',
           update_type: 'update',
           visible_to_subscribers: true,
+          post_as_public_update: false,
         });
         setAddUpdateDialogOpen(false);
 
@@ -295,13 +322,13 @@ export default function IncidentTimeline({
                       <Typography variant="caption" color="text.secondary">
                         {update.posted_by_user?.name || 'Unknown User'}
                       </Typography>
-                      {/* Visibility info not available in current schema */}
-                      {false && (
+                      {(update.visible_to_public || publicUpdatesMap.get(update.id)) && (
                         <Chip
-                          label="Internal"
+                          label="Public"
                           size="small"
                           variant="outlined"
-                          color="secondary"
+                          color="primary"
+                          sx={{ ml: 1 }}
                         />
                       )}
                     </Box>
@@ -372,6 +399,24 @@ export default function IncidentTimeline({
             </FormControl>
 
             {/* Visibility control removed - not supported by current database schema */}
+            
+            {/* Public Update Checkbox */}
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={newUpdate.post_as_public_update}
+                  onChange={e =>
+                    setNewUpdate(prev => ({
+                      ...prev,
+                      post_as_public_update: e.target.checked,
+                    }))
+                  }
+                  color="primary"
+                />
+              }
+              label="Post as public update to affected services"
+              sx={{ mt: 2 }}
+            />
           </Box>
         </DialogContent>
         <DialogActions>

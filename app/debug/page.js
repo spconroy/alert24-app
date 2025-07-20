@@ -13,6 +13,7 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  TextField,
 } from '@mui/material';
 import {
   ExpandMore as ExpandMoreIcon,
@@ -22,11 +23,15 @@ import {
   HealthAndSafety as HealthIcon,
   MonitorHeart as MonitorIcon,
   Settings as SettingsIcon,
+  Email as EmailIcon,
+  Sms as SmsIcon,
 } from '@mui/icons-material';
 
 export default function DebugPage() {
   const [debugResults, setDebugResults] = useState({});
   const [loading, setLoading] = useState({});
+  const [testEmail, setTestEmail] = useState('');
+  const [testPhone, setTestPhone] = useState('');
 
   const runTest = async (testName, endpoint) => {
     setLoading(prev => ({ ...prev, [testName]: true }));
@@ -62,6 +67,116 @@ export default function DebugPage() {
       }));
     } catch (error) {
       console.error(`Test ${testName} failed:`, error);
+      setDebugResults(prev => ({
+        ...prev,
+        [testName]: { success: false, error: error.message, status: 'error' },
+      }));
+    } finally {
+      setLoading(prev => ({ ...prev, [testName]: false }));
+    }
+  };
+
+  const sendTestEmail = async () => {
+    if (!testEmail) {
+      alert('Please enter an email address');
+      return;
+    }
+
+    const testName = 'Email Test';
+    setLoading(prev => ({ ...prev, [testName]: true }));
+    
+    try {
+      console.log(`Sending test email to: ${testEmail}`);
+      const response = await fetch('/api/test-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          action: 'test',
+          testEmail: testEmail
+        }),
+      });
+
+      console.log(`Response status: ${response.status}`);
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        const text = await response.text();
+        data = { parseError: 'Failed to parse JSON', responseText: text };
+      }
+
+      console.log('Response data:', data);
+
+      setDebugResults(prev => ({
+        ...prev,
+        [testName]: {
+          success: response.ok,
+          data,
+          status: response.status,
+          timestamp: new Date().toISOString(),
+          emailSent: testEmail,
+        },
+      }));
+    } catch (error) {
+      console.error(`Email test failed:`, error);
+      setDebugResults(prev => ({
+        ...prev,
+        [testName]: { success: false, error: error.message, status: 'error' },
+      }));
+    } finally {
+      setLoading(prev => ({ ...prev, [testName]: false }));
+    }
+  };
+
+  const sendTestSMS = async () => {
+    if (!testPhone) {
+      alert('Please enter a phone number');
+      return;
+    }
+
+    const testName = 'SMS Test';
+    setLoading(prev => ({ ...prev, [testName]: true }));
+    
+    try {
+      console.log(`Sending test SMS to: ${testPhone}`);
+      const response = await fetch('/api/test-sms', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          action: 'test',
+          testPhone: testPhone
+        }),
+      });
+
+      console.log(`Response status: ${response.status}`);
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        const text = await response.text();
+        data = { parseError: 'Failed to parse JSON', responseText: text };
+      }
+
+      console.log('Response data:', data);
+
+      setDebugResults(prev => ({
+        ...prev,
+        [testName]: {
+          success: response.ok,
+          data,
+          status: response.status,
+          timestamp: new Date().toISOString(),
+          phoneSent: testPhone,
+        },
+      }));
+    } catch (error) {
+      console.error(`SMS test failed:`, error);
       setDebugResults(prev => ({
         ...prev,
         [testName]: { success: false, error: error.message, status: 'error' },
@@ -607,6 +722,177 @@ export default function DebugPage() {
             </Card>
           ))}
         </Box>
+
+        <Card sx={{ mt: 4 }}>
+          <CardContent>
+            <Box display="flex" alignItems="center" gap={2} mb={3}>
+              <EmailIcon color="primary" />
+              <Typography variant="h6">
+                Email Test
+              </Typography>
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Send a test email to verify email configuration and delivery
+            </Typography>
+            
+            <Box display="flex" alignItems="center" gap={2} mb={2}>
+              <TextField
+                label="Email Address"
+                variant="outlined"
+                value={testEmail}
+                onChange={(e) => setTestEmail(e.target.value)}
+                placeholder="Enter email address to test"
+                size="small"
+                sx={{ flexGrow: 1 }}
+                type="email"
+              />
+              <Button
+                variant="contained"
+                onClick={sendTestEmail}
+                disabled={loading['Email Test'] || !testEmail}
+                startIcon={
+                  loading['Email Test'] ? <CircularProgress size={16} /> : <EmailIcon />
+                }
+              >
+                {loading['Email Test'] ? 'Sending...' : 'Send Test Email'}
+              </Button>
+            </Box>
+
+            {debugResults['Email Test'] && (
+              <Accordion>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Typography>
+                    Email Test Results {debugResults['Email Test'].success ? '✅' : '❌'}
+                    {debugResults['Email Test'].emailSent && (
+                      <span
+                        style={{
+                          marginLeft: '8px',
+                          fontSize: '0.9em',
+                          color: '#666',
+                        }}
+                      >
+                        (sent to {debugResults['Email Test'].emailSent})
+                      </span>
+                    )}
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  {debugResults['Email Test'].success ? (
+                    <Alert severity="success" sx={{ mb: 2 }}>
+                      Test email sent successfully! Check your inbox at{' '}
+                      <strong>{debugResults['Email Test'].emailSent}</strong>
+                    </Alert>
+                  ) : (
+                    <Alert severity="error" sx={{ mb: 2 }}>
+                      Failed to send test email. Check the error details below.
+                    </Alert>
+                  )}
+                  
+                  <pre
+                    style={{
+                      background: '#f5f5f5',
+                      padding: '1rem',
+                      borderRadius: '4px',
+                      overflow: 'auto',
+                      fontSize: '0.8rem',
+                    }}
+                  >
+                    {JSON.stringify(debugResults['Email Test'], null, 2)}
+                  </pre>
+                </AccordionDetails>
+              </Accordion>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card sx={{ mt: 4 }}>
+          <CardContent>
+            <Box display="flex" alignItems="center" gap={2} mb={3}>
+              <SmsIcon color="primary" />
+              <Typography variant="h6">
+                SMS Test
+              </Typography>
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Send a test SMS to verify Twilio configuration and delivery
+            </Typography>
+            
+            <Box display="flex" alignItems="center" gap={2} mb={2}>
+              <TextField
+                label="Phone Number"
+                variant="outlined"
+                value={testPhone}
+                onChange={(e) => setTestPhone(e.target.value)}
+                placeholder="Enter phone number (e.g., +1234567890)"
+                size="small"
+                sx={{ flexGrow: 1 }}
+                type="tel"
+                helperText="Include country code (e.g., +1 for US)"
+              />
+              <Button
+                variant="contained"
+                onClick={sendTestSMS}
+                disabled={loading['SMS Test'] || !testPhone}
+                startIcon={
+                  loading['SMS Test'] ? <CircularProgress size={16} /> : <SmsIcon />
+                }
+              >
+                {loading['SMS Test'] ? 'Sending...' : 'Send Test SMS'}
+              </Button>
+            </Box>
+
+            {debugResults['SMS Test'] && (
+              <Accordion>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Typography>
+                    SMS Test Results {debugResults['SMS Test'].success ? '✅' : '❌'}
+                    {debugResults['SMS Test'].phoneSent && (
+                      <span
+                        style={{
+                          marginLeft: '8px',
+                          fontSize: '0.9em',
+                          color: '#666',
+                        }}
+                      >
+                        (sent to {debugResults['SMS Test'].phoneSent})
+                      </span>
+                    )}
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  {debugResults['SMS Test'].success ? (
+                    <Alert severity="success" sx={{ mb: 2 }}>
+                      Test SMS sent successfully! Check your phone at{' '}
+                      <strong>{debugResults['SMS Test'].phoneSent}</strong>
+                    </Alert>
+                  ) : (
+                    <Alert severity="error" sx={{ mb: 2 }}>
+                      Failed to send test SMS. Check the error details below.
+                      {debugResults['SMS Test'].status === 401 && (
+                        <>
+                          <br />
+                          <strong>Note:</strong> Authentication may be required or Twilio credentials may be missing.
+                        </>
+                      )}
+                    </Alert>
+                  )}
+                  
+                  <pre
+                    style={{
+                      background: '#f5f5f5',
+                      padding: '1rem',
+                      borderRadius: '4px',
+                      overflow: 'auto',
+                      fontSize: '0.8rem',
+                    }}
+                  >
+                    {JSON.stringify(debugResults['SMS Test'], null, 2)}
+                  </pre>
+                </AccordionDetails>
+              </Accordion>
+            )}
+          </CardContent>
+        </Card>
 
         <Card sx={{ mt: 4 }}>
           <CardContent>

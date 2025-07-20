@@ -88,6 +88,7 @@ export async function POST(req, { params }) {
       status,
       update_type = 'update',
       visible_to_subscribers = true,
+      post_as_public_update = false,
     } = body;
 
     if (!message) {
@@ -118,9 +119,44 @@ export async function POST(req, { params }) {
       user_id: user.id,
       message,
       status: status || incident.status,
+      visible_to_public: post_as_public_update,
     };
 
     const newUpdate = await db.createIncidentUpdate(updateData);
+
+    // Handle public update posting to affected services
+    if (post_as_public_update && incident.affected_services?.length > 0) {
+      try {
+        // In a real implementation, this would post to external service status pages
+        // For now, we'll log this action and could extend to integrate with services like:
+        // - StatusPage.io
+        // - Atlassian Statuspage
+        // - Custom status page APIs
+        console.log('Public update requested for services:', incident.affected_services);
+        console.log('Update message:', message);
+        console.log('Update status:', status || incident.status);
+        
+        // TODO: Implement actual service status page integrations
+        // This could involve:
+        // 1. Posting to external status page APIs
+        // 2. Updating service status dashboards
+        // 3. Sending notifications to service subscribers
+      } catch (err) {
+        console.error('Error posting public update to services:', err);
+        // Don't fail the entire request if public posting fails
+      }
+    }
+
+    // Add user information to the newly created update for immediate display
+    const updateWithUser = {
+      ...newUpdate,
+      posted_by_user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      },
+      visible_to_public: post_as_public_update,
+    };
 
     // If status changed, update the incident
     if (status && status !== incident.status) {
@@ -133,7 +169,7 @@ export async function POST(req, { params }) {
     return NextResponse.json(
       {
         success: true,
-        update: newUpdate,
+        update: updateWithUser,
         message: 'Incident update created successfully',
       },
       { status: 201 }
