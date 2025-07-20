@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { SessionManager } from '@/lib/session-manager';
-import { SupabaseClient } from '@/lib/db-supabase';
+import { SupabaseClient, db } from '@/lib/db-supabase';
 
-const db = new SupabaseClient();
+// Use the singleton instance instead of creating a new one
+// const db = new SupabaseClient();
 
 export const runtime = 'edge';
 

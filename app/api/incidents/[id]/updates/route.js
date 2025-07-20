@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { SessionManager } from '@/lib/session-manager';
-import { SupabaseClient } from '@/lib/db-supabase';
+import { SupabaseClient, db } from '@/lib/db-supabase';
 
-const db = new SupabaseClient();
+// Use the singleton instance instead of creating a new one
+// const db = new SupabaseClient();
 
 export const runtime = 'edge';
 
@@ -45,6 +46,7 @@ export async function GET(req, { params }) {
       ...update,
       posted_by_name: update.posted_by_user?.name,
       posted_by_email: update.posted_by_user?.email,
+      // visible_to_subscribers is already the correct field name in the database
     }));
 
     return NextResponse.json({
@@ -113,11 +115,9 @@ export async function POST(req, { params }) {
     // Create incident update
     const updateData = {
       incident_id: incidentId,
+      user_id: user.id,
       message,
       status: status || incident.status,
-      update_type,
-      posted_by: user.id,
-      visible_to_subscribers,
     };
 
     const newUpdate = await db.createIncidentUpdate(updateData);

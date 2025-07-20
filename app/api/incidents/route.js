@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { SupabaseClient } from '@/lib/db-supabase';
+import { SupabaseClient, db } from '@/lib/db-supabase';
 import {
   withErrorHandler,
   ApiResponse,
@@ -9,7 +9,8 @@ import {
 } from '@/lib/api-utils';
 import { emailService } from '@/lib/email-service';
 
-const db = new SupabaseClient();
+// Use the singleton instance instead of creating a new one
+// const db = new SupabaseClient();
 
 export const runtime = 'edge';
 

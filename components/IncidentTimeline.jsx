@@ -5,13 +5,6 @@ import {
   Card,
   CardContent,
   Typography,
-  Timeline,
-  TimelineItem,
-  TimelineSeparator,
-  TimelineDot,
-  TimelineConnector,
-  TimelineContent,
-  TimelineOppositeContent,
   Chip,
   Avatar,
   Button,
@@ -28,6 +21,16 @@ import {
   CircularProgress,
   Paper,
 } from '@mui/material';
+// Timeline components can be problematic, using simple layout instead
+// import {
+//   Timeline,
+//   TimelineItem,
+//   TimelineSeparator,
+//   TimelineDot,
+//   TimelineConnector,
+//   TimelineContent,
+//   TimelineOppositeContent,
+// } from '@mui/lab';
 import NoSSR from './NoSSR';
 import {
   Add as AddIcon,
@@ -239,58 +242,47 @@ export default function IncidentTimeline({
           </Typography>
         </Paper>
       ) : (
-        <Timeline position="left">
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {updates.map((update, index) => (
-            <TimelineItem key={update.id}>
-              <TimelineOppositeContent
-                sx={{ m: 'auto 0', maxWidth: '100px', fontSize: '0.75rem' }}
-                color="text.secondary"
-              >
-                <NoSSR fallback="...">
-                  {formatRelativeTime(update.created_at)}
-                </NoSSR>
-              </TimelineOppositeContent>
-              <TimelineSeparator>
-                <TimelineDot color={getStatusColor(update.status)}>
-                  {getStatusIcon(update.status)}
-                </TimelineDot>
-                {index < updates.length - 1 && <TimelineConnector />}
-              </TimelineSeparator>
-              <TimelineContent sx={{ py: '12px', px: 2 }}>
-                <Card sx={{ mb: 1 }}>
-                  <CardContent sx={{ pb: '16px !important' }}>
-                    <Box
-                      display="flex"
-                      justifyContent="space-between"
-                      alignItems="flex-start"
-                      mb={1}
-                    >
-                      <Box>
-                        <Chip
-                          label={
-                            update.status.charAt(0).toUpperCase() +
-                            update.status.slice(1)
-                          }
-                          color={getStatusColor(update.status)}
-                          size="small"
-                          sx={{ mr: 1 }}
-                        />
-                        <Chip
-                          label={
-                            update.update_type?.charAt(0).toUpperCase() +
-                              update.update_type?.slice(1) || 'Update'
-                          }
-                          color={getUpdateTypeColor(update.update_type)}
-                          variant="outlined"
-                          size="small"
-                        />
-                      </Box>
-                      <Typography variant="caption" color="text.secondary">
-                        <NoSSR fallback="Loading...">
-                          {formatDate(update.created_at)}
-                        </NoSSR>
-                      </Typography>
+            <Card key={update.id} sx={{ mb: 1 }}>
+              <CardContent sx={{ pb: '16px !important' }}>
+                <Box
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="flex-start"
+                  mb={1}
+                >
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Avatar sx={{ width: 32, height: 32, bgcolor: getStatusColor(update.status) + '.main' }}>
+                      {getStatusIcon(update.status)}
+                    </Avatar>
+                    <Box>
+                      <Chip
+                        label={
+                          update.status.charAt(0).toUpperCase() +
+                          update.status.slice(1)
+                        }
+                        color={getStatusColor(update.status)}
+                        size="small"
+                        sx={{ mr: 1 }}
+                      />
+                      <Chip
+                        label={
+                          update.update_type?.charAt(0).toUpperCase() +
+                            update.update_type?.slice(1) || 'Update'
+                        }
+                        color={getUpdateTypeColor(update.update_type)}
+                        variant="outlined"
+                        size="small"
+                      />
                     </Box>
+                  </Box>
+                  <Typography variant="caption" color="text.secondary">
+                    <NoSSR fallback="Loading...">
+                      {formatDate(update.created_at)}
+                    </NoSSR>
+                  </Typography>
+                </Box>
 
                     <Typography variant="body1" sx={{ mb: 2 }}>
                       {update.message}
@@ -303,7 +295,8 @@ export default function IncidentTimeline({
                       <Typography variant="caption" color="text.secondary">
                         {update.posted_by_user?.name || 'Unknown User'}
                       </Typography>
-                      {!update.visible_to_subscribers && (
+                      {/* Visibility info not available in current schema */}
+                      {false && (
                         <Chip
                           label="Internal"
                           size="small"
@@ -314,10 +307,8 @@ export default function IncidentTimeline({
                     </Box>
                   </CardContent>
                 </Card>
-              </TimelineContent>
-            </TimelineItem>
           ))}
-        </Timeline>
+        </Box>
       )}
 
       {/* Add Update Dialog */}
@@ -380,24 +371,7 @@ export default function IncidentTimeline({
               </Select>
             </FormControl>
 
-            <FormControl fullWidth>
-              <InputLabel>Visibility</InputLabel>
-              <Select
-                value={newUpdate.visible_to_subscribers}
-                label="Visibility"
-                onChange={e =>
-                  setNewUpdate(prev => ({
-                    ...prev,
-                    visible_to_subscribers: e.target.value,
-                  }))
-                }
-              >
-                <MenuItem value={true}>
-                  Public (visible to subscribers)
-                </MenuItem>
-                <MenuItem value={false}>Internal only</MenuItem>
-              </Select>
-            </FormControl>
+            {/* Visibility control removed - not supported by current database schema */}
           </Box>
         </DialogContent>
         <DialogActions>

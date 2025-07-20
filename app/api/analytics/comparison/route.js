@@ -1,6 +1,6 @@
 export const runtime = 'edge';
 
-import { db } from '@/lib/db-supabase';
+import { SupabaseClient, db } from '@/lib/db-supabase';
 import { NextResponse } from 'next/server';
 
 export async function POST(request) {
@@ -12,7 +12,7 @@ export async function POST(request) {
     }
 
     // Get service information
-    const { data: serviceData, error: serviceError } = await supabase
+    const { data: serviceData, error: serviceError } = await db.client
       .from('services')
       .select('*')
       .in('id', services);
@@ -49,7 +49,7 @@ export async function POST(request) {
     const comparisonData = await Promise.all(
       (serviceData || []).map(async service => {
         // Get monitoring checks for this service
-        const { data: monitoringChecks } = await supabase
+        const { data: monitoringChecks } = await db.client
           .from('service_monitoring_checks')
           .select('monitoring_check_id')
           .eq('service_id', service.id);
@@ -69,7 +69,7 @@ export async function POST(request) {
         }
 
         // Get monitoring statistics
-        const { data: stats } = await supabase
+        const { data: stats } = await db.client
           .from('monitoring_statistics')
           .select('*')
           .in('monitoring_check_id', checkIds)
@@ -77,7 +77,7 @@ export async function POST(request) {
           .lte('date_hour', endDate.toISOString());
 
         // Get check results for response time
-        const { data: checkResults } = await supabase
+        const { data: checkResults } = await db.client
           .from('check_results')
           .select('response_time, is_successful')
           .in('monitoring_check_id', checkIds)
@@ -86,7 +86,7 @@ export async function POST(request) {
           .not('response_time', 'is', null);
 
         // Get incidents for this service (simplified - get all incidents for the org)
-        const { data: incidents } = await supabase
+        const { data: incidents } = await db.client
           .from('incidents')
           .select('*')
           .eq('organization_id', organizationId)

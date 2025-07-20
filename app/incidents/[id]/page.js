@@ -496,7 +496,7 @@ export default function IncidentDetailPage() {
                     {incident.affected_services.map((service, index) => (
                       <Chip
                         key={index}
-                        label={service}
+                        label={typeof service === 'string' ? service : service.name || service.id || 'Unknown Service'}
                         variant="outlined"
                         size="small"
                       />

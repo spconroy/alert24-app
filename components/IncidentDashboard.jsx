@@ -29,6 +29,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import SmsIcon from '@mui/icons-material/Sms';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import NoSSR from './NoSSR';
+import OnCallTextingModal from './OnCallTextingModal';
 
 // CSS for animations
 const animations = `
@@ -62,6 +63,8 @@ export default function IncidentDashboard() {
   const [onCallInfo, setOnCallInfo] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [textingModalOpen, setTextingModalOpen] = useState(false);
+  const [selectedOnCallPerson, setSelectedOnCallPerson] = useState(null);
   const { selectedOrganization, session } = useOrganization();
 
 
@@ -201,6 +204,16 @@ export default function IncidentDashboard() {
       return { status: 'Monitoring Issues', color: 'warning' };
     }
     return { status: 'All Systems Operational', color: 'success' };
+  };
+
+  const handleOpenTextingModal = (onCallPerson) => {
+    setSelectedOnCallPerson(onCallPerson);
+    setTextingModalOpen(true);
+  };
+
+  const handleCloseTextingModal = () => {
+    setTextingModalOpen(false);
+    setSelectedOnCallPerson(null);
   };
 
   if (loading) {
@@ -1091,6 +1104,8 @@ export default function IncidentDashboard() {
                       .map((incident, index) => (
                       <Box
                         key={incident.id}
+                        component={Link}
+                        href={`/incidents/${incident.id}`}
                         sx={{
                           mb: 2,
                           p: 2,
@@ -1102,9 +1117,14 @@ export default function IncidentDashboard() {
                               : 'grey.200',
                           backgroundColor:
                             incident.status === 'open' ? 'error.50' : 'grey.50',
+                          textDecoration: 'none',
+                          color: 'inherit',
+                          display: 'block',
+                          cursor: 'pointer',
                           '&:hover': {
                             boxShadow: 2,
                             transform: 'translateY(-1px)',
+                            textDecoration: 'none',
                           },
                           transition: 'all 0.2s ease-in-out',
                         }}
@@ -1125,18 +1145,9 @@ export default function IncidentDashboard() {
                                   incident.status === 'open'
                                     ? 'error.main'
                                     : 'text.primary',
-                                '&:hover': { textDecoration: 'underline' },
                               }}
                             >
-                              <Link
-                                href={`/incidents/${incident.id}`}
-                                style={{
-                                  textDecoration: 'none',
-                                  color: 'inherit',
-                                }}
-                              >
-                                {incident.title}
-                              </Link>
+                              {incident.title}
                             </Typography>
                           </Box>
                           <Box display="flex" gap={0.5} alignItems="center">
@@ -1197,41 +1208,6 @@ export default function IncidentDashboard() {
                           </Typography>
                         </Box>
 
-                        {/* Action buttons */}
-                        <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-                          <Button
-                            component={Link}
-                            href={`/incidents/${incident.id}`}
-                            size="small"
-                            variant="outlined"
-                            sx={{ flex: 1, fontSize: '0.75rem' }}
-                          >
-                            View Details
-                          </Button>
-                          {incident.status === 'open' && (
-                            <Button
-                              component={Link}
-                              href={`/incidents/${incident.id}/edit`}
-                              size="small"
-                              variant="contained"
-                              color={
-                                incident.severity === 'critical'
-                                  ? 'error'
-                                  : 'primary'
-                              }
-                              sx={{ fontSize: '0.75rem' }}
-                            >
-                              {incident.severity === 'critical'
-                                ? 'Urgent'
-                                : 'Update'}
-                            </Button>
-                          )}
-                          <Tooltip title="Quick actions">
-                            <IconButton size="small" color="primary">
-                              ⚡
-                            </IconButton>
-                          </Tooltip>
-                        </Box>
                       </Box>
                     ))}
 
@@ -1504,12 +1480,7 @@ export default function IncidentDashboard() {
                               variant="outlined"
                               color="success"
                               sx={{ minWidth: 'auto', px: 1 }}
-                              onClick={() => {
-                                const phone = schedule.current_on_call_member?.phone || schedule.current_on_call_member?.email;
-                                if (phone) {
-                                  window.open(`sms:${phone}`, '_blank');
-                                }
-                              }}
+                              onClick={() => handleOpenTextingModal(schedule)}
                             >
                               <SmsIcon fontSize="small" />
                             </Button>
@@ -2133,6 +2104,14 @@ export default function IncidentDashboard() {
             </Card>
           </Grid>
         </Grid>
+
+        {/* Texting Modal */}
+        <OnCallTextingModal
+          open={textingModalOpen}
+          onClose={handleCloseTextingModal}
+          onCallPerson={selectedOnCallPerson}
+          userInfo={session?.user}
+        />
       </Box>
   );
 }
