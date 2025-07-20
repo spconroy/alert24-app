@@ -30,6 +30,7 @@ import SmsIcon from '@mui/icons-material/Sms';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import NoSSR from './NoSSR';
 import OnCallTextingModal from './OnCallTextingModal';
+import RecentUpdatesFeed from './RecentUpdatesFeed';
 
 // CSS for animations
 const animations = `
@@ -2102,6 +2103,9 @@ export default function IncidentDashboard() {
                 </Box>
               </CardContent>
             </Card>
+
+            {/* Recent Updates Feed */}
+            <RecentUpdatesFeed />
           </Grid>
         </Grid>
 

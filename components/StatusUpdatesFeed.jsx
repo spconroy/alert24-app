@@ -299,7 +299,10 @@ export default function StatusUpdatesFeed({
                 >
                   <Box flex={1}>
                     <Typography variant="h6" component="h4" gutterBottom>
-                      {update.title}
+                      {update.type === 'incident_update' 
+                        ? `${update.incident_title} - Update`
+                        : update.title
+                      }
                     </Typography>
                     <Box display="flex" gap={1} mb={1}>
                       <Chip
@@ -307,6 +310,14 @@ export default function StatusUpdatesFeed({
                         color={getStatusColor(update.status)}
                         size="small"
                       />
+                      {update.type === 'incident_update' && (
+                        <Chip
+                          label="Incident Update"
+                          color="warning"
+                          variant="outlined"
+                          size="small"
+                        />
+                      )}
                       {update.update_type && (
                         <Chip
                           label={
@@ -324,6 +335,17 @@ export default function StatusUpdatesFeed({
                           variant="outlined"
                           size="small"
                         />
+                      )}
+                      {update.type === 'incident_update' && update.affected_services && (
+                        update.affected_services.slice(0, 3).map((service, idx) => (
+                          <Chip
+                            key={idx}
+                            label={service}
+                            variant="outlined"
+                            size="small"
+                            color="primary"
+                          />
+                        ))
                       )}
                     </Box>
                   </Box>
@@ -347,9 +369,22 @@ export default function StatusUpdatesFeed({
                     </Typography>
                   }
                 >
-                  <Typography variant="caption" color="text.secondary">
-                    Posted {new Date(update.created_at).toLocaleString()}
-                  </Typography>
+                  <Box display="flex" justifyContent="space-between" alignItems="center">
+                    <Typography variant="caption" color="text.secondary">
+                      Posted {new Date(update.created_at).toLocaleString()}
+                      {update.type === 'incident_update' && update.posted_by_user && (
+                        ` by ${update.posted_by_user.name || update.posted_by_user.email}`
+                      )}
+                    </Typography>
+                    {update.type === 'incident_update' && (
+                      <Chip 
+                        label="Public Update" 
+                        size="small" 
+                        color="success" 
+                        variant="outlined"
+                      />
+                    )}
+                  </Box>
                 </NoSSR>
               </CardContent>
             </Card>
