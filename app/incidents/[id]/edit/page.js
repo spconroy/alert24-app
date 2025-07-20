@@ -68,9 +68,13 @@ export default function EditIncidentPage() {
 
   const fetchIncident = async () => {
     try {
+      console.log('Fetching incident with ID:', incidentId);
       const response = await fetch(`/api/incidents/${incidentId}`);
+      console.log('Incident fetch response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('Incident data received:', data);
         const incident = data.incident;
         setOriginalIncident(incident);
 
@@ -93,6 +97,8 @@ export default function EditIncidentPage() {
       } else if (response.status === 404) {
         setError('Incident not found');
       } else {
+        const errorData = await response.text();
+        console.error('Failed to fetch incident:', response.status, errorData);
         setError('Failed to load incident');
       }
     } catch (err) {
@@ -105,29 +111,46 @@ export default function EditIncidentPage() {
 
   const fetchOrganizationData = async orgId => {
     try {
+      console.log('Fetching organization data for orgId:', orgId);
+      
       // Fetch escalation policies
+      console.log('Fetching escalation policies...');
       const policiesResponse = await fetch(
         `/api/escalation-policies?organization_id=${orgId}&active_only=true`
       );
+      console.log('Escalation policies response status:', policiesResponse.status);
       if (policiesResponse.ok) {
         const policiesData = await policiesResponse.json();
+        console.log('Escalation policies data:', policiesData);
         setEscalationPolicies(policiesData.escalation_policies || []);
       }
 
       // Fetch organization details and members
+      console.log('Fetching organization details...');
       const orgResponse = await fetch(`/api/organizations/${orgId}`);
+      console.log('Organization response status:', orgResponse.status);
       if (orgResponse.ok) {
         const orgData = await orgResponse.json();
+        console.log('Organization data:', orgData);
         setOrganizationMembers(orgData.members || []);
+      } else {
+        const orgError = await orgResponse.text();
+        console.error('Organization fetch error:', orgResponse.status, orgError);
       }
 
       // Fetch services
+      console.log('Fetching services...');
       const servicesResponse = await fetch(
         `/api/services?organization_id=${orgId}`
       );
+      console.log('Services response status:', servicesResponse.status);
       if (servicesResponse.ok) {
         const servicesData = await servicesResponse.json();
+        console.log('Services data:', servicesData);
         setServices(servicesData.services || []);
+      } else {
+        const servicesError = await servicesResponse.text();
+        console.error('Services fetch error:', servicesResponse.status, servicesError);
       }
     } catch (err) {
       console.error('Error fetching organization data:', err);
