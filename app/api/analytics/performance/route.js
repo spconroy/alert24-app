@@ -22,7 +22,7 @@ export async function POST(request) {
     }
 
     // Get monitoring checks for the selected services
-    const { data: monitoringChecks } = await supabase
+    const { data: monitoringChecks } = await db.client
       .from('service_monitoring_checks')
       .select('monitoring_check_id')
       .in('service_id', services);
@@ -65,7 +65,7 @@ export async function POST(request) {
     }
 
     // Get check results for response time analysis
-    const { data: checkResults } = await supabase
+    const { data: checkResults } = await db.client
       .from('check_results')
       .select('response_time, created_at, is_successful')
       .in('monitoring_check_id', checkIds)

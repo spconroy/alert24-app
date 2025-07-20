@@ -9,7 +9,7 @@ export const runtime = 'edge';
 export async function POST(req) {
   try {
     const sessionManager = new SessionManager();
-    const session = await sessionManager.getSessionFromRequest(request);
+    const session = await sessionManager.getSessionFromRequest(req);
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

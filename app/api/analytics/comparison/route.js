@@ -1,6 +1,6 @@
 export const runtime = 'edge';
 
-import { SupabaseClient, db } from '@/lib/db-supabase';
+import { db } from '@/lib/db-supabase';
 import { NextResponse } from 'next/server';
 
 export async function POST(request) {

@@ -35,7 +35,7 @@ export async function POST(request) {
     }
 
     // Get incidents for the organization in the date range
-    const { data: incidents, error: incidentsError } = await supabase
+    const { data: incidents, error: incidentsError } = await db.client
       .from('incidents')
       .select('*')
       .eq('organization_id', organizationId)

@@ -62,7 +62,7 @@ export async function POST(request) {
     }
 
     // Get monitoring checks for the selected services
-    const { data: monitoringChecks, error: checksError } = await supabase
+    const { data: monitoringChecks, error: checksError } = await db.client
       .from('service_monitoring_checks')
       .select('monitoring_check_id')
       .in('service_id', services);
@@ -92,7 +92,7 @@ export async function POST(request) {
     }
 
     // Get monitoring statistics for the period
-    const { data: stats, error: statsError } = await supabase
+    const { data: stats, error: statsError } = await db.client
       .from('monitoring_statistics')
       .select('*')
       .in('monitoring_check_id', checkIds)
@@ -105,7 +105,7 @@ export async function POST(request) {
     }
 
     // Get previous period statistics for trend calculation
-    const { data: previousStats, error: previousStatsError } = await supabase
+    const { data: previousStats, error: previousStatsError } = await db.client
       .from('monitoring_statistics')
       .select('*')
       .in('monitoring_check_id', checkIds)

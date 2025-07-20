@@ -43,7 +43,7 @@ export async function POST(request) {
     }
 
     // Get monitoring checks for selected services
-    const { data: monitoringChecks } = await supabase
+    const { data: monitoringChecks } = await db.client
       .from('service_monitoring_checks')
       .select('monitoring_check_id')
       .in('service_id', services);
@@ -52,7 +52,7 @@ export async function POST(request) {
       monitoringChecks?.map(check => check.monitoring_check_id) || [];
 
     // Get monitoring data
-    const { data: stats } = await supabase
+    const { data: stats } = await db.client
       .from('monitoring_statistics')
       .select('*')
       .in('monitoring_check_id', checkIds)
@@ -60,7 +60,7 @@ export async function POST(request) {
       .lte('date_hour', endDate.toISOString());
 
     // Get check results
-    const { data: checkResults } = await supabase
+    const { data: checkResults } = await db.client
       .from('check_results')
       .select('*')
       .in('monitoring_check_id', checkIds)
@@ -68,7 +68,7 @@ export async function POST(request) {
       .lte('created_at', endDate.toISOString());
 
     // Get incidents
-    const { data: incidents } = await supabase
+    const { data: incidents } = await db.client
       .from('incidents')
       .select('*')
       .eq('organization_id', organizationId)
@@ -76,7 +76,7 @@ export async function POST(request) {
       .lte('created_at', endDate.toISOString());
 
     // Get alerts
-    const { data: alerts } = await supabase
+    const { data: alerts } = await db.client
       .from('monitoring_alerts')
       .select('*')
       .in('monitoring_check_id', checkIds)

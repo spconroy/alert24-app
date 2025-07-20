@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { SupabaseClient } from '@/lib/db-supabase';
+import { SupabaseClient } from '@/lib/db-supabase.js';
 
 const db = new SupabaseClient();
 
@@ -105,41 +105,76 @@ export async function GET(request, { params }) {
       try {
         // Since visible_to_public column might not exist, get all incident updates
         // and filter client-side for now
+        // Get incidents first, then get their updates separately to avoid join issues
         const { data: incidents, error: incidentsError } = await db.client
           .from('incidents')
-          .select(
-            `
-            id,
-            title,
-            affected_services,
-            status,
-            incident_updates (
-              id,
-              message,
-              status,
-              created_at,
+          .select('id, title, affected_services, status, created_at')
+          .gte('created_at', thirtyDaysAgo.toISOString())
+          .order('created_at', { ascending: false });
+
+        if (!incidentsError && incidents && incidents.length > 0) {
+          // Get incident updates for these incidents
+          const incidentIds = incidents.map(i => i.id);
+          const { data: incidentUpdates, error: updatesError } = await db.adminClient
+            .from('incident_updates')
+            .select(`
+              id, 
+              incident_id, 
+              message, 
+              status, 
+              created_at, 
               user_id,
               users (
                 name,
                 email
               )
-            )
-          `
-          )
-          .gte('created_at', thirtyDaysAgo.toISOString())
-          .order('created_at', { ascending: false });
+            `)
+            .in('incident_id', incidentIds)
+            .gte('created_at', thirtyDaysAgo.toISOString())
+            .order('created_at', { ascending: false });
+
+          if (!updatesError && incidentUpdates) {
+            // Group updates by incident
+            const updatesByIncident = incidentUpdates.reduce((acc, update) => {
+              if (!acc[update.incident_id]) acc[update.incident_id] = [];
+              acc[update.incident_id].push(update);
+              return acc;
+            }, {});
+
+            // Add updates to incidents
+            incidents.forEach(incident => {
+              incident.incident_updates = updatesByIncident[incident.id] || [];
+            });
+          }
+        }
 
         if (!incidentsError && incidents) {
           // Filter incidents that affect services on this status page
           const serviceNames = actualServices.map(s => s.name);
+          const serviceIds = actualServices.map(s => s.id);
           
-          publicIncidentUpdates = incidents
-            .filter(incident => {
-              // Check if any affected service is on this status page
-              return incident.affected_services?.some(service => 
-                serviceNames.includes(service)
-              );
-            })
+          const filteredIncidents = incidents.filter(incident => {
+            // Check if any affected service ID or name is on this status page
+            const hasMatchingService = incident.affected_services?.some(service => {
+              // Handle both service IDs and service names
+              if (typeof service === 'string') {
+                // If it looks like a UUID, check against service IDs
+                if (service.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+                  return serviceIds.includes(service);
+                }
+                // Otherwise check against service names
+                return serviceNames.includes(service);
+              }
+              // Handle service objects (like in one of the incidents)
+              if (service && typeof service === 'object' && service.id) {
+                return serviceIds.includes(service.id);
+              }
+              return false;
+            });
+            return hasMatchingService;
+          });
+          
+          publicIncidentUpdates = filteredIncidents
             .flatMap(incident => 
               incident.incident_updates.map(update => ({
                 ...update,

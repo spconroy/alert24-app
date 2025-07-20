@@ -28,8 +28,6 @@ import {
 } from '@mui/material';
 import Link from 'next/link';
 import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import VisibilityIcon from '@mui/icons-material/Visibility';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import WarningIcon from '@mui/icons-material/Warning';
@@ -870,7 +868,6 @@ export default function IncidentsPage() {
                       <TableCell>⚠️ Severity</TableCell>
                       <TableCell>👤 Assigned To</TableCell>
                       <TableCell>📅 Created</TableCell>
-                      <TableCell align="right">⚡ Actions</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -878,11 +875,16 @@ export default function IncidentsPage() {
                       <TableRow
                         key={incident.id}
                         hover
+                        component={Link}
+                        href={`/incidents/${incident.id}`}
                         sx={{
                           backgroundColor:
                             index % 2 === 0
                               ? 'rgba(248, 250, 252, 0.3)'
                               : 'white',
+                          cursor: 'pointer',
+                          textDecoration: 'none',
+                          color: 'inherit',
                           '&:hover': {
                             backgroundColor: 'rgba(99, 102, 241, 0.08)',
                             transform: 'translateX(4px)',
@@ -942,26 +944,6 @@ export default function IncidentsPage() {
                           <Typography variant="body2">
                             {new Date(incident.created_at).toLocaleDateString()}
                           </Typography>
-                        </TableCell>
-                        <TableCell align="right">
-                          <Tooltip title="View Details">
-                            <IconButton
-                              component={Link}
-                              href={`/incidents/${incident.id}`}
-                              size="small"
-                            >
-                              <VisibilityIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Edit">
-                            <IconButton
-                              component={Link}
-                              href={`/incidents/${incident.id}/edit`}
-                              size="small"
-                            >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
                         </TableCell>
                       </TableRow>
                     ))}

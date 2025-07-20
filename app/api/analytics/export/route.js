@@ -76,13 +76,13 @@ export async function POST(request) {
 
 async function getAnalyticsData(organizationId, services, startDate, endDate) {
   // Get service information
-  const { data: serviceData, error: serviceError } = await supabase
+  const { data: serviceData, error: serviceError } = await db.client
     .from('services')
     .select('*')
     .in('id', services);
 
   // Get monitoring checks
-  const { data: monitoringChecks, error: checksError } = await supabase
+  const { data: monitoringChecks, error: checksError } = await db.client
     .from('service_monitoring_checks')
     .select('monitoring_check_id')
     .in('service_id', services);
@@ -91,7 +91,7 @@ async function getAnalyticsData(organizationId, services, startDate, endDate) {
     monitoringChecks?.map(check => check.monitoring_check_id) || [];
 
   // Get monitoring statistics
-  const { data: stats, error: statsError } = await supabase
+  const { data: stats, error: statsError } = await db.client
     .from('monitoring_statistics')
     .select('*')
     .in('monitoring_check_id', checkIds)
@@ -99,7 +99,7 @@ async function getAnalyticsData(organizationId, services, startDate, endDate) {
     .lte('date_hour', endDate.toISOString());
 
   // Get incidents
-  const { data: incidents, error: incidentsError } = await supabase
+  const { data: incidents, error: incidentsError } = await db.client
     .from('incidents')
     .select('*')
     .eq('organization_id', organizationId)
