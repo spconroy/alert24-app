@@ -8,14 +8,20 @@ export const runtime = 'edge';
 
 export async function GET(req, { params }) {
   try {
+    console.log('🔍 GET /api/incidents/[id] - Starting request');
     const sessionManager = new SessionManager();
     const session = await sessionManager.getSessionFromRequest(req);
+    console.log('📋 Session check result:', !!session, session?.user?.email);
+    
     if (!session || !session.user?.email) {
+      console.log('❌ Unauthorized - no session or email');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { id } = params;
+    console.log('📝 Incident ID from params:', id);
     if (!id) {
+      console.log('❌ No incident ID provided');
       return NextResponse.json(
         { error: 'Incident ID is required' },
         { status: 400 }
@@ -23,14 +29,20 @@ export async function GET(req, { params }) {
     }
 
     // Get user ID
+    console.log('👤 Getting user by email:', session.user.email);
     const user = await db.getUserByEmail(session.user.email);
+    console.log('👤 User lookup result:', !!user, user?.id);
     if (!user) {
+      console.log('❌ User not found for email:', session.user.email);
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Get incident with organization membership check
+    console.log('🎯 Getting incident by ID:', id, 'for user:', user.id);
     const incident = await db.getIncidentById(id, user.id);
+    console.log('🎯 Incident lookup result:', !!incident);
     if (!incident) {
+      console.log('❌ Incident not found or access denied:', id);
       return NextResponse.json(
         { error: 'Incident not found or access denied' },
         { status: 404 }
@@ -55,7 +67,13 @@ export async function GET(req, { params }) {
       incident: formattedIncident,
     });
   } catch (err) {
-    console.error('Error fetching incident:', err);
+    console.error('❌ Error fetching incident:', err);
+    console.error('❌ Error stack:', err.stack);
+    console.error('❌ Error details:', {
+      message: err.message,
+      name: err.name,
+      cause: err.cause
+    });
     return NextResponse.json(
       {
         success: false,
