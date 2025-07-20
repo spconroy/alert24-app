@@ -1534,7 +1534,8 @@ export default function IncidentDashboard() {
               </CardContent>
             </Card>
 
-            {/* Quick Actions */}
+            {/* Quick Actions - Hide when setup is 100% complete */}
+            {!(monitoringStats.total > 0 && currentlyOnCall.length > 0) && (
             <Card>
               <CardContent>
                 <Box
@@ -2103,6 +2104,7 @@ export default function IncidentDashboard() {
                 </Box>
               </CardContent>
             </Card>
+            )}
 
             {/* Recent Updates Feed */}
             <RecentUpdatesFeed />

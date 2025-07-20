@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { NextResponse } from 'next/server';
 import TwilioConversationsService from '@/lib/twilio-conversations';
 import { Auth } from '@/lib/api-utils';

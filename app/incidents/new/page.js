@@ -35,6 +35,8 @@ import PersonIcon from '@mui/icons-material/Person';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
+import ErrorIcon from '@mui/icons-material/Error';
+import BuildIcon from '@mui/icons-material/Build';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useOrganization } from '@/contexts/OrganizationContext';
 
@@ -89,6 +91,7 @@ export default function CreateIncidentPage() {
     severity: 'medium',
     status: 'open',
     affected_services: [],
+    service_status_updates: {},
     impact_description: '',
     assigned_to: '',
     escalation_policy_id: '',
@@ -255,6 +258,34 @@ export default function CreateIncidentPage() {
     );
   };
 
+  const handleServiceStatusChange = (serviceId, newStatus) => {
+    setFormData(prev => ({
+      ...prev,
+      service_status_updates: {
+        ...prev.service_status_updates,
+        [serviceId]: newStatus,
+      },
+    }));
+  };
+
+  const handleServiceSelectionChange = (e, newValue) => {
+    handleInputChange('affected_services', newValue);
+    
+    // Remove status updates for services that are no longer selected
+    const newServiceIds = newValue.map(service => service.id);
+    const filteredStatusUpdates = {};
+    Object.keys(formData.service_status_updates).forEach(serviceId => {
+      if (newServiceIds.includes(serviceId)) {
+        filteredStatusUpdates[serviceId] = formData.service_status_updates[serviceId];
+      }
+    });
+    
+    setFormData(prev => ({
+      ...prev,
+      service_status_updates: filteredStatusUpdates,
+    }));
+  };
+
   const handleKeyPress = e => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -279,6 +310,7 @@ export default function CreateIncidentPage() {
           severity: formData.severity,
           status: formData.status,
           affectedServices: formData.affected_services,
+          serviceStatusUpdates: formData.service_status_updates,
           impactDescription: formData.impact_description,
           assignedTo: formData.assigned_to || null,
           escalationPolicyId: formData.escalation_policy_id || null,
@@ -489,9 +521,7 @@ export default function CreateIncidentPage() {
                 options={services}
                 getOptionLabel={option => option.name || option.id || 'Unnamed Service'}
                 value={formData.affected_services}
-                onChange={(e, newValue) =>
-                  handleInputChange('affected_services', newValue)
-                }
+                onChange={handleServiceSelectionChange}
                 renderInput={params => (
                   <TextField
                     {...params}
@@ -510,6 +540,78 @@ export default function CreateIncidentPage() {
                   ))
                 }
               />
+
+              {/* Service Status Updates */}
+              {formData.affected_services.length > 0 && (
+                <Box sx={{ mt: 3 }}>
+                  <Typography variant="subtitle1" gutterBottom>
+                    Update Service Status (Optional)
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    Set the status for affected services when creating this incident.
+                  </Typography>
+                  
+                  <Grid container spacing={2}>
+                    {formData.affected_services.map(service => (
+                      <Grid item xs={12} sm={6} key={service.id}>
+                        <Card variant="outlined" sx={{ p: 2 }}>
+                          <Typography variant="subtitle2" gutterBottom>
+                            {service.name || service.id || 'Unnamed Service'}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                            Current: <Chip 
+                              label={service.status?.charAt(0).toUpperCase() + service.status?.slice(1) || 'Unknown'} 
+                              size="small" 
+                              color={
+                                service.status === 'operational' ? 'success' :
+                                service.status === 'degraded' ? 'warning' :
+                                service.status === 'down' ? 'error' :
+                                service.status === 'maintenance' ? 'info' : 'default'
+                              }
+                            />
+                          </Typography>
+                          <FormControl fullWidth size="small">
+                            <InputLabel>New Status</InputLabel>
+                            <Select
+                              value={formData.service_status_updates[service.id] || ''}
+                              onChange={(e) => handleServiceStatusChange(service.id, e.target.value)}
+                              label="New Status"
+                            >
+                              <MenuItem value="">
+                                <em>No change</em>
+                              </MenuItem>
+                              <MenuItem value="operational">
+                                <Box display="flex" alignItems="center" gap={1}>
+                                  <CheckCircleIcon sx={{ color: 'success.main', fontSize: 16 }} />
+                                  Operational
+                                </Box>
+                              </MenuItem>
+                              <MenuItem value="degraded">
+                                <Box display="flex" alignItems="center" gap={1}>
+                                  <WarningIcon sx={{ color: 'warning.main', fontSize: 16 }} />
+                                  Degraded
+                                </Box>
+                              </MenuItem>
+                              <MenuItem value="down">
+                                <Box display="flex" alignItems="center" gap={1}>
+                                  <ErrorIcon sx={{ color: 'error.main', fontSize: 16 }} />
+                                  Down
+                                </Box>
+                              </MenuItem>
+                              <MenuItem value="maintenance">
+                                <Box display="flex" alignItems="center" gap={1}>
+                                  <BuildIcon sx={{ color: 'info.main', fontSize: 16 }} />
+                                  Maintenance
+                                </Box>
+                              </MenuItem>
+                            </Select>
+                          </FormControl>
+                        </Card>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Box>
+              )}
 
               <Box>
                 <TextField
@@ -710,6 +812,21 @@ export default function CreateIncidentPage() {
                           />
                         ))}
                       </Stack>
+                      
+                      {Object.keys(formData.service_status_updates).length > 0 && (
+                        <Box sx={{ mt: 2 }}>
+                          <Typography variant="body2">
+                            <strong>Service Status Updates:</strong>
+                          </Typography>
+                          {formData.affected_services
+                            .filter(service => formData.service_status_updates[service.id])
+                            .map(service => (
+                              <Typography key={service.id} variant="body2" sx={{ ml: 1, mt: 0.5 }}>
+                                • {service.name}: {service.status || 'Unknown'} → {formData.service_status_updates[service.id]}
+                              </Typography>
+                            ))}
+                        </Box>
+                      )}
                     </Box>
                   )}
                 </Paper>

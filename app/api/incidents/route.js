@@ -129,6 +129,7 @@ export const POST = withErrorHandler(async request => {
     severity = 'medium',
     status = 'investigating',
     affectedServices,
+    serviceStatusUpdates,
     impactDescription,
     assignedTo,
     createdBy,
@@ -177,6 +178,21 @@ export const POST = withErrorHandler(async request => {
 
   // Create the incident in the database
   const incident = await db.createIncident(incidentData);
+
+  // Update service statuses if provided
+  if (serviceStatusUpdates && Object.keys(serviceStatusUpdates).length > 0) {
+    try {
+      for (const [serviceId, newStatus] of Object.entries(serviceStatusUpdates)) {
+        if (newStatus && ['operational', 'degraded', 'down', 'maintenance'].includes(newStatus)) {
+          await db.updateService(serviceId, { status: newStatus });
+          console.log(`Updated service ${serviceId} status to ${newStatus}`);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to update service statuses:', error);
+      // Continue execution since incident was created successfully
+    }
+  }
 
   // Send notifications to organization members (don't wait for this to complete)
   sendIncidentNotifications(incident, organizationId).catch(error => {
