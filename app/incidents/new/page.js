@@ -312,7 +312,9 @@ export default function CreateIncidentPage() {
           description: formData.description,
           severity: formData.severity,
           status: formData.status,
-          affectedServices: formData.affected_services,
+          affectedServices: formData.affected_services.map(service =>
+            typeof service === 'string' ? service : service.name || service.id
+          ),
           serviceStatusUpdates: formData.service_status_updates,
           impactDescription: formData.impact_description,
           assignedTo: formData.assigned_to || null,

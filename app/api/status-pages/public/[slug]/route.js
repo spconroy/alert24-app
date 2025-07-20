@@ -182,7 +182,9 @@ export async function GET(request, { params }) {
                 incident_id: incident.id,
                 incident_title: incident.title,
                 incident_status: incident.status,
-                affected_services: incident.affected_services,
+                affected_services: incident.affected_services?.map(service =>
+                  typeof service === 'string' ? service : service.name || service.id || 'Unknown Service'
+                ) || [],
                 posted_by_user: update.users,
                 // For now, assume all incident updates should be visible on status page
                 // TODO: Filter by visible_to_public when column exists
