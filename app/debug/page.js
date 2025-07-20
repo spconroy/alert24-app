@@ -25,6 +25,7 @@ import {
   Settings as SettingsIcon,
   Email as EmailIcon,
   Sms as SmsIcon,
+  Phone as PhoneIcon,
 } from '@mui/icons-material';
 
 export default function DebugPage() {
@@ -32,6 +33,7 @@ export default function DebugPage() {
   const [loading, setLoading] = useState({});
   const [testEmail, setTestEmail] = useState('');
   const [testPhone, setTestPhone] = useState('');
+  const [testCallPhone, setTestCallPhone] = useState('');
 
   const runTest = async (testName, endpoint) => {
     setLoading(prev => ({ ...prev, [testName]: true }));
@@ -177,6 +179,60 @@ export default function DebugPage() {
       }));
     } catch (error) {
       console.error(`SMS test failed:`, error);
+      setDebugResults(prev => ({
+        ...prev,
+        [testName]: { success: false, error: error.message, status: 'error' },
+      }));
+    } finally {
+      setLoading(prev => ({ ...prev, [testName]: false }));
+    }
+  };
+
+  const sendTestCall = async () => {
+    if (!testCallPhone) {
+      alert('Please enter a phone number');
+      return;
+    }
+
+    const testName = 'Phone Call Test';
+    setLoading(prev => ({ ...prev, [testName]: true }));
+    
+    try {
+      console.log(`Making test call to: ${testCallPhone}`);
+      const response = await fetch('/api/test-call', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          testPhone: testCallPhone
+        }),
+      });
+
+      console.log(`Response status: ${response.status}`);
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        const text = await response.text();
+        data = { parseError: 'Failed to parse JSON', responseText: text };
+      }
+
+      console.log('Response data:', data);
+
+      setDebugResults(prev => ({
+        ...prev,
+        [testName]: {
+          success: response.ok,
+          data,
+          status: response.status,
+          timestamp: new Date().toISOString(),
+          phoneCalled: testCallPhone,
+        },
+      }));
+    } catch (error) {
+      console.error(`Phone call test failed:`, error);
       setDebugResults(prev => ({
         ...prev,
         [testName]: { success: false, error: error.message, status: 'error' },
@@ -887,6 +943,107 @@ export default function DebugPage() {
                     }}
                   >
                     {JSON.stringify(debugResults['SMS Test'], null, 2)}
+                  </pre>
+                </AccordionDetails>
+              </Accordion>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card sx={{ mt: 4 }}>
+          <CardContent>
+            <Box display="flex" alignItems="center" gap={2} mb={3}>
+              <PhoneIcon color="primary" />
+              <Typography variant="h6">
+                Phone Call Test
+              </Typography>
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Make a test phone call to verify Twilio Voice API configuration
+            </Typography>
+            
+            <Box display="flex" alignItems="center" gap={2} mb={2}>
+              <TextField
+                label="Phone Number"
+                variant="outlined"
+                value={testCallPhone}
+                onChange={(e) => setTestCallPhone(e.target.value)}
+                placeholder="Enter phone number (e.g., +1234567890)"
+                size="small"
+                sx={{ flexGrow: 1 }}
+                type="tel"
+                helperText="Include country code (e.g., +1 for US)"
+              />
+              <Button
+                variant="contained"
+                onClick={sendTestCall}
+                disabled={loading['Phone Call Test'] || !testCallPhone}
+                startIcon={
+                  loading['Phone Call Test'] ? <CircularProgress size={16} /> : <PhoneIcon />
+                }
+              >
+                {loading['Phone Call Test'] ? 'Calling...' : 'Make Test Call'}
+              </Button>
+            </Box>
+
+            {debugResults['Phone Call Test'] && (
+              <Accordion>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Typography>
+                    Phone Call Test Results {debugResults['Phone Call Test'].success ? '✅' : '❌'}
+                    {debugResults['Phone Call Test'].phoneCalled && (
+                      <span
+                        style={{
+                          marginLeft: '8px',
+                          fontSize: '0.9em',
+                          color: '#666',
+                        }}
+                      >
+                        (called {debugResults['Phone Call Test'].phoneCalled})
+                      </span>
+                    )}
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  {debugResults['Phone Call Test'].success ? (
+                    <Alert severity="success" sx={{ mb: 2 }}>
+                      Test call initiated successfully! You should receive a call at{' '}
+                      <strong>{debugResults['Phone Call Test'].phoneCalled}</strong>
+                      {debugResults['Phone Call Test'].data.callId && (
+                        <>
+                          <br />
+                          <strong>Call ID:</strong> {debugResults['Phone Call Test'].data.callId}
+                        </>
+                      )}
+                    </Alert>
+                  ) : (
+                    <Alert severity="error" sx={{ mb: 2 }}>
+                      Failed to make test call. Check the error details below.
+                      {debugResults['Phone Call Test'].status === 401 && (
+                        <>
+                          <br />
+                          <strong>Note:</strong> Authentication may be required or Twilio credentials may be missing.
+                        </>
+                      )}
+                      {debugResults['Phone Call Test'].status === 400 && (
+                        <>
+                          <br />
+                          <strong>Note:</strong> Check that the phone number format is correct and includes country code.
+                        </>
+                      )}
+                    </Alert>
+                  )}
+                  
+                  <pre
+                    style={{
+                      background: '#f5f5f5',
+                      padding: '1rem',
+                      borderRadius: '4px',
+                      overflow: 'auto',
+                      fontSize: '0.8rem',
+                    }}
+                  >
+                    {JSON.stringify(debugResults['Phone Call Test'], null, 2)}
                   </pre>
                 </AccordionDetails>
               </Accordion>
