@@ -134,14 +134,27 @@ export default function TeamsPage() {
     if (!confirm('Are you sure you want to delete this team?')) return;
 
     try {
+      setLoading(true);
       const response = await fetch(`/api/teams/${teamId}`, {
         method: 'DELETE',
       });
 
-      if (!response.ok) throw new Error('Failed to delete team');
-      fetchTeams();
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `HTTP ${response.status}`;
+        throw new Error(`Failed to delete team: ${errorMessage}`);
+      }
+
+      // Immediately update the local state to remove the team
+      setTeams(prevTeams => prevTeams.filter(team => team.id !== teamId));
+      
+      // Also fetch from server to ensure consistency
+      await fetchTeams();
     } catch (err) {
+      console.error('Error deleting team:', err);
       setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 

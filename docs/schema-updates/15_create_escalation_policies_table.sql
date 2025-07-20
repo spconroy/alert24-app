@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS escalation_policies (
     escalation_steps JSONB DEFAULT '[]'::jsonb,
     notification_config JSONB DEFAULT '{}'::jsonb,
     is_active BOOLEAN DEFAULT true,
+    created_by UUID REFERENCES users(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     deleted_at TIMESTAMP WITH TIME ZONE

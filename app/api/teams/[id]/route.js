@@ -61,6 +61,27 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Get user by email
+    const user = await db.getUserByEmail(session.user.email);
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Get team to check organization
+    const team = await db.getTeamGroup(params.id);
+    if (!team) {
+      return NextResponse.json({ error: 'Team not found' }, { status: 404 });
+    }
+
+    // Check if user has permission to delete teams
+    const permissionCheck = await rbac.checkPermission(user.id, team.organization_id, 'teams.delete');
+    if (!permissionCheck.allowed) {
+      return NextResponse.json(
+        { error: 'Forbidden - ' + permissionCheck.reason },
+        { status: 403 }
+      );
+    }
+
     await db.deleteTeamGroup(params.id);
     return NextResponse.json({ success: true });
   } catch (error) {
