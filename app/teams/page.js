@@ -168,13 +168,15 @@ export default function TeamsPage() {
         <Typography variant="h4" component="h1">
           Teams
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleCreateTeam}
-        >
-          Create Team
-        </Button>
+        {!loading && teams.length > 0 && (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleCreateTeam}
+          >
+            Create Team
+          </Button>
+        )}
       </Box>
 
       {error && (
