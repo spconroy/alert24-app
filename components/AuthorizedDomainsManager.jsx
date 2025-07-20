@@ -63,7 +63,7 @@ export default function AuthorizedDomainsManager() {
   const [formData, setFormData] = useState({
     domain: '',
     description: '',
-    autoRole: 'member',
+    autoRole: 'stakeholder',
     maxAutoEnrollments: '',
     requireVerification: true,
     isActive: true,
@@ -110,7 +110,7 @@ export default function AuthorizedDomainsManager() {
     setFormData({
       domain: '',
       description: '',
-      autoRole: 'member',
+      autoRole: 'stakeholder',
       maxAutoEnrollments: '',
       requireVerification: true,
       isActive: true,
@@ -380,7 +380,8 @@ export default function AuthorizedDomainsManager() {
                         <Chip
                           label={domain.auto_role}
                           color={
-                            domain.auto_role === 'admin' ? 'error' : 'primary'
+                            domain.auto_role === 'admin' ? 'error' : 
+                            domain.auto_role === 'responder' ? 'warning' : 'primary'
                           }
                           size="small"
                           icon={<GroupIcon />}
@@ -499,7 +500,8 @@ export default function AuthorizedDomainsManager() {
                 }
                 label="Auto-assigned Role"
               >
-                <MenuItem value="member">Member</MenuItem>
+                <MenuItem value="stakeholder">Stakeholder</MenuItem>
+                <MenuItem value="responder">Responder</MenuItem>
                 <MenuItem value="admin">Admin</MenuItem>
               </Select>
             </FormControl>
