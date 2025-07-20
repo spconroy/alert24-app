@@ -32,6 +32,10 @@ import {
   Notifications as NotificationsIcon,
   Save as SaveIcon,
   Close as CloseIcon,
+  Email as EmailIcon,
+  Sms as SmsIcon,
+  Call as CallIcon,
+  Chat as SlackIcon,
 } from '@mui/icons-material';
 import UserTeamSelector from './UserTeamSelector';
 
@@ -370,19 +374,24 @@ export default function EscalationPolicyForm({
                         Notification Channels
                       </Typography>
                       <Box mb={2}>
-                        {['email', 'sms', 'voice', 'slack'].map(channel => (
+                        {[
+                          { key: 'email', label: 'Email', icon: <EmailIcon fontSize="small" /> },
+                          { key: 'sms', label: 'SMS', icon: <SmsIcon fontSize="small" /> },
+                          { key: 'call', label: 'Phone Call', icon: <CallIcon fontSize="small" /> },
+                          { key: 'slack', label: 'Slack', icon: <SlackIcon fontSize="small" /> }
+                        ].map(channel => (
                           <FormControlLabel
-                            key={channel}
+                            key={channel.key}
                             control={
                               <Switch
                                 checked={rule.notification_channels.includes(
-                                  channel
+                                  channel.key
                                 )}
                                 onChange={e => {
                                   const channels = e.target.checked
-                                    ? [...rule.notification_channels, channel]
+                                    ? [...rule.notification_channels, channel.key]
                                     : rule.notification_channels.filter(
-                                        c => c !== channel
+                                        c => c !== channel.key
                                       );
                                   updateEscalationRule(
                                     ruleIndex,
@@ -394,8 +403,12 @@ export default function EscalationPolicyForm({
                               />
                             }
                             label={
-                              channel.charAt(0).toUpperCase() + channel.slice(1)
+                              <Box display="flex" alignItems="center" gap={1}>
+                                {channel.icon}
+                                {channel.label}
+                              </Box>
                             }
+                            sx={{ display: 'block', mb: 1 }}
                           />
                         ))}
                       </Box>

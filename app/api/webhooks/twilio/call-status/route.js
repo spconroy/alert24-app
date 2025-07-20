@@ -3,6 +3,8 @@
  * Receives call status updates from Twilio Voice API
  */
 
+export const runtime = 'edge';
+
 import { NextResponse } from 'next/server';
 
 export async function POST(request) {

@@ -55,6 +55,7 @@ export default function IncidentTimeline({
   const [addUpdateDialogOpen, setAddUpdateDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [publicUpdatesMap, setPublicUpdatesMap] = useState(new Map());
+  const [affectedServices, setAffectedServices] = useState([]);
 
   // Form state for new update
   const [newUpdate, setNewUpdate] = useState({
@@ -63,11 +64,14 @@ export default function IncidentTimeline({
     update_type: 'update',
     visible_to_subscribers: true,
     post_as_public_update: false,
+    update_service_status: false,
+    service_status_updates: {},
   });
 
   useEffect(() => {
     if (incidentId) {
       fetchUpdates();
+      fetchAffectedServices();
       // Load public updates map from localStorage
       const savedPublicUpdates = localStorage.getItem(`publicUpdates_${incidentId}`);
       if (savedPublicUpdates) {
@@ -79,7 +83,7 @@ export default function IncidentTimeline({
         }
       }
     }
-  }, [incidentId]);
+  }, [incidentId, incident]);
 
   const fetchUpdates = async () => {
     try {
@@ -99,6 +103,48 @@ export default function IncidentTimeline({
     }
   };
 
+  const fetchAffectedServices = async () => {
+    if (!incident?.affected_services || incident.affected_services.length === 0) {
+      setAffectedServices([]);
+      return;
+    }
+
+    try {
+      // Fetch all services for the organization to resolve service names to full service objects
+      const response = await fetch('/api/services');
+      if (response.ok) {
+        const data = await response.json();
+        const allServices = data.services || [];
+        
+        // Map affected service names/IDs to full service objects
+        const matchedServices = incident.affected_services.map(serviceName => {
+          // First try to find by name, then by ID
+          const service = allServices.find(s => s.name === serviceName || s.id === serviceName);
+          return service || { 
+            id: serviceName, 
+            name: serviceName, 
+            status: 'operational',
+            isUnknown: true 
+          };
+        });
+        
+        setAffectedServices(matchedServices);
+        
+        // Initialize service status updates with current status
+        const initialStatusUpdates = {};
+        matchedServices.forEach(service => {
+          initialStatusUpdates[service.id] = service.status;
+        });
+        setNewUpdate(prev => ({
+          ...prev,
+          service_status_updates: initialStatusUpdates
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching affected services:', err);
+    }
+  };
+
   const handleAddUpdate = async () => {
     if (!newUpdate.message.trim()) {
       setError('Update message is required');
@@ -109,12 +155,17 @@ export default function IncidentTimeline({
       setSubmitting(true);
       setError(null);
 
+      // First, add the incident update
+      const updatePayload = { ...newUpdate };
+      delete updatePayload.update_service_status;
+      delete updatePayload.service_status_updates;
+
       const response = await fetch(`/api/incidents/${incidentId}/updates`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(newUpdate),
+        body: JSON.stringify(updatePayload),
       });
 
       if (response.ok) {
@@ -130,15 +181,14 @@ export default function IncidentTimeline({
           const mapObj = Object.fromEntries(newMap);
           localStorage.setItem(`publicUpdates_${incidentId}`, JSON.stringify(mapObj));
         }
+
+        // Update service statuses if requested
+        if (newUpdate.update_service_status && Object.keys(newUpdate.service_status_updates).length > 0) {
+          await updateServiceStatuses();
+        }
         
         setUpdates(prev => [data.update, ...prev]);
-        setNewUpdate({
-          message: '',
-          status: incident?.status || 'investigating',
-          update_type: 'update',
-          visible_to_subscribers: true,
-          post_as_public_update: false,
-        });
+        resetUpdateForm();
         setAddUpdateDialogOpen(false);
 
         // Notify parent component if status changed
@@ -155,6 +205,48 @@ export default function IncidentTimeline({
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const updateServiceStatuses = async () => {
+    const statusUpdatePromises = Object.entries(newUpdate.service_status_updates).map(async ([serviceId, newStatus]) => {
+      const service = affectedServices.find(s => s.id === serviceId);
+      if (service && service.status !== newStatus && !service.isUnknown) {
+        try {
+          const response = await fetch(`/api/services/${serviceId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ status: newStatus }),
+          });
+          
+          if (!response.ok) {
+            console.error(`Failed to update status for service ${service.name}`);
+          }
+        } catch (err) {
+          console.error(`Error updating service ${service.name}:`, err);
+        }
+      }
+    });
+
+    await Promise.all(statusUpdatePromises);
+  };
+
+  const resetUpdateForm = () => {
+    const initialStatusUpdates = {};
+    affectedServices.forEach(service => {
+      initialStatusUpdates[service.id] = service.status;
+    });
+    
+    setNewUpdate({
+      message: '',
+      status: incident?.status || 'investigating',
+      update_type: 'update',
+      visible_to_subscribers: true,
+      post_as_public_update: false,
+      update_service_status: false,
+      service_status_updates: initialStatusUpdates,
+    });
   };
 
   const getStatusIcon = status => {
@@ -223,6 +315,21 @@ export default function IncidentTimeline({
     } else {
       const diffInDays = Math.floor(diffInHours / 24);
       return `${diffInDays}d ago`;
+    }
+  };
+
+  const getServiceStatusColor = status => {
+    switch (status) {
+      case 'operational':
+        return 'success';
+      case 'degraded':
+        return 'warning';
+      case 'down':
+        return 'error';
+      case 'maintenance':
+        return 'info';
+      default:
+        return 'default';
     }
   };
 
@@ -417,6 +524,76 @@ export default function IncidentTimeline({
               label="Post as public update to affected services"
               sx={{ mt: 2 }}
             />
+
+            {/* Service Status Update Section */}
+            {affectedServices.length > 0 && (
+              <Box sx={{ mt: 3 }}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={newUpdate.update_service_status}
+                      onChange={e =>
+                        setNewUpdate(prev => ({
+                          ...prev,
+                          update_service_status: e.target.checked,
+                        }))
+                      }
+                      color="primary"
+                    />
+                  }
+                  label="Update status of affected services"
+                  sx={{ mb: 2 }}
+                />
+
+                {newUpdate.update_service_status && (
+                  <Box sx={{ ml: 4, mt: 2 }}>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Service Status Updates
+                    </Typography>
+                    {affectedServices.map(service => (
+                      <Box key={service.id} sx={{ mb: 2 }}>
+                        <Box display="flex" alignItems="center" gap={2}>
+                          <Chip
+                            label={service.name}
+                            color={getServiceStatusColor(service.status)}
+                            size="small"
+                            sx={{ minWidth: 120 }}
+                          />
+                          {service.isUnknown && (
+                            <Typography variant="caption" color="text.secondary">
+                              (Unknown service - cannot update)
+                            </Typography>
+                          )}
+                          {!service.isUnknown && (
+                            <FormControl size="small" sx={{ minWidth: 140 }}>
+                              <InputLabel>New Status</InputLabel>
+                              <Select
+                                value={newUpdate.service_status_updates[service.id] || service.status}
+                                label="New Status"
+                                onChange={e =>
+                                  setNewUpdate(prev => ({
+                                    ...prev,
+                                    service_status_updates: {
+                                      ...prev.service_status_updates,
+                                      [service.id]: e.target.value,
+                                    },
+                                  }))
+                                }
+                              >
+                                <MenuItem value="operational">Operational</MenuItem>
+                                <MenuItem value="degraded">Degraded</MenuItem>
+                                <MenuItem value="down">Down</MenuItem>
+                                <MenuItem value="maintenance">Maintenance</MenuItem>
+                              </Select>
+                            </FormControl>
+                          )}
+                        </Box>
+                      </Box>
+                    ))}
+                  </Box>
+                )}
+              </Box>
+            )}
           </Box>
         </DialogContent>
         <DialogActions>

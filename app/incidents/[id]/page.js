@@ -51,6 +51,7 @@ export default function IncidentDetailPage() {
   const [error, setError] = useState(null);
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
   const [statusUpdateDialogOpen, setStatusUpdateDialogOpen] = useState(false);
+  const [affectedServicesWithStatus, setAffectedServicesWithStatus] = useState([]);
 
   // Form state for incident update
   const [updateForm, setUpdateForm] = useState({
@@ -72,6 +73,12 @@ export default function IncidentDetailPage() {
       fetchIncidentUpdates();
     }
   }, [incidentId, session]);
+
+  useEffect(() => {
+    if (incident?.affected_services) {
+      fetchAffectedServicesWithStatus();
+    }
+  }, [incident]);
 
   const fetchIncident = async () => {
     try {
@@ -105,6 +112,46 @@ export default function IncidentDetailPage() {
       console.error('Error fetching incident updates:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAffectedServicesWithStatus = async () => {
+    if (!incident?.affected_services || incident.affected_services.length === 0) {
+      setAffectedServicesWithStatus([]);
+      return;
+    }
+
+    try {
+      // Fetch all services for the organization to resolve service names to full service objects
+      const response = await fetch('/api/services');
+      if (response.ok) {
+        const data = await response.json();
+        const allServices = data.services || [];
+        
+        // Map affected service names/IDs to full service objects with status
+        const servicesWithStatus = incident.affected_services.map(serviceName => {
+          // First try to find by name, then by ID
+          const service = allServices.find(s => s.name === serviceName || s.id === serviceName);
+          return service || { 
+            id: serviceName, 
+            name: serviceName, 
+            status: 'operational',
+            isUnknown: true 
+          };
+        });
+        
+        setAffectedServicesWithStatus(servicesWithStatus);
+      }
+    } catch (err) {
+      console.error('Error fetching affected services:', err);
+      setAffectedServicesWithStatus(
+        incident.affected_services.map(serviceName => ({
+          id: serviceName,
+          name: serviceName,
+          status: 'operational',
+          isUnknown: true
+        }))
+      );
     }
   };
 
@@ -202,6 +249,21 @@ export default function IncidentDetailPage() {
         return 'info';
       case 'resolved':
         return 'success';
+      default:
+        return 'default';
+    }
+  };
+
+  const getServiceStatusColor = status => {
+    switch (status) {
+      case 'operational':
+        return 'success';
+      case 'degraded':
+        return 'warning';
+      case 'down':
+        return 'error';
+      case 'maintenance':
+        return 'info';
       default:
         return 'default';
     }
@@ -374,7 +436,10 @@ export default function IncidentDetailPage() {
               <IncidentTimeline
                 incidentId={incidentId}
                 incident={incident}
-                onIncidentUpdate={fetchIncident}
+                onIncidentUpdate={() => {
+                  fetchIncident();
+                  fetchAffectedServicesWithStatus();
+                }}
               />
             </CardContent>
           </Card>
@@ -485,26 +550,41 @@ export default function IncidentDetailPage() {
           </Card>
 
           {/* Affected Services */}
-          {incident.affected_services &&
-            incident.affected_services.length > 0 && (
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Affected Services
-                  </Typography>
-                  <Box display="flex" flexWrap="wrap" gap={1}>
-                    {incident.affected_services.map((service, index) => (
+          {affectedServicesWithStatus.length > 0 && (
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Affected Services
+                </Typography>
+                <Box display="flex" flexDirection="column" gap={1}>
+                  {affectedServicesWithStatus.map((service, index) => (
+                    <Box
+                      key={service.id || index}
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="space-between"
+                      sx={{ p: 1, borderRadius: 1, bgcolor: 'grey.50' }}
+                    >
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {service.name}
+                      </Typography>
                       <Chip
-                        key={index}
-                        label={typeof service === 'string' ? service : service.name || service.id || 'Unknown Service'}
-                        variant="outlined"
+                        label={service.status.charAt(0).toUpperCase() + service.status.slice(1)}
+                        color={getServiceStatusColor(service.status)}
                         size="small"
+                        variant={service.isUnknown ? "outlined" : "filled"}
                       />
-                    ))}
-                  </Box>
-                </CardContent>
-              </Card>
-            )}
+                    </Box>
+                  ))}
+                </Box>
+                {affectedServicesWithStatus.some(s => s.isUnknown) && (
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                    Services with outlined status badges could not be found in your organization
+                  </Typography>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </Grid>
       </Grid>
 

@@ -57,6 +57,8 @@ export default function ProfilePage() {
             email_escalations: true,
             sms_critical: false,
             sms_escalations: false,
+            call_critical: false,
+            call_escalations: false,
           },
         });
       }

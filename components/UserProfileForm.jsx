@@ -29,6 +29,7 @@ import {
   Save as SaveIcon,
   Edit as EditIcon,
   CheckCircle as CheckCircleIcon,
+  Call as CallIcon,
 } from '@mui/icons-material';
 
 const TIMEZONES = [
@@ -60,6 +61,8 @@ export default function UserProfileForm({
       email_escalations: true,
       sms_critical: false,
       sms_escalations: false,
+      call_critical: false,
+      call_escalations: false,
     },
     ...initialData,
   });
@@ -422,6 +425,56 @@ export default function UserProfileForm({
                 {!formData.phone && (
                   <Typography variant="caption" color="text.secondary" display="block">
                     Add phone number to enable SMS notifications
+                  </Typography>
+                )}
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.notification_preferences?.call_critical || false}
+                      onChange={e =>
+                        handleNotificationChange('call_critical', e.target.checked)
+                      }
+                      disabled={!isEditing || loading || !formData.phone}
+                    />
+                  }
+                  label={
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <CallIcon fontSize="small" />
+                      Phone Call - Critical Incidents
+                    </Box>
+                  }
+                />
+                {!formData.phone && (
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Add phone number to enable phone call notifications
+                  </Typography>
+                )}
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.notification_preferences?.call_escalations || false}
+                      onChange={e =>
+                        handleNotificationChange('call_escalations', e.target.checked)
+                      }
+                      disabled={!isEditing || loading || !formData.phone}
+                    />
+                  }
+                  label={
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <CallIcon fontSize="small" />
+                      Phone Call - Escalations
+                    </Box>
+                  }
+                />
+                {!formData.phone && (
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Add phone number to enable phone call notifications
                   </Typography>
                 )}
               </Grid>
