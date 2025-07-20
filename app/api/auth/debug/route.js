@@ -17,7 +17,7 @@ export async function GET(request) {
         hasGoogleClientSecret: !!process.env.GOOGLE_CLIENT_SECRET,
         hasNextAuthSecret: !!process.env.NEXTAUTH_SECRET,
         hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-        hasSupabaseKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+        hasSupabaseKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
         nodeEnv: process.env.NODE_ENV,
         runtime: 'edge',
       },

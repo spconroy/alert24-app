@@ -1,10 +1,12 @@
-import React from 'react';
+'use client';
+
+import React, { Component } from 'react';
 import { Alert, AlertTitle } from '@mui/material';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import RefreshIcon from '@mui/icons-material/Refresh';
 
-class OrganizationErrorBoundary extends React.Component {
+class OrganizationErrorBoundary extends Component {
   constructor(props) {
     super(props);
     this.state = { hasError: false, error: null };

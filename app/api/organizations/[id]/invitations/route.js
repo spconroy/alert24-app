@@ -16,8 +16,8 @@ function generateInvitationToken() {
 
 export const runtime = 'edge';
 
-// GET - List pending invitations for an organization
-export async function GET(req, { params }) {
+// GET - List pending invitations for an organization  
+export async function GET(request, { params }) {
   try {
     const sessionManager = new SessionManager();
     const session = await sessionManager.getSessionFromRequest(request);
@@ -39,11 +39,18 @@ export async function GET(req, { params }) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Check if user is admin/owner of the org
-    const membership = await db.getOrganizationMember(orgId, user.id);
-    if (!membership || !['owner', 'admin'].includes(membership.role)) {
+    // Check if user has permission to read member invitations
+    const permissionCheck = await rbac.checkPermission(user.id, orgId, 'members.read');
+    if (!permissionCheck.allowed) {
+      await auditLogger.logSecurity(
+        user.id, 
+        orgId, 
+        ACTIVITY_TYPES.SECURITY_PERMISSION_DENIED,
+        { permission: 'members.read', reason: permissionCheck.reason },
+        request
+      );
       return NextResponse.json(
-        { error: 'Forbidden - Admin access required' },
+        { error: 'Forbidden - ' + permissionCheck.reason },
         { status: 403 }
       );
     }
@@ -71,7 +78,7 @@ export async function GET(req, { params }) {
 }
 
 // POST - Send new invitation
-export async function POST(req, { params }) {
+export async function POST(request, { params }) {
   try {
     const sessionManager = new SessionManager();
     const session = await sessionManager.getSessionFromRequest(request);
@@ -87,7 +94,7 @@ export async function POST(req, { params }) {
       );
     }
 
-    const body = await req.json();
+    const body = await request.json();
     const { email, role = 'responder' } = body;
 
     if (!email) {
@@ -109,31 +116,33 @@ export async function POST(req, { params }) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Check if user is admin/owner of the org
-    const membership = await db.getOrganizationMember(orgId, user.id);
-    if (!membership) {
+    // Check if user has permission to invite members
+    const permissionCheck = await rbac.checkPermission(user.id, orgId, 'members.invite');
+    if (!permissionCheck.allowed) {
+      await auditLogger.logSecurity(
+        user.id, 
+        orgId, 
+        ACTIVITY_TYPES.SECURITY_PERMISSION_DENIED,
+        { permission: 'members.invite', reason: permissionCheck.reason },
+        request
+      );
       return NextResponse.json(
-        {
-          error: 'Forbidden - Not a member of this organization',
-        },
+        { error: 'Forbidden - ' + permissionCheck.reason },
         { status: 403 }
       );
     }
 
-    const userRole = membership.role;
-
-    // Check permission to invite this role type
-    if (!['owner', 'admin'].includes(userRole)) {
-      return NextResponse.json(
-        {
-          error: 'Forbidden - Admin access required to invite members',
-        },
-        { status: 403 }
-      );
-    }
+    const userRole = permissionCheck.userRole;
 
     // Only owners can invite admins
     if (role === 'admin' && userRole !== 'owner') {
+      await auditLogger.logSecurity(
+        user.id, 
+        orgId, 
+        ACTIVITY_TYPES.SECURITY_PERMISSION_DENIED,
+        { permission: 'invite_admin', reason: 'Only owners can invite admins', targetRole: role },
+        request
+      );
       return NextResponse.json(
         { error: 'Forbidden - Only owners can invite admins' },
         { status: 403 }
@@ -214,6 +223,21 @@ export async function POST(req, { params }) {
         logoUrl: organization.logo_url,
       },
     });
+
+    // Log the invitation activity
+    await auditLogger.logMemberActivity(
+      user.id,
+      orgId,
+      ACTIVITY_TYPES.MEMBER_INVITED,
+      {
+        email,
+        role,
+        invitationId: invitation.id,
+        expiresAt: expiresAt.toISOString(),
+        emailSent: emailResult.success,
+        emailError: emailResult.success ? null : emailResult.error
+      }
+    );
 
     // Log email result
     if (emailResult.success) {

@@ -181,22 +181,23 @@ export function OrganizationProvider({ children }) {
           }
         } catch (error) {
           console.error('Error fetching organizations:', error);
-          
+
           // Determine if this is a network error
-          const isNetworkError = error.name === 'TypeError' || 
-                                error.message.includes('fetch') || 
-                                error.message.includes('network');
-          
+          const isNetworkError =
+            error.name === 'TypeError' ||
+            error.message.includes('fetch') ||
+            error.message.includes('network');
+
           setNetworkError(isNetworkError);
           setError(error.message || 'Failed to load organizations');
-          
+
           // Try to use cached data if network error
           if (isNetworkError) {
             const cachedOrgs = getCachedOrganizations();
             if (cachedOrgs && cachedOrgs.length > 0) {
               console.log('📦 Using cached organizations data');
               setOrganizations(cachedOrgs);
-              
+
               // Still try to select an organization from cache
               let selectedOrg = null;
               const storedId = getStoredOrganizationId();
@@ -209,11 +210,13 @@ export function OrganizationProvider({ children }) {
               }
               setSelectedOrganization(selectedOrg);
             }
-            
+
             // Only retry on network errors, not on authentication/authorization errors
             if (retryCount < 3) {
               const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
-              console.log(`⏰ Retrying in ${delay}ms (attempt ${retryCount + 1}/3)`);
+              console.log(
+                `⏰ Retrying in ${delay}ms (attempt ${retryCount + 1}/3)`
+              );
               setTimeout(() => {
                 setRetryCount(prev => prev + 1);
               }, delay);
@@ -250,7 +253,7 @@ export function OrganizationProvider({ children }) {
     }
 
     console.log('🔄 Switching to organization:', org.name);
-    
+
     // Optimistically update the UI first
     const previousOrg = selectedOrganization;
     setSelectedOrganization(org);
@@ -267,26 +270,32 @@ export function OrganizationProvider({ children }) {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to update default organization: ${response.statusText}`);
+        throw new Error(
+          `Failed to update default organization: ${response.statusText}`
+        );
       }
 
       console.log('✅ Default organization updated in database');
-      
+
       // Dispatch a custom event to notify other components of the organization change
-      window.dispatchEvent(new CustomEvent('organizationChanged', {
-        detail: { 
-          newOrganization: org,
-          previousOrganization: previousOrg
-        }
-      }));
-      
+      window.dispatchEvent(
+        new CustomEvent('organizationChanged', {
+          detail: {
+            newOrganization: org,
+            previousOrganization: previousOrg,
+          },
+        })
+      );
     } catch (error) {
-      console.error('❌ Failed to update default organization in database:', error);
-      
+      console.error(
+        '❌ Failed to update default organization in database:',
+        error
+      );
+
       // Revert UI changes on database failure
       setSelectedOrganization(previousOrg);
       setStoredOrganizationId(previousOrg?.id || null);
-      
+
       throw error; // Re-throw to let NavBar handle the error
     }
   };
@@ -363,7 +372,7 @@ export function OrganizationProvider({ children }) {
     setOrganizationsLoading(true);
     setIsInitialized(false);
   };
-  
+
   // Function to check if we should use cached data during offline scenarios
   const getCachedOrganizations = () => {
     try {
@@ -380,21 +389,26 @@ export function OrganizationProvider({ children }) {
     }
     return null;
   };
-  
+
   // Function to cache organizations data
-  const cacheOrganizations = (orgs) => {
+  const cacheOrganizations = orgs => {
     try {
-      localStorage.setItem('cachedOrganizations', JSON.stringify({
-        data: orgs,
-        timestamp: Date.now()
-      }));
+      localStorage.setItem(
+        'cachedOrganizations',
+        JSON.stringify({
+          data: orgs,
+          timestamp: Date.now(),
+        })
+      );
     } catch (error) {
       console.warn('Failed to cache organizations:', error);
     }
   };
 
   // Calculate overall loading state
-  const isLoading = status === 'loading' || (status === 'authenticated' && (!isInitialized || organizationsLoading));
+  const isLoading =
+    status === 'loading' ||
+    (status === 'authenticated' && (!isInitialized || organizationsLoading));
 
   const value = {
     session,
