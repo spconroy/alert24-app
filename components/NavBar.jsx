@@ -35,6 +35,7 @@ import { useTheme } from '@mui/material/styles';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import MenuIcon from '@mui/icons-material/Menu';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import WarningIcon from '@mui/icons-material/Warning';
 import MonitorIcon from '@mui/icons-material/Monitor';
@@ -56,8 +57,15 @@ export default function NavBar() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { data: session, status } = useSession();
-  const { selectedOrganization, organizations, loading, switchOrganization } =
-    useOrganization();
+  const { 
+    selectedOrganization, 
+    organizations, 
+    loading, 
+    organizationsLoading,
+    error,
+    switchOrganization,
+    retryFetch 
+  } = useOrganization();
 
   const [defaultOrganizationId, setDefaultOrganizationId] = useState(null);
   const [settingDefault, setSettingDefault] = useState(false);
@@ -165,7 +173,7 @@ export default function NavBar() {
     },
   ];
 
-  // Show loading state
+  // Show loading state with error handling
   if (status === 'loading' || (status === 'authenticated' && loading)) {
     return (
       <AppBar position="static">
@@ -173,7 +181,17 @@ export default function NavBar() {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             Alert24
           </Typography>
-          <CircularProgress size={20} color="inherit" />
+          {error ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Tooltip title={`Error: ${error}. Click to retry.`}>
+                <IconButton color="inherit" onClick={retryFetch} size="small">
+                  <RefreshIcon />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          ) : (
+            <CircularProgress size={20} color="inherit" />
+          )}
         </Toolbar>
       </AppBar>
     );

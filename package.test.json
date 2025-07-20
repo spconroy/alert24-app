@@ -1,0 +1,28 @@
+{
+  "name": "alert24-migration-tests",
+  "version": "1.0.0",
+  "description": "Test configuration for Alert24 database migration",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:migration": "jest tests/migration.test.js",
+    "test:migration-status": "curl -s http://localhost:3002/api/test-migration-status | jq .",
+    "test:coverage": "jest --coverage"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"],
+    "testMatch": ["**/tests/**/*.test.js"],
+    "collectCoverageFrom": [
+      "lib/**/*.js",
+      "app/api/**/*.js",
+      "!**/*.test.js",
+      "!**/node_modules/**"
+    ],
+    "coverageDirectory": "coverage",
+    "coverageReporters": ["text", "lcov", "html"]
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}

@@ -81,12 +81,15 @@ export function OrganizationProvider({ children }) {
   const [organizations, setOrganizations] = useState([]);
   const [selectedOrganization, setSelectedOrganization] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   // Fetch organizations when user is authenticated
   useEffect(() => {
     const fetchOrganizations = async () => {
       if (status === 'authenticated' && session?.user?.email) {
         try {
+          setError(null);
           console.log('🔍 Fetching organizations for:', session.user.email);
 
           // Fetch both organizations and default organization in parallel
@@ -169,19 +172,35 @@ export function OrganizationProvider({ children }) {
           }
         } catch (error) {
           console.error('Error fetching organizations:', error);
+          setError(error.message || 'Failed to load organizations');
+          
+          // Retry logic with exponential backoff
+          if (retryCount < 3) {
+            const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+            console.log(`⏰ Retrying in ${delay}ms (attempt ${retryCount + 1}/3)`);
+            setTimeout(() => {
+              setRetryCount(prev => prev + 1);
+            }, delay);
+          }
+        } finally {
+          setOrganizationsLoading(false);
         }
       } else if (status === 'unauthenticated') {
         console.log('🚪 User not authenticated - clearing organizations');
         setOrganizations([]);
         setSelectedOrganization(null);
         setStoredOrganizationId(null);
+        setIsInitialized(true);
       }
 
-      setLoading(false);
+      // Only set loading to false after both session and organizations are resolved
+      if (status !== 'loading') {
+        setLoading(false);
+      }
     };
 
     fetchOrganizations();
-  }, [session, status]);
+  }, [session, status, retryCount]);
 
   const switchOrganization = async organizationId => {
     const org = organizations.find(o => o.id === organizationId);
@@ -271,14 +290,28 @@ export function OrganizationProvider({ children }) {
     }
   };
 
+  const retryFetch = () => {
+    setRetryCount(0);
+    setError(null);
+    setLoading(true);
+    setIsInitialized(false);
+  };
+
+  // Calculate overall loading state
+  const isLoading = status === 'loading' || (status === 'authenticated' && (!isInitialized || organizationsLoading));
+
   const value = {
     session,
     status,
     organizations,
     selectedOrganization,
-    loading,
+    loading: isLoading,
+    organizationsLoading,
+    error,
+    isInitialized,
     switchOrganization,
     refreshOrganizations,
+    retryFetch,
   };
 
   return (

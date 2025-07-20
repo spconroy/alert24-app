@@ -12,6 +12,8 @@ import {
   Chip,
 } from '@mui/material';
 import { Speed, TrendingUp, TrendingDown } from '@mui/icons-material';
+import LoadingTransition from './skeletons/LoadingTransition';
+import ChartSkeleton from './skeletons/ChartSkeleton';
 
 function ResponseTimeChart({ data, title }) {
   const maxValue = Math.max(...data.map(d => d.value), 1000);
@@ -185,12 +187,18 @@ export default function AnalyticsResponseTimeChart({
 
   if (loading) {
     return (
-      <Paper sx={{ p: 4, textAlign: 'center' }}>
-        <CircularProgress />
-        <Typography variant="h6" sx={{ mt: 2 }}>
-          Loading performance data...
-        </Typography>
-      </Paper>
+      <LoadingTransition
+        loading={loading}
+        loaderProps={{
+          type: 'progressive',
+          complexity: 'medium',
+          estimatedLoadTime: 2500
+        }}
+        loadingMessage="Loading response time performance charts"
+        completedMessage="Response time analytics loaded successfully"
+      >
+        <></>
+      </LoadingTransition>
     );
   }
 

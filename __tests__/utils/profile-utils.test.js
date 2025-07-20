@@ -3,31 +3,40 @@
 
 describe('Profile Utility Functions', () => {
   // Phone number validation function (extracted from UserProfileForm)
-  const validatePhone = (phone) => {
+  const validatePhone = phone => {
     if (!phone) return true; // Phone is optional
-    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
-    return phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''));
+
+    // Remove formatting characters
+    const cleaned = phone.replace(/[\s\-\(\)\.\/\_]/g, '');
+
+    // Check for valid format: optional +, then 7-15 digits, first digit can't be 0
+    const phoneRegex = /^[\+]?[1-9][\d]{6,14}$/;
+
+    // Reject multiple + signs
+    if ((cleaned.match(/\+/g) || []).length > 1) return false;
+
+    return phoneRegex.test(cleaned);
   };
 
   // Phone number formatting function (extracted from UserProfileForm)
-  const formatPhoneNumber = (phone) => {
+  const formatPhoneNumber = phone => {
     if (!phone) return '';
-    
+
     // Remove all non-digits except leading +
     const cleaned = phone.replace(/[^\d+]/g, '');
-    
+
     // Basic US phone number formatting
     if (cleaned.length === 10) {
       return cleaned.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
     } else if (cleaned.length === 11 && cleaned.startsWith('1')) {
       return cleaned.replace(/(\d{1})(\d{3})(\d{3})(\d{4})/, '+$1 ($2) $3-$4');
     }
-    
+
     return phone; // Return as-is if doesn't match expected formats
   };
 
   // Profile completion calculation function (extracted from UserProfileForm)
-  const calculateProfileCompletion = (formData) => {
+  const calculateProfileCompletion = formData => {
     const fields = [
       { key: 'name', weight: 25 },
       { key: 'email', weight: 25 },
@@ -41,7 +50,7 @@ describe('Profile Utility Functions', () => {
 
     fields.forEach(field => {
       maxScore += field.weight;
-      
+
       if (field.key === 'notification_preferences') {
         // Check if at least one notification preference is set
         const prefs = formData.notification_preferences || {};
@@ -56,7 +65,7 @@ describe('Profile Utility Functions', () => {
   };
 
   // Email validation function
-  const validateEmail = (email) => {
+  const validateEmail = email => {
     if (!email || !email.trim()) return false;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
@@ -126,7 +135,7 @@ describe('Profile Utility Functions', () => {
       expect(formatPhoneNumber('1 555 123 4567')).toBe('+1 (555) 123-4567');
     });
 
-    it('should not format numbers that don\'t match expected patterns', () => {
+    it("should not format numbers that don't match expected patterns", () => {
       expect(formatPhoneNumber('123')).toBe('123');
       expect(formatPhoneNumber('12345')).toBe('12345');
       expect(formatPhoneNumber('+441234567890')).toBe('+441234567890');
@@ -200,7 +209,9 @@ describe('Profile Utility Functions', () => {
         // Missing email (25%), phone (20%), timezone (15%), and notification_preferences (15%)
       };
 
-      expect(calculateProfileCompletion(profileWithEmptyNotifications)).toBe(25);
+      expect(calculateProfileCompletion(profileWithEmptyNotifications)).toBe(
+        25
+      );
     });
 
     it('should handle whitespace-only fields as empty', () => {
@@ -223,7 +234,9 @@ describe('Profile Utility Functions', () => {
         // Missing notification_preferences (15%)
       };
 
-      expect(calculateProfileCompletion(profileWithoutNotificationPrefs)).toBe(85);
+      expect(calculateProfileCompletion(profileWithoutNotificationPrefs)).toBe(
+        85
+      );
     });
 
     it('should round percentages correctly', () => {

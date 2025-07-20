@@ -13,6 +13,8 @@ import {
   Tooltip,
   LinearProgress,
 } from '@mui/material';
+import LoadingTransition from './skeletons/LoadingTransition';
+import AnalyticsCardSkeleton from './skeletons/AnalyticsCardSkeleton';
 import {
   TrendingUp,
   TrendingDown,
@@ -80,52 +82,53 @@ function MetricCard({
           )}
         </Box>
 
-        {loading ? (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <CircularProgress size={20} />
-            <Typography variant="body2" color="text.secondary">
-              Loading...
+        <LoadingTransition
+          loading={loading}
+          loaderProps={{ 
+            variant: 'metric',
+            type: 'skeleton',
+            complexity: 'simple'
+          }}
+          preventLayoutShift={true}
+          loadingMessage={`Loading ${title} metric`}
+          completedMessage={`${title} metric loaded: ${value}`}
+        >
+          <Typography variant="h4" component="div" fontWeight="bold">
+            {value}
+          </Typography>
+          {subtitle && (
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mt: 0.5 }}
+            >
+              {subtitle}
             </Typography>
-          </Box>
-        ) : (
-          <>
-            <Typography variant="h4" component="div" fontWeight="bold">
-              {value}
-            </Typography>
-            {subtitle && (
+          )}
+          {progress !== null && (
+            <Box sx={{ mt: 2 }}>
+              <LinearProgress
+                variant="determinate"
+                value={progress}
+                color={
+                  progress >= 95
+                    ? 'success'
+                    : progress >= 90
+                      ? 'warning'
+                      : 'error'
+                }
+                sx={{ height: 6, borderRadius: 3 }}
+              />
               <Typography
-                variant="body2"
+                variant="caption"
                 color="text.secondary"
-                sx={{ mt: 0.5 }}
+                sx={{ mt: 0.5, display: 'block' }}
               >
-                {subtitle}
+                {progress.toFixed(2)}%
               </Typography>
-            )}
-            {progress !== null && (
-              <Box sx={{ mt: 2 }}>
-                <LinearProgress
-                  variant="determinate"
-                  value={progress}
-                  color={
-                    progress >= 95
-                      ? 'success'
-                      : progress >= 90
-                        ? 'warning'
-                        : 'error'
-                  }
-                  sx={{ height: 6, borderRadius: 3 }}
-                />
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ mt: 0.5, display: 'block' }}
-                >
-                  {progress.toFixed(2)}%
-                </Typography>
-              </Box>
-            )}
-          </>
-        )}
+            </Box>
+          )}
+        </LoadingTransition>
       </CardContent>
     </Card>
   );

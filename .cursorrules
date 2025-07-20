@@ -130,3 +130,5 @@ After any major feature is completed, do a git commit and a git push
 Make sure to document things as you go. And update the help page when the user UI changes
 
 Always use the edge runtime. Otherwise deployments to cloudflare will fail.
+
+Anytime you create a taskmaster task, also create it in azure devops. And create subtassks as linked user stories. If applicable, link the features to an epic.

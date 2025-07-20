@@ -33,6 +33,7 @@ import {
   Refresh,
   MoreVert,
 } from '@mui/icons-material';
+import LoadingTransition from './skeletons/LoadingTransition';
 import AnalyticsOverviewCards from './AnalyticsOverviewCards';
 import AnalyticsUptimeChart from './AnalyticsUptimeChart';
 import AnalyticsResponseTimeChart from './AnalyticsResponseTimeChart';
@@ -142,12 +143,18 @@ export default function AnalyticsDashboard({ organizationId }) {
 
   if (loading) {
     return (
-      <Paper sx={{ p: 4, textAlign: 'center' }}>
-        <CircularProgress />
-        <Typography variant="h6" sx={{ mt: 2 }}>
-          Loading analytics data...
-        </Typography>
-      </Paper>
+      <LoadingTransition
+        loading={loading}
+        loaderProps={{
+          type: 'progressive',
+          complexity: 'complex',
+          estimatedLoadTime: 5000
+        }}
+        loadingMessage="Loading analytics dashboard with charts and metrics"
+        completedMessage="Analytics dashboard loaded successfully"
+      >
+        <></>
+      </LoadingTransition>
     );
   }
 

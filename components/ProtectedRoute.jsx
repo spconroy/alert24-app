@@ -4,16 +4,16 @@ import Box from '@mui/material/Box';
 import { useOrganization } from '@/contexts/OrganizationContext';
 
 export default function ProtectedRoute({ children }) {
-  const { session, sessionStatus } = useOrganization();
+  const { session, status } = useOrganization();
 
   useEffect(() => {
-    if (sessionStatus === 'unauthenticated') {
+    if (status === 'unauthenticated') {
       // Redirect to sign in page
       window.location.href = '/api/auth/signin';
     }
-  }, [sessionStatus]);
+  }, [status]);
 
-  if (sessionStatus === 'loading') {
+  if (status === 'loading') {
     return (
       <Box
         display="flex"

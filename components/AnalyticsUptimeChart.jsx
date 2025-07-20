@@ -17,6 +17,8 @@ import {
   Tooltip,
 } from '@mui/material';
 import { TrendingUp, TrendingDown, Info } from '@mui/icons-material';
+import LoadingTransition from './skeletons/LoadingTransition';
+import ChartSkeleton from './skeletons/ChartSkeleton';
 
 // Simple chart component using CSS
 function UptimeChart({ data, title }) {
@@ -286,12 +288,18 @@ export default function AnalyticsUptimeChart({
 
   if (loading) {
     return (
-      <Paper sx={{ p: 4, textAlign: 'center' }}>
-        <CircularProgress />
-        <Typography variant="h6" sx={{ mt: 2 }}>
-          Loading uptime data...
-        </Typography>
-      </Paper>
+      <LoadingTransition
+        loading={loading}
+        loaderProps={{
+          type: 'progressive',
+          complexity: 'medium',
+          estimatedLoadTime: 3000
+        }}
+        loadingMessage="Loading uptime charts and analytics data"
+        completedMessage="Uptime analytics loaded successfully"
+      >
+        <></>
+      </LoadingTransition>
     );
   }
 
