@@ -809,7 +809,7 @@ export default function CreateIncidentPage() {
                         {formData.affected_services.map((service, index) => (
                           <Chip
                             key={index}
-                            label={service.name || service}
+                            label={service.name || service.id || 'Unknown Service'}
                             variant="outlined"
                             size="small"
                           />
@@ -825,7 +825,7 @@ export default function CreateIncidentPage() {
                             .filter(service => formData.service_status_updates[service.id])
                             .map(service => (
                               <Typography key={service.id} variant="body2" sx={{ ml: 1, mt: 0.5 }}>
-                                • {service.name}: {service.status || 'Unknown'} → {formData.service_status_updates[service.id]}
+                                • {service.name || service.id || 'Unknown Service'}: {service.status || 'Unknown'} → {formData.service_status_updates[service.id]}
                               </Typography>
                             ))}
                         </Box>

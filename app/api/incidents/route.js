@@ -14,6 +14,107 @@ import { emailService } from '@/lib/email-service';
 
 export const runtime = 'edge';
 
+// Send incident paging when incident is created with 'new' status
+async function sendIncidentPaging(incident, organizationId) {
+  try {
+    if (incident.status !== 'new') {
+      return; // Only page for new incidents
+    }
+
+    // Get escalation policy for the incident
+    let escalationPolicy = null;
+    if (incident.escalation_policy_id) {
+      escalationPolicy = await db.getEscalationPolicyById(incident.escalation_policy_id);
+    } else {
+      // Get default escalation policy for organization
+      const policies = await db.getEscalationPoliciesByOrganization(organizationId);
+      escalationPolicy = policies.find(p => p.is_default);
+    }
+
+    if (!escalationPolicy) {
+      console.log('No escalation policy found for incident:', incident.id);
+      return;
+    }
+
+    // Get assigned person or on-call schedule
+    let targets = [];
+    
+    if (incident.assigned_to) {
+      // Page the assigned person
+      const assignedUser = await db.getUserById(incident.assigned_to);
+      if (assignedUser) {
+        targets.push({ type: 'user', id: assignedUser.id, email: assignedUser.email, name: assignedUser.name });
+      }
+    } else if (escalationPolicy.rules && escalationPolicy.rules.length > 0) {
+      // Page based on escalation policy first level
+      const firstLevel = escalationPolicy.rules.find(rule => rule.level === 1) || escalationPolicy.rules[0];
+      
+      if (firstLevel && firstLevel.targets) {
+        for (const target of firstLevel.targets) {
+          if (target.type === 'user') {
+            const user = await db.getUserById(target.id);
+            if (user) {
+              targets.push({ type: 'user', id: user.id, email: user.email, name: user.name });
+            }
+          } else if (target.type === 'schedule') {
+            // Get current on-call person from schedule
+            const schedule = await db.getOnCallScheduleById(target.id);
+            if (schedule) {
+              // For now, get first member - in real implementation, calculate current on-call
+              if (schedule.members && schedule.members.length > 0) {
+                const onCallUserId = schedule.members[0].user_id;
+                const user = await db.getUserById(onCallUserId);
+                if (user) {
+                  targets.push({ type: 'user', id: user.id, email: user.email, name: user.name });
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Send urgent notifications/pages to targets
+    for (const target of targets) {
+      try {
+        await emailService.sendIncidentPaging({
+          toEmail: target.email,
+          toName: target.name,
+          incidentTitle: incident.title,
+          incidentDescription: incident.description || 'No description provided',
+          severity: incident.severity,
+          incidentId: incident.id,
+          incidentUrl: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/incidents/${incident.id}`,
+        });
+
+        console.log(`📟 Incident paging sent to ${target.email}`);
+      } catch (emailError) {
+        console.error(`Failed to send incident paging to ${target.email}:`, emailError);
+      }
+    }
+
+    // Create escalation record
+    if (targets.length > 0) {
+      try {
+        await db.createIncidentEscalation({
+          incident_id: incident.id,
+          escalation_policy_id: escalationPolicy.id,
+          level: 1,
+          triggered_by: 'system',
+          targets: targets.map(t => ({ type: t.type, id: t.id, notified: true, acknowledged: false })),
+          status: 'notified',
+          timeout_minutes: 15, // Default timeout
+          timeout_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+        });
+      } catch (escalationError) {
+        console.error('Failed to create escalation record:', escalationError);
+      }
+    }
+  } catch (error) {
+    console.error('Error sending incident paging:', error);
+  }
+}
+
 // Send incident notifications to organization members
 async function sendIncidentNotifications(incident, organizationId) {
   try {
@@ -199,6 +300,11 @@ export const POST = withErrorHandler(async request => {
     console.error('Failed to send incident notifications:', error);
   });
 
+  // Send paging if incident is new (don't wait for this to complete)
+  sendIncidentPaging(incident, organizationId).catch(error => {
+    console.error('Failed to send incident paging:', error);
+  });
+
   return ApiResponse.success(
     { incident },
     'Incident created successfully',
@@ -270,6 +376,28 @@ export const PUT = withErrorHandler(async request => {
   // Add timestamp fields if provided
   if (resolvedAt !== undefined) updateData.resolved_at = resolvedAt;
   if (acknowledgedAt !== undefined) updateData.acknowledged_at = acknowledgedAt;
+
+  // Stop escalation if status is changing from 'new' to another status
+  if (status !== undefined && existingIncident.status === 'new' && status !== 'new') {
+    try {
+      // Get active escalations for this incident
+      const activeEscalations = await db.getActiveIncidentEscalations(id);
+      
+      // Mark active escalations as acknowledged
+      for (const escalation of activeEscalations) {
+        await db.updateIncidentEscalation(escalation.id, {
+          status: 'acknowledged',
+          acknowledged_by: user.id,
+          acknowledged_at: new Date().toISOString(),
+        });
+      }
+      
+      console.log(`Stopped ${activeEscalations.length} active escalations for incident ${id}`);
+    } catch (escalationError) {
+      console.error('Failed to stop escalations:', escalationError);
+      // Continue with incident update even if escalation stopping fails
+    }
+  }
 
   // Update the incident in the database
   const incident = await db.updateIncident(id, updateData);

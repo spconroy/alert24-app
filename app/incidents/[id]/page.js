@@ -198,6 +198,9 @@ export default function IncidentDetailPage() {
           statusForm.resolution_notes && {
             resolution_notes: statusForm.resolution_notes,
           }),
+        ...(statusForm.status === 'acknowledged' && {
+          acknowledgedAt: new Date().toISOString(),
+        }),
       };
 
       const response = await fetch(`/api/incidents/${incidentId}`, {
@@ -468,6 +471,22 @@ export default function IncidentDetailPage() {
                 >
                   Add Update
                 </Button>
+                {incident.status === 'new' && (
+                  <Button
+                    variant="contained"
+                    color="warning"
+                    fullWidth
+                    onClick={() => {
+                      setStatusForm({
+                        status: 'acknowledged',
+                        resolution_notes: '',
+                      });
+                      setStatusUpdateDialogOpen(true);
+                    }}
+                  >
+                    Acknowledge Incident
+                  </Button>
+                )}
                 {incident.status !== 'resolved' && (
                   <Button
                     variant="contained"

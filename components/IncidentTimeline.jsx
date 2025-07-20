@@ -221,10 +221,10 @@ export default function IncidentTimeline({
           });
           
           if (!response.ok) {
-            console.error(`Failed to update status for service ${service.name}`);
+            console.error(`Failed to update status for service ${typeof service.name === 'string' ? service.name : service.id}`);
           }
         } catch (err) {
-          console.error(`Error updating service ${service.name}:`, err);
+          console.error(`Error updating service ${typeof service.name === 'string' ? service.name : service.id}:`, err);
         }
       }
     });
@@ -554,7 +554,7 @@ export default function IncidentTimeline({
                       <Box key={service.id} sx={{ mb: 2 }}>
                         <Box display="flex" alignItems="center" gap={2}>
                           <Chip
-                            label={service.name}
+                            label={typeof service.name === 'string' ? service.name : service.id || 'Unknown Service'}
                             color={getServiceStatusColor(service.status)}
                             size="small"
                             sx={{ minWidth: 120 }}
