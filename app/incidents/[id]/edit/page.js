@@ -125,17 +125,17 @@ export default function EditIncidentPage() {
         setEscalationPolicies(policiesData.escalation_policies || []);
       }
 
-      // Fetch organization details and members
-      console.log('Fetching organization details...');
-      const orgResponse = await fetch(`/api/organizations/${orgId}`);
-      console.log('Organization response status:', orgResponse.status);
-      if (orgResponse.ok) {
-        const orgData = await orgResponse.json();
-        console.log('Organization data:', orgData);
-        setOrganizationMembers(orgData.members || []);
+      // Fetch organization members
+      console.log('Fetching organization members...');
+      const membersResponse = await fetch(`/api/organizations/${orgId}/members`);
+      console.log('Members response status:', membersResponse.status);
+      if (membersResponse.ok) {
+        const membersData = await membersResponse.json();
+        console.log('Members data:', membersData);
+        setOrganizationMembers(membersData.members || []);
       } else {
-        const orgError = await orgResponse.text();
-        console.error('Organization fetch error:', orgResponse.status, orgError);
+        const membersError = await membersResponse.text();
+        console.error('Members fetch error:', membersResponse.status, membersError);
       }
 
       // Fetch services
@@ -450,8 +450,8 @@ export default function EditIncidentPage() {
                       >
                         <MenuItem value="">Unassigned</MenuItem>
                         {organizationMembers.map(member => (
-                          <MenuItem key={member.id} value={member.id}>
-                            {member.name || member.email}
+                          <MenuItem key={member.id} value={member.user_id}>
+                            {member.users?.name || member.name} ({member.users?.email || member.email})
                           </MenuItem>
                         ))}
                       </Select>

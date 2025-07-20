@@ -34,8 +34,11 @@ export async function GET(req) {
     // Get escalation policies
     const escalationPolicies = await db.getEscalationPolicies(user.id, filters);
 
+    // Ensure escalationPolicies is an array
+    const policiesArray = Array.isArray(escalationPolicies) ? escalationPolicies : [];
+
     // Transform the data to match expected format
-    const formattedPolicies = escalationPolicies.map(policy => ({
+    const formattedPolicies = policiesArray.map(policy => ({
       ...policy,
       organization_name: policy.organizations?.name,
       created_by_name: policy.created_by_user?.name,
