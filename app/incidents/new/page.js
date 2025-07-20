@@ -167,9 +167,15 @@ export default function CreateIncidentPage() {
       const membersResponse = await fetch(
         `/api/organizations/${orgId}/members`
       );
+      console.log('Members response status:', membersResponse.status);
       if (membersResponse.ok) {
         const membersData = await membersResponse.json();
+        console.log('Members response data:', membersData);
+        console.log('Members array:', membersData.members);
         setOrganizationMembers(membersData.members || []);
+      } else {
+        const errorData = await membersResponse.text();
+        console.error('Failed to fetch members:', membersResponse.status, errorData);
       }
 
       // Fetch services (status pages can list services)
@@ -582,15 +588,25 @@ export default function CreateIncidentPage() {
                   <MenuItem value="">
                     <em>Unassigned</em>
                   </MenuItem>
-                  {organizationMembers.map(member => (
-                    <MenuItem key={member.id} value={member.user_id}>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <PersonIcon fontSize="small" />
-                        {member.users?.name || member.name} (
-                        {member.users?.email || member.email})
-                      </Box>
+                  {console.log('organizationMembers state:', organizationMembers)}
+                  {organizationMembers.length === 0 ? (
+                    <MenuItem disabled>
+                      <em>No members found</em>
                     </MenuItem>
-                  ))}
+                  ) : (
+                    organizationMembers.map(member => {
+                      console.log('Rendering member:', member);
+                      return (
+                        <MenuItem key={member.id} value={member.user_id}>
+                          <Box display="flex" alignItems="center" gap={1}>
+                            <PersonIcon fontSize="small" />
+                            {member.users?.name || member.name} (
+                            {member.users?.email || member.email})
+                          </Box>
+                        </MenuItem>
+                      );
+                    })
+                  )}
                 </Select>
                 <FormHelperText>
                   Assign this incident to a team member

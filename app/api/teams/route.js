@@ -168,7 +168,7 @@ export async function POST(request) {
         organization_id: organizationId,
         team_lead_id: teamLeadId || null,
         is_active: true,
-      });
+      }, user.id);
 
       console.log('✅ Team created successfully:', newTeam);
       return NextResponse.json(newTeam);

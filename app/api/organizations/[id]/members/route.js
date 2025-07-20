@@ -44,7 +44,7 @@ export async function GET(request, { params }) {
     }
 
     const members = await db.getOrganizationMembers(organizationId);
-    return NextResponse.json(members);
+    return NextResponse.json({ members });
   } catch (error) {
     console.error('Error fetching organization members:', error);
     return NextResponse.json({ error: 'Failed to fetch organization members' }, { status: 500 });

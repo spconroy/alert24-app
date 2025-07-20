@@ -75,10 +75,10 @@ export default function CreateEscalationPolicyPage() {
 
   const fetchOrganizationMembers = async orgId => {
     try {
-      const response = await fetch(`/api/organizations/${orgId}`);
+      const response = await fetch(`/api/organizations/${orgId}/members`);
       if (response.ok) {
         const data = await response.json();
-        setOrganizationMembers(data.members || []);
+        setOrganizationMembers(data || []);
       }
     } catch (err) {
       console.error('Error fetching organization members:', err);
@@ -517,8 +517,8 @@ export default function CreateEscalationPolicyPage() {
                               >
                                 {rule.target_type === 'user' &&
                                   organizationMembers.map(member => (
-                                    <MenuItem key={member.id} value={member.id}>
-                                      {member.name || member.email}
+                                    <MenuItem key={member.users.id} value={member.users.id}>
+                                      {member.users.name || member.users.email}
                                     </MenuItem>
                                   ))}
                                 {rule.target_type === 'team' && (
@@ -562,8 +562,8 @@ export default function CreateEscalationPolicyPage() {
                                 {rule.notification_type} to{' '}
                                 {rule.target_type === 'user' &&
                                   organizationMembers.find(
-                                    m => m.id === rule.target_id
-                                  )?.name}
+                                    m => m.users.id === rule.target_id
+                                  )?.users.name}
                                 {rule.target_type === 'team' &&
                                   'Engineering Team'}
                                 {rule.target_type === 'on_call' &&
