@@ -337,7 +337,7 @@ export default function IncidentDashboard() {
               </IconButton>
             </Tooltip>
 
-            {/* Contextual Primary CTA based on app state */}
+            {/* Single primary CTA based on app state */}
             {monitoringStats.total === 0 ? (
               <Button
                 component={Link}
@@ -370,20 +370,6 @@ export default function IncidentDashboard() {
                 startIcon={<AddIcon />}
                 color="error"
                 sx={{ px: 3 }}
-              >
-                Create Incident
-              </Button>
-            )}
-
-            {/* Secondary action - always available but less prominent */}
-            {(monitoringStats.total > 0 || currentlyOnCall.length > 0) && (
-              <Button
-                component={Link}
-                href="/incidents/new"
-                variant="outlined"
-                startIcon={<AddIcon />}
-                color="error"
-                size="small"
               >
                 Create Incident
               </Button>
@@ -988,17 +974,6 @@ export default function IncidentDashboard() {
                   >
                     <Button
                       component={Link}
-                      href="/incidents/new"
-                      variant="contained"
-                      size="small"
-                      startIcon={<AddIcon />}
-                      color="error"
-                      sx={{ flex: { xs: 1, sm: 'none' } }}
-                    >
-                      Create
-                    </Button>
-                    <Button
-                      component={Link}
                       href="/incidents"
                       variant="outlined"
                       size="small"
@@ -1125,17 +1100,8 @@ export default function IncidentDashboard() {
                     >
                       <Button
                         component={Link}
-                        href="/incidents/new"
-                        variant="contained"
-                        size="small"
-                        startIcon={<AddIcon />}
-                      >
-                        Create Test Incident
-                      </Button>
-                      <Button
-                        component={Link}
                         href="/monitoring/new"
-                        variant="outlined"
+                        variant="contained"
                         size="small"
                         startIcon={<MonitorIcon />}
                       >
@@ -1192,7 +1158,7 @@ export default function IncidentDashboard() {
                                   color: 'inherit',
                                 }}
                               >
-                                #{incident.id} {incident.title}
+                                {incident.title}
                               </Link>
                             </Typography>
                           </Box>

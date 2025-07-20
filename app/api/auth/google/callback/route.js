@@ -71,6 +71,24 @@ export async function GET(request) {
       }
 
       user = newUser;
+    } else {
+      console.log('👤 Updating existing user profile picture');
+      const { data: updatedUser, error: updateError } = await db.client
+        .from('users')
+        .update({
+          avatar_url: googleUser.picture,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('❌ Error updating user profile picture:', updateError);
+        // Don't fail the login, just log the error
+      } else {
+        user = updatedUser;
+      }
     }
 
     // Check for authorized domains and auto-enroll user

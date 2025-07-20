@@ -25,6 +25,9 @@ import {
   ListItem,
   ListItemText,
   ListItemSecondaryAction,
+  Avatar,
+  Paper,
+  Tooltip,
 } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
@@ -36,6 +39,8 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import PersonIcon from '@mui/icons-material/Person';
 import ClearIcon from '@mui/icons-material/Clear';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import GroupIcon from '@mui/icons-material/Group';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import dayjs from 'dayjs';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -325,242 +330,334 @@ export default function EditOnCallSchedulePage() {
           )}
 
           {/* Form */}
-          <Card>
-            <CardContent>
-              <form onSubmit={handleSubmit}>
-                <Grid container spacing={3}>
-                  {/* Basic Information */}
-                  <Grid item xs={12}>
-                    <Typography variant="h6" gutterBottom>
+          <form onSubmit={handleSubmit}>
+            <Grid container spacing={3}>
+              {/* Basic Information Card */}
+              <Grid item xs={12}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+                      <PersonIcon color="primary" />
                       Basic Information
                     </Typography>
-                  </Grid>
-
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      label="Schedule Name"
-                      value={formData.name}
-                      onChange={e => handleInputChange('name', e.target.value)}
-                      error={!!formErrors.name}
-                      helperText={formErrors.name}
-                      required
-                    />
-                  </Grid>
-
-                  <Grid item xs={12} md={6}>
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={formData.is_active}
-                          onChange={e =>
-                            handleInputChange('is_active', e.target.checked)
-                          }
-                          color="primary"
-                        />
-                      }
-                      label="Active"
-                    />
-                  </Grid>
-
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      label="Description"
-                      value={formData.description}
-                      onChange={e =>
-                        handleInputChange('description', e.target.value)
-                      }
-                      multiline
-                      rows={3}
-                    />
-                  </Grid>
-
-                  {/* Rotation Settings */}
-                  <Grid item xs={12}>
-                    <Divider sx={{ my: 2 }} />
-                    <Typography variant="h6" gutterBottom>
-                      Rotation Settings
-                    </Typography>
-                  </Grid>
-
-                  <Grid item xs={12} md={6}>
-                    <FormControl fullWidth>
-                      <InputLabel>Rotation Type</InputLabel>
-                      <Select
-                        value={formData.rotation_type}
-                        onChange={e =>
-                          handleInputChange('rotation_type', e.target.value)
-                        }
-                        label="Rotation Type"
-                      >
-                        <MenuItem value="daily">Daily</MenuItem>
-                        <MenuItem value="weekly">Weekly</MenuItem>
-                        <MenuItem value="biweekly">Bi-weekly</MenuItem>
-                        <MenuItem value="monthly">Monthly</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      label="Rotation Interval (hours)"
-                      type="number"
-                      value={formData.rotation_interval_hours}
-                      onChange={e =>
-                        handleInputChange(
-                          'rotation_interval_hours',
-                          parseInt(e.target.value) || 0
-                        )
-                      }
-                      error={!!formErrors.rotation_interval_hours}
-                      helperText={formErrors.rotation_interval_hours}
-                      inputProps={{ min: 1 }}
-                    />
-                  </Grid>
-
-                  <Grid item xs={12} md={6}>
-                    <DateTimePicker
-                      label="Start Date"
-                      value={formData.start_date}
-                      onChange={value => handleInputChange('start_date', value)}
-                      renderInput={params => (
+                    
+                    <Grid container spacing={3}>
+                      <Grid item xs={12} md={8}>
                         <TextField
-                          {...params}
                           fullWidth
-                          error={!!formErrors.start_date}
-                          helperText={formErrors.start_date}
+                          label="Schedule Name"
+                          value={formData.name}
+                          onChange={e => handleInputChange('name', e.target.value)}
+                          error={!!formErrors.name}
+                          helperText={formErrors.name}
+                          required
+                          variant="outlined"
                         />
-                      )}
-                    />
-                  </Grid>
+                      </Grid>
 
-                  <Grid item xs={12} md={6}>
-                    <DateTimePicker
-                      label="End Date (Optional)"
-                      value={formData.end_date}
-                      onChange={value => handleInputChange('end_date', value)}
-                      renderInput={params => (
-                        <TextField
-                          {...params}
-                          fullWidth
-                          error={!!formErrors.end_date}
-                          helperText={formErrors.end_date}
-                        />
-                      )}
-                    />
-                  </Grid>
-
-                  {/* Participants */}
-                  <Grid item xs={12}>
-                    <Divider sx={{ my: 2 }} />
-                    <Typography variant="h6" gutterBottom>
-                      Participants
-                    </Typography>
-                  </Grid>
-
-                  <Grid item xs={12} md={8}>
-                    <Autocomplete
-                      options={organizationMembers}
-                      getOptionLabel={option =>
-                        `${option.name || option.email} (${option.email})`
-                      }
-                      value={selectedMember}
-                      onChange={(event, newValue) =>
-                        setSelectedMember(newValue)
-                      }
-                      renderInput={params => (
-                        <TextField
-                          {...params}
-                          label="Add Team Member"
-                          placeholder="Select a team member to add to rotation"
-                        />
-                      )}
-                    />
-                  </Grid>
-
-                  <Grid item xs={12} md={4}>
-                    <Button
-                      fullWidth
-                      variant="outlined"
-                      onClick={handleAddParticipant}
-                      disabled={!selectedMember}
-                      startIcon={<AddIcon />}
-                      sx={{ height: '56px' }}
-                    >
-                      Add Member
-                    </Button>
-                  </Grid>
-
-                  {formData.participants.length > 0 && (
-                    <Grid item xs={12}>
-                      <Typography variant="subtitle1" gutterBottom>
-                        Rotation Order ({formData.participants.length} members)
-                      </Typography>
-                      <List>
-                        {formData.participants.map((participant, index) => (
-                          <ListItem key={participant.id} divider>
-                            <ListItemText
-                              primary={
-                                <Box display="flex" alignItems="center" gap={1}>
-                                  <Chip
-                                    label={index + 1}
-                                    size="small"
-                                    color="primary"
-                                    variant="outlined"
-                                  />
-                                  <PersonIcon color="action" />
-                                  {participant.name || participant.email}
-                                </Box>
-                              }
-                              secondary={participant.email}
-                            />
-                            <ListItemSecondaryAction>
-                              <IconButton
-                                edge="end"
-                                onClick={() =>
-                                  handleRemoveParticipant(participant.id)
+                      <Grid item xs={12} md={4}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', height: '56px' }}>
+                          <FormControlLabel
+                            control={
+                              <Switch
+                                checked={formData.is_active}
+                                onChange={e =>
+                                  handleInputChange('is_active', e.target.checked)
                                 }
-                                color="error"
-                              >
-                                <DeleteIcon />
-                              </IconButton>
-                            </ListItemSecondaryAction>
-                          </ListItem>
-                        ))}
-                      </List>
-                    </Grid>
-                  )}
+                                color="primary"
+                                size="medium"
+                              />
+                            }
+                            label="Schedule Active"
+                            sx={{ ml: 1 }}
+                          />
+                        </Box>
+                      </Grid>
 
-                  {/* Actions */}
-                  <Grid item xs={12}>
-                    <Divider sx={{ my: 2 }} />
-                    <Box display="flex" gap={2} justifyContent="flex-end">
-                      <Button
-                        component={Link}
-                        href="/on-call"
-                        variant="outlined"
-                        disabled={saving}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        type="submit"
-                        variant="contained"
-                        disabled={saving}
-                        startIcon={
-                          saving ? <CircularProgress size={20} /> : <SaveIcon />
+                      <Grid item xs={12}>
+                        <TextField
+                          fullWidth
+                          label="Description"
+                          value={formData.description}
+                          onChange={e =>
+                            handleInputChange('description', e.target.value)
+                          }
+                          multiline
+                          rows={3}
+                          variant="outlined"
+                          placeholder="Add a description for this on-call schedule..."
+                        />
+                      </Grid>
+                    </Grid>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Schedule Configuration Card */}
+              <Grid item xs={12}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+                      <ScheduleIcon color="primary" />
+                      Schedule Configuration
+                    </Typography>
+                    
+                    <Grid container spacing={3}>
+                      <Grid item xs={12} md={6}>
+                        <FormControl fullWidth variant="outlined">
+                          <InputLabel>Rotation Type</InputLabel>
+                          <Select
+                            value={formData.rotation_type}
+                            onChange={e =>
+                              handleInputChange('rotation_type', e.target.value)
+                            }
+                            label="Rotation Type"
+                          >
+                            <MenuItem value="daily">Daily</MenuItem>
+                            <MenuItem value="weekly">Weekly</MenuItem>
+                            <MenuItem value="biweekly">Bi-weekly</MenuItem>
+                            <MenuItem value="monthly">Monthly</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Rotation Interval (hours)"
+                          type="number"
+                          value={formData.rotation_interval_hours}
+                          onChange={e =>
+                            handleInputChange(
+                              'rotation_interval_hours',
+                              parseInt(e.target.value) || 0
+                            )
+                          }
+                          error={!!formErrors.rotation_interval_hours}
+                          helperText={formErrors.rotation_interval_hours || 'How many hours between rotations'}
+                          inputProps={{ min: 1 }}
+                          variant="outlined"
+                        />
+                      </Grid>
+
+                      <Grid item xs={12}>
+                        <Typography variant="subtitle1" gutterBottom sx={{ mt: 2, mb: 2, fontWeight: 600 }}>
+                          Schedule Timeline
+                        </Typography>
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <DateTimePicker
+                          label="Start Date & Time"
+                          value={formData.start_date}
+                          onChange={value => handleInputChange('start_date', value)}
+                          slotProps={{
+                            textField: {
+                              fullWidth: true,
+                              variant: 'outlined',
+                              error: !!formErrors.start_date,
+                              helperText: formErrors.start_date || 'When the schedule begins',
+                            }
+                          }}
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <DateTimePicker
+                          label="End Date & Time (Optional)"
+                          value={formData.end_date}
+                          onChange={value => handleInputChange('end_date', value)}
+                          slotProps={{
+                            textField: {
+                              fullWidth: true,
+                              variant: 'outlined',
+                              error: !!formErrors.end_date,
+                              helperText: formErrors.end_date || 'Leave empty for ongoing schedule',
+                            }
+                          }}
+                        />
+                      </Grid>
+                    </Grid>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Team Members Card */}
+              <Grid item xs={12}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+                      <GroupIcon color="primary" />
+                      Team Members
+                      {formData.participants.length > 0 && (
+                        <Chip
+                          label={`${formData.participants.length} member${formData.participants.length !== 1 ? 's' : ''}`}
+                          size="small"
+                          color="primary"
+                          variant="outlined"
+                        />
+                      )}
+                    </Typography>
+                    
+                    <Grid container spacing={3}>
+                      <Grid item xs={12} md={8}>
+                        <Autocomplete
+                          options={organizationMembers}
+                          getOptionLabel={option =>
+                            `${option.name || option.email} (${option.email})`
+                          }
+                          value={selectedMember}
+                          onChange={(event, newValue) =>
+                            setSelectedMember(newValue)
+                          }
+                          renderInput={params => (
+                            <TextField
+                              {...params}
+                              label="Add Team Member"
+                              placeholder="Search and select a team member..."
+                              variant="outlined"
+                            />
+                          )}
+                          noOptionsText="No team members found"
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} md={4}>
+                        <Button
+                          fullWidth
+                          variant="contained"
+                          onClick={handleAddParticipant}
+                          disabled={!selectedMember}
+                          startIcon={<AddIcon />}
+                          sx={{ height: '56px' }}
+                        >
+                          Add to Rotation
+                        </Button>
+                      </Grid>
+
+                      {formData.participants.length > 0 && (
+                        <Grid item xs={12}>
+                          <Box sx={{ mt: 2 }}>
+                            <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>
+                              Rotation Order
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" gutterBottom>
+                              Members will be on-call in the order shown below. Drag to reorder.
+                            </Typography>
+                            <Paper variant="outlined" sx={{ mt: 2 }}>
+                              <List disablePadding>
+                                {formData.participants.map((participant, index) => (
+                                  <ListItem 
+                                    key={participant.id} 
+                                    divider={index < formData.participants.length - 1}
+                                    sx={{ py: 2 }}
+                                  >
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+                                      <Chip
+                                        label={index + 1}
+                                        size="small"
+                                        color="primary"
+                                        sx={{ minWidth: '32px' }}
+                                      />
+                                      <Avatar sx={{ width: 40, height: 40 }}>
+                                        {(participant.name || participant.email).charAt(0).toUpperCase()}
+                                      </Avatar>
+                                      <Box>
+                                        <Typography variant="body1" fontWeight="medium">
+                                          {participant.name || participant.email}
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                          {participant.email}
+                                        </Typography>
+                                      </Box>
+                                    </Box>
+                                    <ListItemSecondaryAction>
+                                      <Tooltip title="Remove from rotation">
+                                        <IconButton
+                                          edge="end"
+                                          onClick={() =>
+                                            handleRemoveParticipant(participant.id)
+                                          }
+                                          color="error"
+                                          size="small"
+                                        >
+                                          <ClearIcon />
+                                        </IconButton>
+                                      </Tooltip>
+                                    </ListItemSecondaryAction>
+                                  </ListItem>
+                                ))}
+                              </List>
+                            </Paper>
+                          </Box>
+                        </Grid>
+                      )}
+
+                      {formData.participants.length === 0 && (
+                        <Grid item xs={12}>
+                          <Paper 
+                            variant="outlined" 
+                            sx={{ 
+                              p: 4, 
+                              textAlign: 'center',
+                              backgroundColor: 'grey.50',
+                              borderStyle: 'dashed'
+                            }}
+                          >
+                            <PersonIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
+                            <Typography variant="h6" color="text.secondary" gutterBottom>
+                              No team members added
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              Add team members to create the on-call rotation order.
+                            </Typography>
+                          </Paper>
+                        </Grid>
+                      )}
+                    </Grid>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Actions */}
+              <Grid item xs={12}>
+                <Card>
+                  <CardContent>
+                    <Box display="flex" gap={2} justifyContent="space-between" alignItems="center">
+                      <Typography variant="body2" color="text.secondary">
+                        {formData.participants.length > 0 
+                          ? `Schedule configured with ${formData.participants.length} team member${formData.participants.length !== 1 ? 's' : ''}`
+                          : 'Add team members to complete the schedule setup'
                         }
-                      >
-                        {saving ? 'Updating...' : 'Update Schedule'}
-                      </Button>
+                      </Typography>
+                      <Box display="flex" gap={2}>
+                        <Button
+                          component={Link}
+                          href="/on-call"
+                          variant="outlined"
+                          disabled={saving}
+                          size="large"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="submit"
+                          variant="contained"
+                          disabled={saving}
+                          startIcon={
+                            saving ? <CircularProgress size={20} /> : <SaveIcon />
+                          }
+                          size="large"
+                        >
+                          {saving ? 'Updating...' : 'Update Schedule'}
+                        </Button>
+                      </Box>
                     </Box>
-                  </Grid>
-                </Grid>
-              </form>
-            </CardContent>
-          </Card>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          </form>
         </Box>
       )}
     </ProtectedRoute>
