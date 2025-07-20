@@ -340,7 +340,7 @@ export default function StatusUpdatesFeed({
                         update.affected_services.slice(0, 3).map((service, idx) => (
                           <Chip
                             key={idx}
-                            label={service}
+                            label={typeof service === 'string' ? service : service.name || service.id || 'Unknown Service'}
                             variant="outlined"
                             size="small"
                             color="primary"

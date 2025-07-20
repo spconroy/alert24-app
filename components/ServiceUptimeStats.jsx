@@ -125,13 +125,13 @@ export default function ServiceUptimeStats({ serviceId, compact = false }) {
           <Box textAlign="center">
             <Typography
               variant="h4"
-              color={getUptimeColor(uptimeStats.last7Days) + '.main'}
+              color={getUptimeColor(uptimeStats.last30Days) + '.main'}
               fontWeight="bold"
             >
-              {formatUptime(uptimeStats.last7Days)}
+              {formatUptime(uptimeStats.last30Days)}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              Last 7 Days
+              Last 30 Days
             </Typography>
           </Box>
         </Grid>
