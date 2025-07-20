@@ -18,11 +18,15 @@ import {
   Autocomplete,
   FormHelperText,
   Divider,
+  Container,
 } from '@mui/material';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SaveIcon from '@mui/icons-material/Save';
+import EscalateIcon from '@mui/icons-material/TrendingUp';
+import HistoryIcon from '@mui/icons-material/History';
+import InfoIcon from '@mui/icons-material/Info';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useOrganization } from '@/contexts/OrganizationContext';
 
@@ -56,6 +60,7 @@ export default function EditIncidentPage() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [formErrors, setFormErrors] = useState({});
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // New tag input
   const [newTag, setNewTag] = useState('');
@@ -65,6 +70,38 @@ export default function EditIncidentPage() {
       fetchIncident();
     }
   }, [incidentId, session]);
+
+  // Track unsaved changes
+  useEffect(() => {
+    if (originalIncident) {
+      const hasChanges = JSON.stringify(formData) !== JSON.stringify({
+        title: originalIncident.title || '',
+        description: originalIncident.description || '',
+        severity: originalIncident.severity || 'medium',
+        status: originalIncident.status || 'open',
+        affected_services: originalIncident.affected_services || [],
+        impact_description: originalIncident.impact_description || '',
+        assigned_to: originalIncident.assigned_to || '',
+        escalation_policy_id: originalIncident.escalation_policy_id || '',
+        tags: originalIncident.tags || [],
+        resolution_notes: originalIncident.resolution_notes || '',
+      });
+      setHasUnsavedChanges(hasChanges);
+    }
+  }, [formData, originalIncident]);
+
+  // Warn before leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   const fetchIncident = async () => {
     try {
@@ -160,9 +197,25 @@ export default function EditIncidentPage() {
   const validateForm = () => {
     const errors = {};
 
-    if (!formData.title.trim()) errors.title = 'Title is required';
-    if (!formData.description.trim())
+    if (!formData.title.trim()) {
+      errors.title = 'Title is required';
+    } else if (formData.title.length > 200) {
+      errors.title = 'Title must be less than 200 characters';
+    }
+    
+    if (!formData.description.trim()) {
       errors.description = 'Description is required';
+    } else if (formData.description.length > 2000) {
+      errors.description = 'Description must be less than 2000 characters';
+    }
+
+    if (formData.impact_description && formData.impact_description.length > 1000) {
+      errors.impact_description = 'Impact description must be less than 1000 characters';
+    }
+
+    if (formData.status === 'resolved' && !formData.resolution_notes.trim()) {
+      errors.resolution_notes = 'Resolution notes are required when status is resolved';
+    }
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -201,6 +254,7 @@ export default function EditIncidentPage() {
       }
 
       setSuccess(true);
+      setHasUnsavedChanges(false);
 
       // Redirect to the incident detail page after a short delay
       setTimeout(() => {
@@ -296,9 +350,16 @@ export default function EditIncidentPage() {
             >
               Back to Incident
             </Button>
-            <Typography variant="h4" component="h1">
-              Edit Incident #{originalIncident?.incident_number}
-            </Typography>
+            <Box>
+              <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
+                Edit Incident #{originalIncident?.incident_number}
+              </Typography>
+              {originalIncident?.title && (
+                <Typography variant="h6" color="text.secondary" sx={{ mt: 0.5 }}>
+                  {originalIncident.title}
+                </Typography>
+              )}
+            </Box>
           </Box>
 
           {/* Error Alert */}
@@ -308,11 +369,25 @@ export default function EditIncidentPage() {
             </Alert>
           )}
 
+          {/* Unsaved Changes Warning */}
+          {hasUnsavedChanges && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              You have unsaved changes. Make sure to save before leaving this page.
+            </Alert>
+          )}
+
           {/* Form */}
-          <Card>
-            <CardContent>
+          <Card elevation={2}>
+            <CardContent sx={{ p: 4 }}>
               <form onSubmit={handleSubmit}>
-                <Grid container spacing={3}>
+                <Grid container spacing={4}>
+                  {/* Basic Information Section */}
+                  <Grid item xs={12}>
+                    <Typography variant="h5" sx={{ fontWeight: 600, mb: 3 }}>
+                      Basic Information
+                    </Typography>
+                  </Grid>
+
                   {/* Title */}
                   <Grid item xs={12}>
                     <TextField
@@ -323,9 +398,11 @@ export default function EditIncidentPage() {
                       error={!!formErrors.title}
                       helperText={
                         formErrors.title ||
-                        'A clear, concise description of the incident'
+                        `A clear, concise description of the incident (${formData.title.length}/200)`
                       }
                       placeholder="e.g., API service experiencing high latency"
+                      variant="outlined"
+                      sx={{ mb: 1 }}
                     />
                   </Grid>
 
@@ -343,10 +420,19 @@ export default function EditIncidentPage() {
                       error={!!formErrors.description}
                       helperText={
                         formErrors.description ||
-                        'Detailed description of the incident and its impact'
+                        `Detailed description of the incident and its impact (${formData.description.length}/2000)`
                       }
                       placeholder="Describe the incident, when it started, symptoms, and any initial investigation findings..."
+                      variant="outlined"
+                      sx={{ mb: 1 }}
                     />
+                  </Grid>
+
+                  {/* Classification Section */}
+                  <Grid item xs={12}>
+                    <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, mt: 2 }}>
+                      Classification
+                    </Typography>
                   </Grid>
 
                   {/* Severity and Status */}
@@ -401,14 +487,20 @@ export default function EditIncidentPage() {
                     <TextField
                       fullWidth
                       multiline
-                      rows={2}
+                      rows={3}
                       label="Impact Description"
                       value={formData.impact_description}
                       onChange={e =>
                         handleInputChange('impact_description', e.target.value)
                       }
-                      helperText="Describe the customer or business impact"
+                      error={!!formErrors.impact_description}
+                      helperText={
+                        formErrors.impact_description ||
+                        `Describe the customer or business impact (${formData.impact_description.length}/1000)`
+                      }
                       placeholder="e.g., Users unable to login, checkout process failing for 25% of customers"
+                      variant="outlined"
+                      sx={{ mb: 1 }}
                     />
                   </Grid>
 
@@ -424,38 +516,55 @@ export default function EditIncidentPage() {
                         onChange={e =>
                           handleInputChange('resolution_notes', e.target.value)
                         }
-                        helperText="Describe how the incident was resolved"
+                        error={!!formErrors.resolution_notes}
+                        helperText={
+                          formErrors.resolution_notes ||
+                          'Describe how the incident was resolved and the root cause'
+                        }
                         placeholder="Explain the root cause and steps taken to resolve the incident..."
                       />
                     </Grid>
                   )}
 
+                  {/* Assignment Section */}
                   <Grid item xs={12}>
-                    <Divider sx={{ my: 2 }} />
-                    <Typography variant="h6" gutterBottom>
+                    <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, mt: 3 }}>
                       Assignment & Escalation
                     </Typography>
                   </Grid>
 
                   {/* Assigned To */}
                   <Grid item xs={12} md={6}>
-                    <FormControl fullWidth>
-                      <InputLabel>Assign To</InputLabel>
-                      <Select
-                        value={formData.assigned_to}
-                        label="Assign To"
-                        onChange={e =>
-                          handleInputChange('assigned_to', e.target.value)
-                        }
+                    <Box display="flex" gap={1} alignItems="start">
+                      <FormControl fullWidth>
+                        <InputLabel>Assign To</InputLabel>
+                        <Select
+                          value={formData.assigned_to}
+                          label="Assign To"
+                          onChange={e =>
+                            handleInputChange('assigned_to', e.target.value)
+                          }
+                        >
+                          <MenuItem value="">Unassigned</MenuItem>
+                          {organizationMembers.map(member => (
+                            <MenuItem key={member.id} value={member.users?.id || member.user_id}>
+                              {member.users?.name || member.name} ({member.users?.email || member.email})
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                      <Button
+                        variant="outlined"
+                        startIcon={<EscalateIcon />}
+                        sx={{ mt: 1, minWidth: 120 }}
+                        onClick={() => {
+                          // For now, just show a simple escalation action
+                          alert('Escalation feature coming soon!');
+                        }}
                       >
-                        <MenuItem value="">Unassigned</MenuItem>
-                        {organizationMembers.map(member => (
-                          <MenuItem key={member.id} value={member.users?.id || member.user_id}>
-                            {member.users?.name || member.name} ({member.users?.email || member.email})
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+                        Escalate
+                      </Button>
+                    </Box>
                   </Grid>
 
                   {/* Escalation Policy */}
@@ -479,7 +588,20 @@ export default function EditIncidentPage() {
                           </MenuItem>
                         ))}
                       </Select>
+                      {formData.escalation_policy_id && (
+                        <FormHelperText>
+                          <InfoIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'middle' }} />
+                          Policy will determine automatic escalation rules for this incident
+                        </FormHelperText>
+                      )}
                     </FormControl>
+                  </Grid>
+
+                  {/* Services Section */}
+                  <Grid item xs={12}>
+                    <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, mt: 3 }}>
+                      Affected Services
+                    </Typography>
                   </Grid>
 
                   {/* Affected Services */}
@@ -497,6 +619,7 @@ export default function EditIncidentPage() {
                           {...params}
                           label="Affected Services"
                           helperText="Select services affected by this incident"
+                          variant="outlined"
                         />
                       )}
                       renderTags={(value, getTagProps) =>
@@ -506,14 +629,19 @@ export default function EditIncidentPage() {
                             label={option.name || option.id || 'Unnamed Service'}
                             {...getTagProps({ index })}
                             key={index}
+                            color="primary"
                           />
                         ))
                       }
+                      sx={{ mb: 1 }}
                     />
                   </Grid>
 
-                  {/* Tags */}
+                  {/* Tags Section */}
                   <Grid item xs={12}>
+                    <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, mt: 3 }}>
+                      Tags & Metadata
+                    </Typography>
                     <Box>
                       <TextField
                         fullWidth
@@ -521,23 +649,22 @@ export default function EditIncidentPage() {
                         value={newTag}
                         onChange={e => setNewTag(e.target.value)}
                         onKeyPress={handleKeyPress}
-                        helperText="Press Enter to add tags for categorization"
-                        InputProps={{
-                          endAdornment: (
-                            <Button
-                              onClick={handleAddTag}
-                              disabled={!newTag.trim()}
-                            >
-                              Add
-                            </Button>
-                          ),
-                        }}
+                        helperText="Press Enter or click Add to include tags for categorization"
+                        sx={{ mb: 1 }}
                       />
+                      <Button
+                        onClick={handleAddTag}
+                        disabled={!newTag.trim()}
+                        variant="outlined"
+                        size="small"
+                        sx={{ mb: 2 }}
+                      >
+                        Add Tag
+                      </Button>
 
                       {formData.tags.length > 0 && (
                         <Box
                           sx={{
-                            mt: 1,
                             display: 'flex',
                             flexWrap: 'wrap',
                             gap: 1,
@@ -562,28 +689,61 @@ export default function EditIncidentPage() {
                     <Box
                       display="flex"
                       gap={2}
-                      justifyContent="flex-end"
-                      sx={{ mt: 2 }}
+                      justifyContent="space-between"
+                      alignItems="center"
+                      sx={{ mt: 4, pt: 3, borderTop: 1, borderColor: 'divider' }}
                     >
                       <Button
                         component={Link}
                         href={`/incidents/${incidentId}`}
-                        variant="outlined"
-                        disabled={saving}
+                        variant="text"
+                        color="inherit"
+                        startIcon={<HistoryIcon />}
                       >
-                        Cancel
+                        View History
                       </Button>
-                      <Button
-                        type="submit"
-                        variant="contained"
-                        startIcon={
-                          saving ? <CircularProgress size={20} /> : <SaveIcon />
-                        }
-                        disabled={saving}
-                        color="primary"
-                      >
-                        {saving ? 'Saving...' : 'Save Changes'}
-                      </Button>
+                      <Box display="flex" gap={2}>
+                        <Button
+                          component={Link}
+                          href={`/incidents/${incidentId}`}
+                          variant="outlined"
+                          disabled={saving}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="submit"
+                          variant="contained"
+                          startIcon={
+                            saving ? <CircularProgress size={20} /> : <SaveIcon />
+                          }
+                          disabled={saving}
+                          color="primary"
+                          size="large"
+                        >
+                          {saving ? 'Saving...' : 'Save Changes'}
+                        </Button>
+                        {/* Bottom Save Button for Long Forms */}
+                        <Button
+                          type="submit"
+                          variant="contained"
+                          startIcon={
+                            saving ? <CircularProgress size={20} /> : <SaveIcon />
+                          }
+                          disabled={saving}
+                          color="primary"
+                          size="large"
+                          sx={{ 
+                            position: 'fixed', 
+                            bottom: 24, 
+                            right: 24, 
+                            zIndex: 1000,
+                            display: { xs: 'flex', md: 'none' }
+                          }}
+                        >
+                          {saving ? 'Saving...' : 'Save'}
+                        </Button>
+                      </Box>
                     </Box>
                   </Grid>
                 </Grid>

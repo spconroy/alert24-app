@@ -26,6 +26,7 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import MonitorIcon from '@mui/icons-material/Monitor';
 import PeopleIcon from '@mui/icons-material/People';
 import InfoIcon from '@mui/icons-material/Info';
+import SmsIcon from '@mui/icons-material/Sms';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import NoSSR from './NoSSR';
 
@@ -1487,7 +1488,7 @@ export default function IncidentDashboard() {
                           >
                             Assign Incident
                           </Button>
-                          <Tooltip title={`Contact ${schedule.user_name}`}>
+                          <Tooltip title={`Call ${schedule.user_name}`}>
                             <Button
                               size="small"
                               variant="outlined"
@@ -1495,6 +1496,22 @@ export default function IncidentDashboard() {
                               sx={{ minWidth: 'auto', px: 1 }}
                             >
                               📞
+                            </Button>
+                          </Tooltip>
+                          <Tooltip title={`Text ${schedule.user_name}`}>
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              color="success"
+                              sx={{ minWidth: 'auto', px: 1 }}
+                              onClick={() => {
+                                const phone = schedule.current_on_call_member?.phone || schedule.current_on_call_member?.email;
+                                if (phone) {
+                                  window.open(`sms:${phone}`, '_blank');
+                                }
+                              }}
+                            >
+                              <SmsIcon fontSize="small" />
                             </Button>
                           </Tooltip>
                         </Box>

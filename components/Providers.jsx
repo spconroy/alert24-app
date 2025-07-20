@@ -5,7 +5,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { OrganizationProvider } from '@/contexts/OrganizationContext';
-import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
+import { CustomThemeProvider, useTheme } from '@/contexts/ThemeContext';
 
 function AppTheme({ children }) {
   const { darkMode } = useTheme();
@@ -38,12 +38,12 @@ function AppTheme({ children }) {
 
 export default function Providers({ children }) {
   return (
-    <ThemeProvider>
+    <CustomThemeProvider>
       <AppTheme>
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <OrganizationProvider>{children}</OrganizationProvider>
         </LocalizationProvider>
       </AppTheme>
-    </ThemeProvider>
+    </CustomThemeProvider>
   );
 }
