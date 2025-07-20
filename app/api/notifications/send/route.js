@@ -6,14 +6,24 @@
 export const runtime = 'edge';
 
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { SessionManager } from '@/lib/session-manager';
+import { SupabaseClient } from '@/lib/db-supabase';
 import notificationService from '@/lib/notification-service';
+
+const db = new SupabaseClient();
 
 export async function POST(request) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const sessionManager = new SessionManager();
+    const session = await sessionManager.getSessionFromRequest(request);
+    if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Get user by email
+    const user = await db.getUserByEmail(session.user.email);
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     const data = await request.json();
@@ -37,13 +47,11 @@ export async function POST(request) {
 
     // Validate organizationId if provided
     if (organizationId) {
-      const { db } = await import('@/lib/db-supabase');
-      
       const { data: membership } = await db.client
         .from('organization_members')
         .select('role')
         .eq('organization_id', organizationId)
-        .eq('user_id', session.user.id)
+        .eq('user_id', user.id)
         .single();
 
       if (!membership) {
@@ -98,13 +106,38 @@ export async function POST(request) {
         break;
     }
 
-    // Log the notification attempt
-    console.log('Notification sent:', {
+    // Log the notification attempt with detailed debugging
+    console.log('🔔 Notification Details:', {
       type,
       channels,
-      recipient: recipient.email || recipient.phone,
-      success: result.success,
+      recipient: {
+        email: recipient.email,
+        phone: recipient.phone,
+        name: recipient.name
+      },
+      subject,
+      message: message.substring(0, 100) + '...',
+      result: {
+        success: result.success,
+        channels: result.channels,
+        errors: result.errors
+      },
+      organizationId,
       timestamp: new Date().toISOString()
+    });
+
+    // Log environment check
+    console.log('📧 Email Config:', {
+      hasApiKey: !!process.env.SENDGRID_API_KEY,
+      hasFromEmail: !!process.env.SENDGRID_FROM_EMAIL,
+      apiKeyPrefix: process.env.SENDGRID_API_KEY?.substring(0, 8) + '...'
+    });
+
+    console.log('📱 SMS Config:', {
+      hasAccountSid: !!process.env.TWILIO_ACCOUNT_SID,
+      hasAuthToken: !!process.env.TWILIO_AUTH_TOKEN,
+      hasPhoneNumber: !!process.env.TWILIO_PHONE_NUMBER,
+      hasMessagingService: !!process.env.TWILIO_MESSAGING_SERVICE_SID
     });
 
     return NextResponse.json({

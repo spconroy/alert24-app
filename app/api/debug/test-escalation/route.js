@@ -23,15 +23,18 @@ export const POST = async (request) => {
       return NextResponse.json({ error: 'Escalation policy not found' }, { status: 404 });
     }
 
-    if (!policy.rules || policy.rules.length === 0) {
+    // Support both rules and escalation_steps field names for compatibility
+    const rules = policy.rules || policy.escalation_steps || [];
+    
+    if (!rules || rules.length === 0) {
       return NextResponse.json({ error: 'No escalation rules configured' }, { status: 400 });
     }
 
-    if (stepIndex >= policy.rules.length) {
+    if (stepIndex >= rules.length) {
       return NextResponse.json({ error: 'Step index out of range' }, { status: 400 });
     }
 
-    const step = policy.rules[stepIndex];
+    const step = rules[stepIndex];
     const testIncident = {
       id: 'test-incident-' + Date.now(),
       title: testData?.title || 'Test Escalation Policy',
@@ -64,7 +67,9 @@ export const POST = async (request) => {
           let targetName = 'Unknown';
 
           if (target.type === 'user') {
-            targetUser = await db.getUserById(target.id);
+            // Handle both simple target structure {id, type} and complex structure {id, data, type, ...}
+            const userId = target.id;
+            targetUser = await db.getUserById(userId);
             if (targetUser) {
               targetName = targetUser.name || targetUser.email;
               
@@ -72,11 +77,13 @@ export const POST = async (request) => {
               const channels = ['email']; // Always include email
               
               // Add SMS and calls for high/critical severity if phone available
-              if (['critical', 'high'].includes(testIncident.severity) && targetUser.phone) {
-                if (step.channels?.includes('sms') || !step.channels) {
+              const userPhone = targetUser.phone || targetUser.phone_number;
+              if (['critical', 'high'].includes(testIncident.severity) && userPhone) {
+                const stepChannels = step.channels || step.notification_channels || [];
+                if (stepChannels.includes('sms') || stepChannels.includes('voice') || stepChannels.length === 0) {
                   channels.push('sms');
                 }
-                if (step.channels?.includes('call') || !step.channels) {
+                if (stepChannels.includes('call') || stepChannels.includes('voice') || stepChannels.length === 0) {
                   channels.push('call');
                 }
               }
@@ -87,7 +94,7 @@ export const POST = async (request) => {
                 recipient: {
                   email: targetUser.email,
                   name: targetUser.name,
-                  phone: targetUser.phone,
+                  phone: userPhone,
                 },
                 subject: `🧪 TEST: Escalation Policy - ${testIncident.title}`,
                 message: `TEST ESCALATION POLICY\n\nPolicy: ${policy.name}\nStep: ${step.level}\nIncident: ${testIncident.title}\nSeverity: ${testIncident.severity.toUpperCase()}\n\nThis is a test of your escalation policy configuration.`,
@@ -102,7 +109,7 @@ export const POST = async (request) => {
                   id: target.id,
                   name: targetName,
                   email: targetUser.email,
-                  phone: targetUser.phone,
+                  phone: userPhone,
                 },
                 channels,
                 success: true,
@@ -111,6 +118,75 @@ export const POST = async (request) => {
 
             } else {
               results.errors.push(`User not found: ${target.id}`);
+            }
+          } else if (target.type === 'team') {
+            // Handle team targets - if target.data contains team info, use it; otherwise fetch from DB
+            const teamId = target.id;
+            try {
+              let team = target.data; // Try to use embedded data first
+              
+              if (!team || !team.members) {
+                // Fallback to fetching from database
+                team = await db.getTeamGroup(teamId);
+              }
+              
+              if (team && team.members && team.members.length > 0) {
+                // Notify all active team members
+                for (const member of team.members) {
+                  if (member.is_active && member.users) {
+                    const teamUser = member.users;
+                    const channels = ['email'];
+                    const userPhone = teamUser.phone_number || teamUser.phone;
+                    
+                    if (['critical', 'high'].includes(testIncident.severity) && userPhone) {
+                      const stepChannels = step.channels || step.notification_channels || [];
+                      if (stepChannels.includes('sms') || stepChannels.includes('voice') || stepChannels.length === 0) {
+                        channels.push('sms');
+                      }
+                      if (stepChannels.includes('call') || stepChannels.includes('voice') || stepChannels.length === 0) {
+                        channels.push('call');
+                      }
+                    }
+
+                    const notificationResult = await notificationService.sendNotification({
+                      channels,
+                      recipient: {
+                        email: teamUser.email,
+                        name: teamUser.name,
+                        phone: userPhone,
+                      },
+                      subject: `🧪 TEST: Team Escalation - ${testIncident.title}`,
+                      message: `TEST TEAM ESCALATION\n\nTeam: ${team.name || target.label || 'Unknown'}\nPolicy: ${policy.name}\nStep: ${step.level}\nIncident: ${testIncident.title}\nSeverity: ${testIncident.severity.toUpperCase()}\n\nThis is a test of your team escalation policy.`,
+                      incidentData: testIncident,
+                      priority: testIncident.severity === 'critical' ? 'urgent' : 'high',
+                      organizationId: policy.organization_id,
+                    });
+
+                    results.notifications.push({
+                      target: {
+                        type: 'team',
+                        id: teamId,
+                        name: `${teamUser.name} (Team: ${team.name || target.label})`,
+                        team_name: team.name || target.label,
+                        member: {
+                          id: teamUser.id,
+                          name: teamUser.name,
+                          email: teamUser.email,
+                          phone: userPhone,
+                        },
+                      },
+                      channels,
+                      success: true,
+                      result: notificationResult,
+                    });
+                  }
+                }
+              } else {
+                results.errors.push(`Team not found or no members: ${teamId}`);
+              }
+            } catch (teamError) {
+              console.error(`Error processing team ${teamId}:`, teamError);
+              results.errors.push(`Failed to process team ${teamId}: ${teamError.message}`);
             }
           } else if (target.type === 'schedule') {
             // Get on-call schedule

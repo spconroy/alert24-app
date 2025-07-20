@@ -325,7 +325,7 @@ export default function CreateOnCallSchedulePage() {
             </Typography>
 
             <Grid container spacing={3}>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <TextField
                   label="Schedule Name"
                   fullWidth
@@ -336,7 +336,7 @@ export default function CreateOnCallSchedulePage() {
                   placeholder="e.g., Production Support Team"
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <TextField
                   label="Description"
                   fullWidth
@@ -349,7 +349,7 @@ export default function CreateOnCallSchedulePage() {
                   placeholder="Optional description for this schedule"
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <TextField
                   label="Timezone"
                   fullWidth
@@ -379,7 +379,7 @@ export default function CreateOnCallSchedulePage() {
                   Schedule Timing
                 </Typography>
                 <Grid container spacing={2}>
-                  <Grid item xs={12} md={6}>
+                  <Grid size={{ xs: 12, md: 6 }}>
                     <DateTimePicker
                       label="Start Date & Time"
                       value={formData.start_date}
@@ -396,7 +396,7 @@ export default function CreateOnCallSchedulePage() {
                       }}
                     />
                   </Grid>
-                  <Grid item xs={12} md={6}>
+                  <Grid size={{ xs: 12, md: 6 }}>
                     <DateTimePicker
                       label="End Date & Time (Optional)"
                       value={formData.end_date}
@@ -422,7 +422,7 @@ export default function CreateOnCallSchedulePage() {
                   Rotation Settings
                 </Typography>
                 <Grid container spacing={2}>
-                  <Grid item xs={12} md={6}>
+                  <Grid size={{ xs: 12, md: 6 }}>
                     <FormControl fullWidth size="small">
                       <InputLabel>Rotation Type</InputLabel>
                       <Select
@@ -440,7 +440,7 @@ export default function CreateOnCallSchedulePage() {
                     </FormControl>
                   </Grid>
                   {formData.rotation_type !== 'daily' && (
-                    <Grid item xs={12} md={6}>
+                    <Grid size={{ xs: 12, md: 6 }}>
                       <FormControl fullWidth size="small">
                         <InputLabel>Rotation Day</InputLabel>
                         <Select
@@ -459,7 +459,7 @@ export default function CreateOnCallSchedulePage() {
                       </FormControl>
                     </Grid>
                   )}
-                  <Grid item xs={12} md={6}>
+                  <Grid size={{ xs: 12, md: 6 }}>
                     <TimePicker
                       label="Rotation Time"
                       value={formData.rotation_time}
@@ -628,7 +628,7 @@ export default function CreateOnCallSchedulePage() {
             </Typography>
 
             <Grid container spacing={3}>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <FormControlLabel
                   control={
                     <Switch
@@ -642,14 +642,14 @@ export default function CreateOnCallSchedulePage() {
                 />
               </Grid>
 
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Divider sx={{ my: 2 }} />
                 <Typography variant="h6" gutterBottom>
                   Schedule Summary
                 </Typography>
               </Grid>
 
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
                   <Typography variant="subtitle2" gutterBottom>
                     Basic Information
@@ -667,7 +667,7 @@ export default function CreateOnCallSchedulePage() {
                 </Paper>
               </Grid>
 
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
                   <Typography variant="subtitle2" gutterBottom>
                     Schedule Configuration
@@ -687,7 +687,7 @@ export default function CreateOnCallSchedulePage() {
                 </Paper>
               </Grid>
 
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
                   <Typography variant="subtitle2" gutterBottom>
                     Team Members ({formData.participants.length})
@@ -705,7 +705,7 @@ export default function CreateOnCallSchedulePage() {
               </Grid>
 
               {success && (
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <Alert severity="success">
                     On-call schedule created successfully! Redirecting...
                   </Alert>

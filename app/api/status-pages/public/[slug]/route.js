@@ -180,7 +180,7 @@ export async function GET(request, { params }) {
                 ...update,
                 type: 'incident_update',
                 incident_id: incident.id,
-                incident_title: incident.title,
+                incident_title: `#${incident.incident_number || incident.id?.slice(-4)} - ${incident.title}`,
                 incident_status: incident.status,
                 affected_services: incident.affected_services?.map(service =>
                   typeof service === 'string' ? service : service.name || service.id || 'Unknown Service'

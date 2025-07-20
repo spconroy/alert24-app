@@ -16,6 +16,8 @@ import {
   CardContent,
   Divider,
   FormHelperText,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import { CheckCircle, Error, Warning } from '@mui/icons-material';
 import { useOrganization } from '@/contexts/OrganizationContext';
@@ -32,9 +34,24 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
     linked_service_id: '',
     failure_behavior: 'match_status', // 'match_status', 'always_degraded', 'always_down'
     failure_message: '',
+    update_service_status: false,
+    service_failure_status: 'down',
+    service_recovery_status: 'operational',
+    // Incident creation settings
+    auto_create_incidents: false,
+    incident_severity: 'medium',
+    incident_threshold_minutes: 5,
+    incident_title_template: '',
+    incident_description_template: '',
+    auto_resolve_incidents: true,
+    assigned_on_call_schedule_id: '',
+    assigned_escalation_policy_id: '',
   });
   const [availableServices, setAvailableServices] = useState([]);
+  const [onCallSchedules, setOnCallSchedules] = useState([]);
+  const [escalationPolicies, setEscalationPolicies] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingOptions, setLoadingOptions] = useState(false);
   const [error, setError] = useState('');
   const [previewData, setPreviewData] = useState(null);
 
@@ -83,9 +100,42 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
     }
   };
 
+  const fetchOnCallSchedules = async () => {
+    if (!selectedOrganization?.id) return;
+    
+    setLoadingOptions(true);
+    try {
+      const response = await fetch(`/api/on-call-schedules?organization_id=${selectedOrganization.id}&active_only=true`);
+      if (response.ok) {
+        const data = await response.json();
+        setOnCallSchedules(data.on_call_schedules || []);
+      }
+    } catch (error) {
+      console.error('Error fetching on-call schedules:', error);
+    } finally {
+      setLoadingOptions(false);
+    }
+  };
+
+  const fetchEscalationPolicies = async () => {
+    if (!selectedOrganization?.id) return;
+    
+    try {
+      const response = await fetch(`/api/escalation-policies?organization_id=${selectedOrganization.id}&active_only=true`);
+      if (response.ok) {
+        const data = await response.json();
+        setEscalationPolicies(data.escalation_policies || []);
+      }
+    } catch (error) {
+      console.error('Error fetching escalation policies:', error);
+    }
+  };
+
   useEffect(() => {
     if (selectedOrganization?.id) {
       loadAvailableServices();
+      fetchOnCallSchedules();
+      fetchEscalationPolicies();
     }
   }, [selectedOrganization]);
 
@@ -188,6 +238,19 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
           failure_behavior: formData.failure_behavior,
           failure_message: formData.failure_message,
         },
+        // Incident creation settings
+        auto_create_incidents: formData.auto_create_incidents,
+        incident_severity: formData.incident_severity,
+        incident_threshold_minutes: formData.incident_threshold_minutes,
+        incident_title_template: formData.incident_title_template || null,
+        incident_description_template: formData.incident_description_template || null,
+        auto_resolve_incidents: formData.auto_resolve_incidents,
+        assigned_on_call_schedule_id: formData.assigned_on_call_schedule_id || null,
+        assigned_escalation_policy_id: formData.assigned_escalation_policy_id || null,
+        // Service association settings
+        update_service_status: formData.update_service_status || false,
+        service_failure_status: formData.service_failure_status || 'down',
+        service_recovery_status: formData.service_recovery_status || 'operational',
       };
 
       const response = await fetch('/api/monitoring', {
@@ -238,7 +301,7 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
       )}
 
       <Grid container spacing={3}>
-        <Grid item xs={12} md={8}>
+        <Grid size={{ xs: 12, md: 8 }}>
           {/* Provider Selection */}
           <StatusPageProviderSelector
             selectedProvider={formData.provider}
@@ -259,7 +322,7 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
           </Typography>
 
           <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
                 label="Check Name"
@@ -270,7 +333,7 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
               />
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <FormControl fullWidth>
                 <InputLabel>Check Interval</InputLabel>
                 <Select
@@ -292,7 +355,7 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <FormControl fullWidth>
                 <InputLabel>Link to Service (Optional)</InputLabel>
                 <Select
@@ -324,7 +387,7 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
             {/* Failure Behavior Configuration */}
             {formData.linked_service_id && (
               <>
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>
                     Failure Behavior
                   </Typography>
@@ -338,7 +401,7 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
                   </Typography>
                 </Grid>
 
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <FormControl fullWidth>
                     <InputLabel>When Status Page Shows Issues</InputLabel>
                     <Select
@@ -369,7 +432,7 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
                   </FormControl>
                 </Grid>
 
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <TextField
                     fullWidth
                     label="Custom Failure Message (Optional)"
@@ -383,12 +446,225 @@ const StatusPageCheckForm = ({ onSuccess, onCancel }) => {
                     rows={2}
                   />
                 </Grid>
+
+                {/* Service Status Update Options */}
+                <Grid size={{ xs: 12 }}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formData.update_service_status}
+                        onChange={e =>
+                          handleInputChange('update_service_status', e.target.checked)
+                        }
+                      />
+                    }
+                    label="Update service status when check fails"
+                  />
+                  <FormHelperText>
+                    Automatically update the linked service status based on check results
+                  </FormHelperText>
+                </Grid>
+
+                {formData.update_service_status && (
+                  <>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <FormControl fullWidth>
+                        <InputLabel>Status When Check Fails</InputLabel>
+                        <Select
+                          value={formData.service_failure_status}
+                          label="Status When Check Fails"
+                          onChange={e =>
+                            handleInputChange('service_failure_status', e.target.value)
+                          }
+                        >
+                          <MenuItem value="degraded">Degraded Performance</MenuItem>
+                          <MenuItem value="down">Service Down</MenuItem>
+                          <MenuItem value="maintenance">Under Maintenance</MenuItem>
+                        </Select>
+                        <FormHelperText>Service status to set when this check fails</FormHelperText>
+                      </FormControl>
+                    </Grid>
+
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <FormControl fullWidth>
+                        <InputLabel>Status When Check Recovers</InputLabel>
+                        <Select
+                          value={formData.service_recovery_status}
+                          label="Status When Check Recovers"
+                          onChange={e =>
+                            handleInputChange('service_recovery_status', e.target.value)
+                          }
+                        >
+                          <MenuItem value="operational">Operational</MenuItem>
+                          <MenuItem value="degraded">Degraded Performance</MenuItem>
+                        </Select>
+                        <FormHelperText>Service status to set when this check recovers</FormHelperText>
+                      </FormControl>
+                    </Grid>
+                  </>
+                )}
+              </>
+            )}
+
+            {/* Incident Management Section */}
+            <Grid size={{ xs: 12 }}>
+              <Divider sx={{ my: 2 }} />
+              <Typography variant="h6" gutterBottom>
+                Incident Management
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Configure automatic incident creation when this status page check fails
+              </Typography>
+            </Grid>
+
+            <Grid size={{ xs: 12 }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.auto_create_incidents}
+                    onChange={e =>
+                      handleInputChange('auto_create_incidents', e.target.checked)
+                    }
+                  />
+                }
+                label="Automatically create incidents when check fails"
+              />
+            </Grid>
+
+            {formData.auto_create_incidents && (
+              <>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <FormControl fullWidth>
+                    <InputLabel>Incident Severity</InputLabel>
+                    <Select
+                      value={formData.incident_severity}
+                      label="Incident Severity"
+                      onChange={e =>
+                        handleInputChange('incident_severity', e.target.value)
+                      }
+                    >
+                      <MenuItem value="low">Low</MenuItem>
+                      <MenuItem value="medium">Medium</MenuItem>
+                      <MenuItem value="high">High</MenuItem>
+                      <MenuItem value="critical">Critical</MenuItem>
+                    </Select>
+                    <FormHelperText>Severity level for auto-created incidents</FormHelperText>
+                  </FormControl>
+                </Grid>
+                
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Failure Duration (minutes)"
+                    value={formData.incident_threshold_minutes}
+                    onChange={e =>
+                      handleInputChange('incident_threshold_minutes', parseInt(e.target.value) || 1)
+                    }
+                    helperText="Create incident after check fails for this duration"
+                    inputProps={{ min: 1, max: 1440 }}
+                  />
+                </Grid>
+
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <FormControl fullWidth>
+                    <InputLabel>On-Call Schedule (Optional)</InputLabel>
+                    <Select
+                      value={formData.assigned_on_call_schedule_id}
+                      label="On-Call Schedule (Optional)"
+                      onChange={e =>
+                        handleInputChange('assigned_on_call_schedule_id', e.target.value)
+                      }
+                      disabled={loadingOptions}
+                    >
+                      <MenuItem value="">
+                        <em>No schedule assignment</em>
+                      </MenuItem>
+                      {onCallSchedules.map(schedule => (
+                        <MenuItem key={schedule.id} value={schedule.id}>
+                          {schedule.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    <FormHelperText>
+                      {loadingOptions ? 'Loading schedules...' : 'Assign incidents to specific on-call schedule'}
+                    </FormHelperText>
+                  </FormControl>
+                </Grid>
+
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <FormControl fullWidth>
+                    <InputLabel>Escalation Policy (Optional)</InputLabel>
+                    <Select
+                      value={formData.assigned_escalation_policy_id}
+                      label="Escalation Policy (Optional)"
+                      onChange={e =>
+                        handleInputChange('assigned_escalation_policy_id', e.target.value)
+                      }
+                      disabled={loadingOptions}
+                    >
+                      <MenuItem value="">
+                        <em>No escalation policy</em>
+                      </MenuItem>
+                      {escalationPolicies.map(policy => (
+                        <MenuItem key={policy.id} value={policy.id}>
+                          {policy.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    <FormHelperText>
+                      {loadingOptions ? 'Loading policies...' : 'Apply escalation policy to auto-created incidents'}
+                    </FormHelperText>
+                  </FormControl>
+                </Grid>
+                
+                <Grid size={{ xs: 12 }}>
+                  <TextField
+                    fullWidth
+                    label="Custom Incident Title Template (Optional)"
+                    value={formData.incident_title_template}
+                    onChange={e =>
+                      handleInputChange('incident_title_template', e.target.value)
+                    }
+                    placeholder="e.g., {check_name} is experiencing issues"
+                    helperText="Use {check_name}, {service_name}, {timestamp} as placeholders. Leave empty for default title."
+                  />
+                </Grid>
+
+                <Grid size={{ xs: 12 }}>
+                  <TextField
+                    fullWidth
+                    label="Custom Incident Description Template (Optional)"
+                    value={formData.incident_description_template}
+                    onChange={e =>
+                      handleInputChange('incident_description_template', e.target.value)
+                    }
+                    multiline
+                    rows={3}
+                    placeholder="e.g., Status page check '{check_name}' for {service_name} has been failing for {duration} minutes."
+                    helperText="Use {check_name}, {service_name}, {duration}, {error_message} as placeholders. Leave empty for default description."
+                  />
+                </Grid>
+
+                <Grid size={{ xs: 12 }}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formData.auto_resolve_incidents}
+                        onChange={e =>
+                          handleInputChange('auto_resolve_incidents', e.target.checked)
+                        }
+                      />
+                    }
+                    label="Automatically resolve incidents when check recovers"
+                  />
+                </Grid>
               </>
             )}
           </Grid>
         </Grid>
 
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           {/* Preview Panel */}
           <Card>
             <CardContent>

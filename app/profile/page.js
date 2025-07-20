@@ -142,7 +142,7 @@ export default function ProfilePage() {
 
       <Grid container spacing={3}>
         {/* Profile Avatar Card */}
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <Box
@@ -242,7 +242,7 @@ export default function ProfilePage() {
         </Grid>
 
         {/* User Profile Form */}
-        <Grid item xs={12} md={8}>
+        <Grid size={{ xs: 12, md: 8 }}>
           <UserProfileForm
             initialData={profileData}
             onSave={handleSave}
@@ -251,7 +251,7 @@ export default function ProfilePage() {
         </Grid>
 
         {/* Security & Account */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Card>
             <CardContent>
               <Typography

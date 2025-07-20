@@ -218,7 +218,7 @@ export default function MonitoringLocationSelector({
               const stats = getLocationStats(location);
 
               return (
-                <Grid item xs={12} sm={6} md={4} key={location.id}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }} key={location.id}>
                   <Card variant="outlined" sx={{ height: '100%' }}>
                     <CardContent sx={{ p: 2 }}>
                       <Box display="flex" alignItems="center" gap={1} mb={1}>

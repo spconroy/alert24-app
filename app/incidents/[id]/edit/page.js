@@ -382,14 +382,14 @@ export default function EditIncidentPage() {
               <form onSubmit={handleSubmit}>
                 <Grid container spacing={4}>
                   {/* Basic Information Section */}
-                  <Grid item xs={12}>
+                  <Grid size={{ xs: 12 }}>
                     <Typography variant="h5" sx={{ fontWeight: 600, mb: 3 }}>
                       Basic Information
                     </Typography>
                   </Grid>
 
                   {/* Title */}
-                  <Grid item xs={12}>
+                  <Grid size={{ xs: 12 }}>
                     <TextField
                       fullWidth
                       label="Incident Title *"
@@ -407,7 +407,7 @@ export default function EditIncidentPage() {
                   </Grid>
 
                   {/* Description */}
-                  <Grid item xs={12}>
+                  <Grid size={{ xs: 12 }}>
                     <TextField
                       fullWidth
                       multiline
@@ -429,14 +429,14 @@ export default function EditIncidentPage() {
                   </Grid>
 
                   {/* Classification Section */}
-                  <Grid item xs={12}>
+                  <Grid size={{ xs: 12 }}>
                     <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, mt: 2 }}>
                       Classification
                     </Typography>
                   </Grid>
 
                   {/* Severity and Status */}
-                  <Grid item xs={12} md={6}>
+                  <Grid size={{ xs: 12, md: 6 }}>
                     <FormControl fullWidth>
                       <InputLabel>Severity</InputLabel>
                       <Select
@@ -464,7 +464,7 @@ export default function EditIncidentPage() {
                     </FormControl>
                   </Grid>
 
-                  <Grid item xs={12} md={6}>
+                  <Grid size={{ xs: 12, md: 6 }}>
                     <FormControl fullWidth>
                       <InputLabel>Status</InputLabel>
                       <Select
@@ -483,7 +483,7 @@ export default function EditIncidentPage() {
                   </Grid>
 
                   {/* Impact Description */}
-                  <Grid item xs={12}>
+                  <Grid size={{ xs: 12 }}>
                     <TextField
                       fullWidth
                       multiline
@@ -506,7 +506,7 @@ export default function EditIncidentPage() {
 
                   {/* Resolution Notes (only show if resolved) */}
                   {formData.status === 'resolved' && (
-                    <Grid item xs={12}>
+                    <Grid size={{ xs: 12 }}>
                       <TextField
                         fullWidth
                         multiline
@@ -527,14 +527,14 @@ export default function EditIncidentPage() {
                   )}
 
                   {/* Assignment Section */}
-                  <Grid item xs={12}>
+                  <Grid size={{ xs: 12 }}>
                     <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, mt: 3 }}>
                       Assignment & Escalation
                     </Typography>
                   </Grid>
 
                   {/* Assigned To */}
-                  <Grid item xs={12} md={6}>
+                  <Grid size={{ xs: 12, md: 6 }}>
                     <Box display="flex" gap={1} alignItems="start">
                       <FormControl fullWidth>
                         <InputLabel>Assign To</InputLabel>
@@ -568,7 +568,7 @@ export default function EditIncidentPage() {
                   </Grid>
 
                   {/* Escalation Policy */}
-                  <Grid item xs={12} md={6}>
+                  <Grid size={{ xs: 12, md: 6 }}>
                     <FormControl fullWidth>
                       <InputLabel>Escalation Policy</InputLabel>
                       <Select
@@ -598,14 +598,14 @@ export default function EditIncidentPage() {
                   </Grid>
 
                   {/* Services Section */}
-                  <Grid item xs={12}>
+                  <Grid size={{ xs: 12 }}>
                     <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, mt: 3 }}>
                       Affected Services
                     </Typography>
                   </Grid>
 
                   {/* Affected Services */}
-                  <Grid item xs={12}>
+                  <Grid size={{ xs: 12 }}>
                     <Autocomplete
                       multiple
                       options={services}
@@ -638,7 +638,7 @@ export default function EditIncidentPage() {
                   </Grid>
 
                   {/* Tags Section */}
-                  <Grid item xs={12}>
+                  <Grid size={{ xs: 12 }}>
                     <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, mt: 3 }}>
                       Tags & Metadata
                     </Typography>
@@ -685,7 +685,7 @@ export default function EditIncidentPage() {
                   </Grid>
 
                   {/* Submit Buttons */}
-                  <Grid item xs={12}>
+                  <Grid size={{ xs: 12 }}>
                     <Box
                       display="flex"
                       gap={2}

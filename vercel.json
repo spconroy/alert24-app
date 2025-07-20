@@ -1,0 +1,12 @@
+{
+  "build": {
+    "env": {
+      "NEXT_RUNTIME": "experimental-edge"
+    }
+  },
+  "functions": {
+    "app/api/**/route.js": {
+      "runtime": "edge"
+    }
+  }
+}

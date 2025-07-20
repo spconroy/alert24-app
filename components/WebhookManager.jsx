@@ -365,7 +365,7 @@ const WebhookManager = () => {
   const WebhookForm = ({ isEdit = false }) => (
     <Box>
       <Grid container spacing={2}>
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <TextField
             fullWidth
             label="Name"
@@ -376,7 +376,7 @@ const WebhookManager = () => {
           />
         </Grid>
         
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <TextField
             fullWidth
             label="URL"
@@ -388,7 +388,7 @@ const WebhookManager = () => {
           />
         </Grid>
         
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <TextField
             fullWidth
             label="Description"

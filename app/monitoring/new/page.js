@@ -25,12 +25,18 @@ import {
   Paper,
   Stack,
   Container,
+  Tooltip,
+  IconButton,
+  Collapse,
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SaveIcon from '@mui/icons-material/Save';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import InfoIcon from '@mui/icons-material/Info';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import StatusPageCheckForm from '@/components/StatusPageCheckForm';
@@ -56,12 +62,34 @@ export default function CreateMonitoringCheckPage() {
     notification_settings: {},
     is_active: true,
     monitoring_locations: ['00000000-0000-0000-0000-000000000001'], // Default to US East
+    // Service association settings
+    linked_service_id: '',
+    update_service_status: false,
+    service_failure_status: 'down', // Status to set when check fails
+    service_recovery_status: 'operational', // Status to set when check recovers
+    // Incident creation settings
+    auto_create_incidents: false,
+    incident_severity: 'medium',
+    incident_threshold_minutes: 5,
+    incident_title_template: '',
+    incident_description_template: '',
+    auto_resolve_incidents: true,
+    assigned_on_call_schedule_id: '',
+    assigned_escalation_policy_id: '',
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [formErrors, setFormErrors] = useState({});
+  const [onCallSchedules, setOnCallSchedules] = useState([]);
+  const [escalationPolicies, setEscalationPolicies] = useState([]);
+  const [availableServices, setAvailableServices] = useState([]);
+  const [loadingOptions, setLoadingOptions] = useState(false);
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  const [showIncidentPreview, setShowIncidentPreview] = useState(false);
+  const [showIncidentManagement, setShowIncidentManagement] = useState(false);
+  const [showServiceAssociation, setShowServiceAssociation] = useState(false);
 
   // Headers management
   const [headerKey, setHeaderKey] = useState('');
@@ -69,6 +97,58 @@ export default function CreateMonitoringCheckPage() {
 
   // Status codes management
   const [newStatusCode, setNewStatusCode] = useState('');
+
+  // Common status codes for quick selection
+  const commonStatusCodes = [
+    { code: 200, label: '200 - OK' },
+    { code: 201, label: '201 - Created' },
+    { code: 202, label: '202 - Accepted' },
+    { code: 301, label: '301 - Moved Permanently' },
+    { code: 302, label: '302 - Found' },
+    { code: 401, label: '401 - Unauthorized' },
+    { code: 403, label: '403 - Forbidden' },
+    { code: 404, label: '404 - Not Found' },
+    { code: 500, label: '500 - Internal Server Error' },
+  ];
+
+  // Helper function for tooltips
+  const FieldTooltip = ({ title, children }) => (
+    <Tooltip title={title} placement="right" arrow>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        {children}
+        <InfoIcon sx={{ fontSize: 16, color: 'action.disabled' }} />
+      </Box>
+    </Tooltip>
+  );
+
+  // Generate incident preview
+  const generateIncidentPreview = () => {
+    const checkName = formData.name || 'Example Check';
+    const targetUrl = formData.target_url || 'https://example.com';
+    const timestamp = new Date().toLocaleString();
+    const duration = formData.incident_threshold_minutes || 5;
+    const errorMessage = 'Connection timeout after 30 seconds';
+
+    const defaultTitle = `${checkName} is experiencing issues`;
+    const defaultDescription = `Monitoring check "${checkName}" has been failing for ${duration} minutes. Last error: ${errorMessage}`;
+
+    const customTitle = formData.incident_title_template 
+      ? formData.incident_title_template
+          .replace('{check_name}', checkName)
+          .replace('{target_url}', targetUrl)
+          .replace('{timestamp}', timestamp)
+      : defaultTitle;
+
+    const customDescription = formData.incident_description_template
+      ? formData.incident_description_template
+          .replace('{check_name}', checkName)
+          .replace('{target_url}', targetUrl)
+          .replace('{duration}', duration)
+          .replace('{error_message}', errorMessage)
+      : defaultDescription;
+
+    return { title: customTitle, description: customDescription };
+  };
 
   const validateForm = () => {
     const errors = {};
@@ -222,6 +302,60 @@ export default function CreateMonitoringCheckPage() {
     }
   };
 
+  // Fetch on-call schedules and escalation policies when organization changes
+  useEffect(() => {
+    if (selectedOrganization) {
+      fetchOnCallSchedules();
+      fetchEscalationPolicies();
+      fetchServices();
+    }
+  }, [selectedOrganization]);
+
+  const fetchOnCallSchedules = async () => {
+    if (!selectedOrganization) return;
+    
+    setLoadingOptions(true);
+    try {
+      const response = await fetch(`/api/on-call-schedules?organization_id=${selectedOrganization.id}&active_only=true`);
+      if (response.ok) {
+        const data = await response.json();
+        setOnCallSchedules(data.on_call_schedules || []);
+      }
+    } catch (error) {
+      console.error('Error fetching on-call schedules:', error);
+    } finally {
+      setLoadingOptions(false);
+    }
+  };
+
+  const fetchEscalationPolicies = async () => {
+    if (!selectedOrganization) return;
+    
+    try {
+      const response = await fetch(`/api/escalation-policies?organization_id=${selectedOrganization.id}&active_only=true`);
+      if (response.ok) {
+        const data = await response.json();
+        setEscalationPolicies(data.escalation_policies || []);
+      }
+    } catch (error) {
+      console.error('Error fetching escalation policies:', error);
+    }
+  };
+
+  const fetchServices = async () => {
+    if (!selectedOrganization) return;
+    
+    try {
+      const response = await fetch(`/api/services?organization_id=${selectedOrganization.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableServices(data.services || []);
+      }
+    } catch (error) {
+      console.error('Error fetching services:', error);
+    }
+  };
+
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
@@ -348,7 +482,7 @@ export default function CreateMonitoringCheckPage() {
                 <form onSubmit={handleSubmit}>
                   <Grid container spacing={3}>
                     {/* Organization Info */}
-                    <Grid item xs={12}>
+                    <Grid size={{ xs: 12 }}>
                       {selectedOrganization ? (
                         <Alert severity="success" sx={{ mb: 2 }}>
                           <strong>Creating monitoring check for:</strong> 🏢{' '}
@@ -369,7 +503,7 @@ export default function CreateMonitoringCheckPage() {
                     </Grid>
 
                     {/* Monitor Name */}
-                    <Grid item xs={12}>
+                    <Grid size={{ xs: 12 }}>
                       <TextField
                         fullWidth
                         label="Monitor Name *"
@@ -387,7 +521,7 @@ export default function CreateMonitoringCheckPage() {
                     </Grid>
 
                     {/* Check Type */}
-                    <Grid item xs={12} md={6}>
+                    <Grid size={{ xs: 12, md: 6 }}>
                       <FormControl fullWidth>
                         <InputLabel>Check Type</InputLabel>
                         <Select
@@ -411,7 +545,7 @@ export default function CreateMonitoringCheckPage() {
 
                     {/* Monitoring Locations - TEMPORARILY HIDDEN */}
                     {/* 
-                  <Grid item xs={12}>
+                  <Grid size={{ xs: 12 }}>
                     <MonitoringLocationSelector
                       selectedLocations={formData.monitoring_locations}
                       onLocationChange={locations =>
@@ -426,7 +560,7 @@ export default function CreateMonitoringCheckPage() {
 
                     {/* Target URL/Hostname - Hide for status page checks */}
                     {formData.check_type !== 'status_page' && (
-                      <Grid item xs={12}>
+                      <Grid size={{ xs: 12 }}>
                         <TextField
                           fullWidth
                           label={
@@ -468,7 +602,7 @@ export default function CreateMonitoringCheckPage() {
 
                     {/* Status Page Configuration */}
                     {formData.check_type === 'status_page' && (
-                      <Grid item xs={12}>
+                      <Grid size={{ xs: 12 }}>
                         <Alert severity="info" sx={{ mb: 2 }}>
                           Status page monitoring checks will be configured using
                           the dedicated form above.
@@ -477,7 +611,7 @@ export default function CreateMonitoringCheckPage() {
                     )}
 
                     {/* Timing Settings */}
-                    <Grid item xs={12} md={6}>
+                    <Grid size={{ xs: 12, md: 6 }}>
                       <TextField
                         fullWidth
                         type="number"
@@ -498,7 +632,7 @@ export default function CreateMonitoringCheckPage() {
                       />
                     </Grid>
 
-                    <Grid item xs={12} md={6}>
+                    <Grid size={{ xs: 12, md: 6 }}>
                       <TextField
                         fullWidth
                         type="number"
@@ -522,14 +656,14 @@ export default function CreateMonitoringCheckPage() {
                     {/* HTTP-specific settings */}
                     {formData.check_type === 'http' && (
                       <>
-                        <Grid item xs={12}>
+                        <Grid size={{ xs: 12 }}>
                           <Divider sx={{ my: 2 }} />
                           <Typography variant="h6" gutterBottom>
                             HTTP Settings
                           </Typography>
                         </Grid>
 
-                        <Grid item xs={12} md={4}>
+                        <Grid size={{ xs: 12, md: 4 }}>
                           <FormControl fullWidth>
                             <InputLabel>HTTP Method</InputLabel>
                             <Select
@@ -547,7 +681,7 @@ export default function CreateMonitoringCheckPage() {
                           </FormControl>
                         </Grid>
 
-                        <Grid item xs={12} md={4}>
+                        <Grid size={{ xs: 12, md: 4 }}>
                           <FormControlLabel
                             control={
                               <Switch
@@ -564,7 +698,7 @@ export default function CreateMonitoringCheckPage() {
                           />
                         </Grid>
 
-                        <Grid item xs={12} md={4}>
+                        <Grid size={{ xs: 12, md: 4 }}>
                           <FormControlLabel
                             control={
                               <Switch
@@ -582,10 +716,46 @@ export default function CreateMonitoringCheckPage() {
                         </Grid>
 
                         {/* Expected Status Codes */}
-                        <Grid item xs={12}>
-                          <Typography variant="subtitle2" gutterBottom>
-                            Expected Status Codes
-                          </Typography>
+                        <Grid size={{ xs: 12 }}>
+                          <FieldTooltip title="HTTP status codes that indicate a successful response. Common codes: 200 (OK), 201 (Created), 202 (Accepted). Multiple codes can be accepted.">
+                            <Typography variant="subtitle2" gutterBottom>
+                              Expected Status Codes
+                            </Typography>
+                          </FieldTooltip>
+                          
+                          {/* Quick-add preset codes */}
+                          <Box mb={2}>
+                            <Typography variant="caption" color="text.secondary" gutterBottom display="block">
+                              Quick add common codes:
+                            </Typography>
+                            <Box display="flex" flexWrap="wrap" gap={1} mb={2}>
+                              {commonStatusCodes.map((preset) => (
+                                <Button
+                                  key={preset.code}
+                                  size="small"
+                                  variant="outlined"
+                                  onClick={() => {
+                                    if (!formData.expected_status_codes.includes(preset.code)) {
+                                      setFormData(prev => ({
+                                        ...prev,
+                                        expected_status_codes: [...prev.expected_status_codes, preset.code]
+                                      }));
+                                    }
+                                  }}
+                                  disabled={formData.expected_status_codes.includes(preset.code)}
+                                  sx={{ 
+                                    fontSize: '0.75rem',
+                                    minWidth: 'auto',
+                                    opacity: formData.expected_status_codes.includes(preset.code) ? 0.5 : 1
+                                  }}
+                                >
+                                  {preset.code}
+                                </Button>
+                              ))}
+                            </Box>
+                          </Box>
+
+                          {/* Manual entry */}
                           <Box
                             display="flex"
                             gap={1}
@@ -594,16 +764,18 @@ export default function CreateMonitoringCheckPage() {
                           >
                             <TextField
                               size="small"
-                              label="Status Code"
+                              label="Custom Status Code"
                               value={newStatusCode}
                               onChange={e => setNewStatusCode(e.target.value)}
-                              placeholder="200"
+                              placeholder="e.g., 304"
                               inputProps={{ min: 100, max: 599 }}
-                              sx={{ width: 150 }}
+                              sx={{ width: 180 }}
                             />
                             <Button
                               onClick={handleAddStatusCode}
                               disabled={!newStatusCode}
+                              variant="contained"
+                              size="small"
                             >
                               Add
                             </Button>
@@ -622,7 +794,7 @@ export default function CreateMonitoringCheckPage() {
                         </Grid>
 
                         {/* Advanced HTTP Settings */}
-                        <Grid item xs={12}>
+                        <Grid size={{ xs: 12 }}>
                           <Accordion>
                             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                               <Typography>Advanced HTTP Settings</Typography>
@@ -630,7 +802,7 @@ export default function CreateMonitoringCheckPage() {
                             <AccordionDetails>
                               <Grid container spacing={2}>
                                 {/* HTTP Headers */}
-                                <Grid item xs={12}>
+                                <Grid size={{ xs: 12 }}>
                                   <Typography variant="subtitle2" gutterBottom>
                                     HTTP Headers
                                   </Typography>
@@ -695,7 +867,7 @@ export default function CreateMonitoringCheckPage() {
                                 </Grid>
 
                                 {/* Keyword Matching */}
-                                <Grid item xs={12} md={8}>
+                                <Grid size={{ xs: 12, md: 8 }}>
                                   <TextField
                                     fullWidth
                                     label="Keyword Match (Optional)"
@@ -711,7 +883,7 @@ export default function CreateMonitoringCheckPage() {
                                   />
                                 </Grid>
 
-                                <Grid item xs={12} md={4}>
+                                <Grid size={{ xs: 12, md: 4 }}>
                                   <FormControl fullWidth>
                                     <InputLabel>Match Type</InputLabel>
                                     <Select
@@ -744,7 +916,7 @@ export default function CreateMonitoringCheckPage() {
                     )}
 
                     {/* Status */}
-                    <Grid item xs={12}>
+                    <Grid size={{ xs: 12 }}>
                       <FormControlLabel
                         control={
                           <Switch
@@ -758,8 +930,324 @@ export default function CreateMonitoringCheckPage() {
                       />
                     </Grid>
 
+                    {/* Incident Management Section */}
+                    <Grid size={{ xs: 12 }}>
+                      <Divider sx={{ my: 3 }} />
+                      <Box 
+                        sx={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'space-between',
+                          cursor: 'pointer',
+                          p: 1,
+                          borderRadius: 1,
+                          '&:hover': { backgroundColor: 'grey.50' }
+                        }}
+                        onClick={() => setShowIncidentManagement(!showIncidentManagement)}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <SettingsIcon color="primary" />
+                          <Typography variant="h6">
+                            Incident Management
+                          </Typography>
+                          {formData.auto_create_incidents && (
+                            <Chip label="Enabled" size="small" color="primary" />
+                          )}
+                        </Box>
+                        <IconButton size="small">
+                          <ExpandMoreIcon sx={{ 
+                            transform: showIncidentManagement ? 'rotate(180deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.2s ease'
+                          }} />
+                        </IconButton>
+                      </Box>
+                      <Typography variant="body2" color="text.secondary" sx={{ ml: 4, mb: 1 }}>
+                        Configure automatic incident creation when this monitoring check fails
+                      </Typography>
+                    </Grid>
+
+                    <Grid size={{ xs: 12 }}>
+                      <Collapse in={showIncidentManagement}>
+                        <Box sx={{ pl: 4, pt: 2 }}>
+                          <Grid container spacing={2}>
+                            <Grid size={{ xs: 12 }}>
+                              <FormControlLabel
+                                control={
+                                  <Switch
+                                    checked={formData.auto_create_incidents}
+                                    onChange={e =>
+                                      handleInputChange('auto_create_incidents', e.target.checked)
+                                    }
+                                  />
+                                }
+                                label="Automatically create incidents when check fails"
+                              />
+                            </Grid>
+
+                            {formData.auto_create_incidents && (
+                      <>
+                        <Grid size={{ xs: 12, md: 6 }}>
+                          <FormControl fullWidth>
+                            <InputLabel>Incident Severity</InputLabel>
+                            <Select
+                              value={formData.incident_severity}
+                              label="Incident Severity"
+                              onChange={e =>
+                                handleInputChange('incident_severity', e.target.value)
+                              }
+                            >
+                              <MenuItem value="low">Low</MenuItem>
+                              <MenuItem value="medium">Medium</MenuItem>
+                              <MenuItem value="high">High</MenuItem>
+                              <MenuItem value="critical">Critical</MenuItem>
+                            </Select>
+                            <FormHelperText>Severity level for auto-created incidents</FormHelperText>
+                          </FormControl>
+                        </Grid>
+                        
+                        <Grid size={{ xs: 12, md: 6 }}>
+                          <TextField
+                            fullWidth
+                            type="number"
+                            label="Failure Duration (minutes)"
+                            value={formData.incident_threshold_minutes}
+                            onChange={e =>
+                              handleInputChange('incident_threshold_minutes', parseInt(e.target.value) || 1)
+                            }
+                            helperText="Create incident after check fails for this duration"
+                            inputProps={{ min: 1, max: 1440 }}
+                          />
+                        </Grid>
+
+                        <Grid size={{ xs: 12, md: 6 }}>
+                          <FormControl fullWidth>
+                            <InputLabel>On-Call Schedule (Optional)</InputLabel>
+                            <Select
+                              value={formData.assigned_on_call_schedule_id}
+                              label="On-Call Schedule (Optional)"
+                              onChange={e =>
+                                handleInputChange('assigned_on_call_schedule_id', e.target.value)
+                              }
+                              disabled={loadingOptions}
+                            >
+                              <MenuItem value="">
+                                <em>No schedule assignment</em>
+                              </MenuItem>
+                              {onCallSchedules.map(schedule => (
+                                <MenuItem key={schedule.id} value={schedule.id}>
+                                  {schedule.name}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                            <FormHelperText>
+                              {loadingOptions ? 'Loading schedules...' : 'Assign incidents to specific on-call schedule'}
+                            </FormHelperText>
+                          </FormControl>
+                        </Grid>
+
+                        <Grid size={{ xs: 12, md: 6 }}>
+                          <FormControl fullWidth>
+                            <InputLabel>Escalation Policy (Optional)</InputLabel>
+                            <Select
+                              value={formData.assigned_escalation_policy_id}
+                              label="Escalation Policy (Optional)"
+                              onChange={e =>
+                                handleInputChange('assigned_escalation_policy_id', e.target.value)
+                              }
+                              disabled={loadingOptions}
+                            >
+                              <MenuItem value="">
+                                <em>No escalation policy</em>
+                              </MenuItem>
+                              {escalationPolicies.map(policy => (
+                                <MenuItem key={policy.id} value={policy.id}>
+                                  {policy.name}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                            <FormHelperText>
+                              {loadingOptions ? 'Loading policies...' : 'Apply escalation policy to auto-created incidents'}
+                            </FormHelperText>
+                          </FormControl>
+                        </Grid>
+                        
+                        <Grid size={{ xs: 12 }}>
+                          <TextField
+                            fullWidth
+                            label="Custom Incident Title Template (Optional)"
+                            value={formData.incident_title_template}
+                            onChange={e =>
+                              handleInputChange('incident_title_template', e.target.value)
+                            }
+                            placeholder="e.g., {check_name} is experiencing issues"
+                            helperText="Use {check_name}, {target_url}, {timestamp} as placeholders. Leave empty for default title."
+                          />
+                        </Grid>
+
+                        <Grid size={{ xs: 12 }}>
+                          <TextField
+                            fullWidth
+                            label="Custom Incident Description Template (Optional)"
+                            value={formData.incident_description_template}
+                            onChange={e =>
+                              handleInputChange('incident_description_template', e.target.value)
+                            }
+                            multiline
+                            rows={3}
+                            placeholder="e.g., Monitoring check '{check_name}' has been failing for {duration} minutes."
+                            helperText="Use {check_name}, {target_url}, {duration}, {error_message} as placeholders. Leave empty for default description."
+                          />
+                        </Grid>
+
+                        <Grid size={{ xs: 12 }}>
+                          <FormControlLabel
+                            control={
+                              <Switch
+                                checked={formData.auto_resolve_incidents}
+                                onChange={e =>
+                                  handleInputChange('auto_resolve_incidents', e.target.checked)
+                                }
+                              />
+                            }
+                              label="Automatically resolve incidents when check recovers"
+                            />
+                            </Grid>
+                            </>
+                            )}
+                          </Grid>
+                        </Box>
+                      </Collapse>
+                    </Grid>
+
+                    {/* Service Association Section */}
+                    <Grid size={{ xs: 12 }}>
+                      <Divider sx={{ my: 3 }} />
+                      <Box 
+                        sx={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'space-between',
+                          cursor: 'pointer',
+                          p: 1,
+                          borderRadius: 1,
+                          '&:hover': { backgroundColor: 'grey.50' }
+                        }}
+                        onClick={() => setShowServiceAssociation(!showServiceAssociation)}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <SettingsIcon color="primary" />
+                          <Typography variant="h6">
+                            Service Association
+                          </Typography>
+                          {formData.linked_service_id && (
+                            <Chip label="Linked" size="small" color="success" />
+                          )}
+                        </Box>
+                        <IconButton size="small">
+                          <ExpandMoreIcon sx={{ 
+                            transform: showServiceAssociation ? 'rotate(180deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.2s ease'
+                          }} />
+                        </IconButton>
+                      </Box>
+                      <Typography variant="body2" color="text.secondary" sx={{ ml: 4, mb: 1 }}>
+                        Link this monitoring check to a service for automatic status updates and incident association
+                      </Typography>
+                    </Grid>
+
+                    <Grid size={{ xs: 12 }}>
+                      <Collapse in={showServiceAssociation}>
+                        <Box sx={{ pl: 4, pt: 2 }}>
+                          <Grid container spacing={2}>
+                            <Grid size={{ xs: 12, md: 6 }}>
+                      <FormControl fullWidth>
+                        <InputLabel>Link to Service (Optional)</InputLabel>
+                        <Select
+                          value={formData.linked_service_id}
+                          label="Link to Service (Optional)"
+                          onChange={e =>
+                            handleInputChange('linked_service_id', e.target.value)
+                          }
+                          disabled={loadingOptions}
+                        >
+                          <MenuItem value="">
+                            <em>No service linkage</em>
+                          </MenuItem>
+                          {availableServices.map(service => (
+                            <MenuItem key={service.id} value={service.id}>
+                              {service.name} ({service.status})
+                            </MenuItem>
+                          ))}
+                        </Select>
+                        <FormHelperText>
+                          {loadingOptions ? 'Loading services...' : 'Link this check to a service for automatic status updates'}
+                        </FormHelperText>
+                      </FormControl>
+                    </Grid>
+
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={formData.update_service_status}
+                            onChange={e =>
+                              handleInputChange('update_service_status', e.target.checked)
+                            }
+                            disabled={!formData.linked_service_id}
+                          />
+                        }
+                        label="Update service status when check fails"
+                      />
+                      <FormHelperText>
+                        Automatically update the linked service status based on check results
+                      </FormHelperText>
+                    </Grid>
+
+                    {formData.linked_service_id && formData.update_service_status && (
+                      <>
+                        <Grid size={{ xs: 12, md: 6 }}>
+                          <FormControl fullWidth>
+                            <InputLabel>Status When Check Fails</InputLabel>
+                            <Select
+                              value={formData.service_failure_status}
+                              label="Status When Check Fails"
+                              onChange={e =>
+                                handleInputChange('service_failure_status', e.target.value)
+                              }
+                            >
+                              <MenuItem value="degraded">Degraded Performance</MenuItem>
+                              <MenuItem value="down">Service Down</MenuItem>
+                              <MenuItem value="maintenance">Under Maintenance</MenuItem>
+                            </Select>
+                            <FormHelperText>Service status to set when this check fails</FormHelperText>
+                          </FormControl>
+                        </Grid>
+
+                        <Grid size={{ xs: 12, md: 6 }}>
+                          <FormControl fullWidth>
+                            <InputLabel>Status When Check Recovers</InputLabel>
+                            <Select
+                              value={formData.service_recovery_status}
+                              label="Status When Check Recovers"
+                              onChange={e =>
+                                handleInputChange('service_recovery_status', e.target.value)
+                              }
+                            >
+                              <MenuItem value="operational">Operational</MenuItem>
+                              <MenuItem value="degraded">Degraded Performance</MenuItem>
+                            </Select>
+                            <FormHelperText>Service status to set when this check recovers</FormHelperText>
+                          </FormControl>
+                            </Grid>
+                            </>
+                            )}
+                          </Grid>
+                        </Box>
+                      </Collapse>
+                    </Grid>
+
                     {/* Submit Buttons */}
-                    <Grid item xs={12}>
+                    <Grid size={{ xs: 12 }}>
                       <Box
                         display="flex"
                         gap={2}

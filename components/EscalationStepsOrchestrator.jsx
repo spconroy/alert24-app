@@ -67,6 +67,9 @@ const EscalationStepsOrchestrator = ({
   organizationId,
   maxSteps = 10,
   disabled = false,
+  repeatEscalation = false,
+  maxRepeatCount = 3,
+  onRepeatConfigChange,
 }) => {
   const [steps, setSteps] = useState(() => {
     if (initialSteps.length === 0) {
@@ -88,7 +91,7 @@ const EscalationStepsOrchestrator = ({
   const [editingStep, setEditingStep] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
 
-  // Notify parent of changes
+  // Notify parent of changes - with loop prevention
   useEffect(() => {
     if (onChange) {
       const formattedSteps = steps.map((step, index) => ({
@@ -98,12 +101,13 @@ const EscalationStepsOrchestrator = ({
       
       // Use a timeout to break the synchronous update cycle
       const timeoutId = setTimeout(() => {
+        console.log('🔄 Notifying parent of step changes:', formattedSteps.length);
         onChange(formattedSteps);
       }, 0);
       
       return () => clearTimeout(timeoutId);
     }
-  }, [steps, onChange]);
+  }, [steps]); // Remove onChange from dependencies to prevent loop
 
   // Validation - moved inside useEffect to avoid recreation on every render
   useEffect(() => {
@@ -194,7 +198,7 @@ const EscalationStepsOrchestrator = ({
   };
 
   // Step components
-  const StepCard = ({ step, index, isDragging }) => {
+  const StepCard = ({ step, index, isDragging, dragHandleProps }) => {
     const hasErrors = validationErrors[step.id];
     const isFirstStep = index === 0;
     
@@ -212,7 +216,15 @@ const EscalationStepsOrchestrator = ({
           <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
             <Box display="flex" alignItems="center" gap={1}>
               {!disabled && (
-                <IconButton size="small" sx={{ cursor: 'grab' }}>
+                <IconButton 
+                  size="small" 
+                  sx={{ 
+                    cursor: 'grab',
+                    pointerEvents: 'auto'
+                  }}
+                  {...dragHandleProps}
+                  onClick={(e) => e.preventDefault()}
+                >
                   <DragIcon />
                 </IconButton>
               )}
@@ -224,30 +236,6 @@ const EscalationStepsOrchestrator = ({
               )}
               {step.is_final && (
                 <Chip label="Final Escalation" size="small" color="error" />
-              )}
-            </Box>
-            
-            <Box display="flex" gap={1}>
-              <Tooltip title="Edit Step">
-                <IconButton
-                  size="small"
-                  onClick={() => setEditingStep(step)}
-                  disabled={disabled}
-                >
-                  <EditIcon />
-                </IconButton>
-              </Tooltip>
-              {steps.length > 1 && (
-                <Tooltip title="Remove Step">
-                  <IconButton
-                    size="small"
-                    onClick={() => removeStep(step.id)}
-                    disabled={disabled}
-                    color="error"
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </Tooltip>
               )}
             </Box>
           </Box>
@@ -334,14 +322,17 @@ const EscalationStepsOrchestrator = ({
 
   // Step Editor Dialog
   const StepEditor = ({ step, onSave, onCancel }) => {
+    console.log('📝 StepEditor rendering for step:', step?.id);
     const [editData, setEditData] = useState(step);
 
     // Sync editData with step prop when it changes
     useEffect(() => {
+      console.log('📝 StepEditor useEffect - updating editData for step:', step?.id);
       setEditData(step);
     }, [step]);
 
     const handleSave = () => {
+      console.log('💾 StepEditor saving changes for step:', step.id);
       updateStep(step.id, editData);
       onSave();
     };
@@ -532,16 +523,68 @@ const EscalationStepsOrchestrator = ({
                   isDragDisabled={disabled}
                 >
                   {(provided, snapshot) => (
-                    <Box
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                    >
-                      <StepCard
-                        step={step}
-                        index={index}
-                        isDragging={snapshot.isDragging}
-                      />
+                    <Box sx={{ position: 'relative' }}>
+                      <Box
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                      >
+                        <StepCard
+                          step={step}
+                          index={index}
+                          isDragging={snapshot.isDragging}
+                          dragHandleProps={provided.dragHandleProps}
+                        />
+                      </Box>
+                      {/* Action buttons outside draggable area */}
+                      <Box 
+                        sx={{ 
+                          position: 'absolute', 
+                          right: 16, 
+                          top: 16, 
+                          zIndex: 1000,
+                          display: 'flex',
+                          gap: 1,
+                          backgroundColor: 'white',
+                          borderRadius: 1,
+                          padding: 0.5,
+                          boxShadow: 1
+                        }}
+                      >
+                        <button
+                          onClick={() => {
+                            console.log('✏️ EDIT CLICKED:', step.id, step);
+                            setEditingStep(step);
+                          }}
+                          style={{
+                            border: 'none',
+                            background: '#1976d2',
+                            color: 'white',
+                            borderRadius: '4px',
+                            padding: '4px 8px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Edit
+                        </button>
+                        {steps.length > 1 && (
+                          <button
+                            onClick={() => {
+                              console.log('DELETE CLICKED:', step.id);
+                              removeStep(step.id);
+                            }}
+                            style={{
+                              border: 'none',
+                              background: '#d32f2f',
+                              color: 'white',
+                              borderRadius: '4px',
+                              padding: '4px 8px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </Box>
                     </Box>
                   )}
                 </Draggable>
@@ -565,6 +608,56 @@ const EscalationStepsOrchestrator = ({
         </Button>
       </Box>
 
+      {/* Repeat Configuration */}
+      <Paper sx={{ p: 3, mb: 3, backgroundColor: '#f8f9fa' }}>
+        <Typography variant="h6" gutterBottom>
+          Repeat Settings
+        </Typography>
+        <Typography variant="body2" color="text.secondary" gutterBottom>
+          Configure whether the escalation should repeat from the beginning if not acknowledged.
+        </Typography>
+        
+        <FormControlLabel
+          control={
+            <Switch
+              checked={repeatEscalation}
+              onChange={(e) => {
+                if (onRepeatConfigChange) {
+                  onRepeatConfigChange({
+                    repeat_escalation: e.target.checked,
+                    max_repeat_count: maxRepeatCount
+                  });
+                }
+              }}
+              disabled={disabled}
+            />
+          }
+          label="Repeat escalation from beginning until acknowledged"
+          sx={{ display: 'block', mb: 2 }}
+        />
+
+        {repeatEscalation && (
+          <TextField
+            label="Maximum Repeat Count"
+            type="number"
+            value={maxRepeatCount}
+            onChange={(e) => {
+              if (onRepeatConfigChange) {
+                onRepeatConfigChange({
+                  repeat_escalation: repeatEscalation,
+                  max_repeat_count: parseInt(e.target.value) || 3
+                });
+              }
+            }}
+            helperText="Maximum number of times to repeat the escalation sequence (0 = infinite)"
+            inputProps={{ min: 0, max: 20 }}
+            disabled={disabled}
+            sx={{ maxWidth: 300 }}
+            size="small"
+          />
+        )}
+      </Paper>
+
       {/* Step Editor Dialog */}
       {editingStep && (
         <StepEditor
@@ -578,6 +671,9 @@ const EscalationStepsOrchestrator = ({
       <Box mt={3}>
         <Typography variant="caption" color="text.secondary">
           {steps.length} of {maxSteps} steps configured
+          {repeatEscalation && (
+            <> • Repeat enabled ({maxRepeatCount === 0 ? 'infinite' : `${maxRepeatCount} times`})</>
+          )}
           {Object.keys(validationErrors).length > 0 && (
             <> • {Object.keys(validationErrors).length} validation error{Object.keys(validationErrors).length !== 1 ? 's' : ''}</>
           )}

@@ -343,23 +343,10 @@ export default function IncidentTimeline({
 
   return (
     <Box>
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={3}
-      >
+      <Box mb={3}>
         <Typography variant="h6" component="h3">
           Incident Timeline
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setAddUpdateDialogOpen(true)}
-          size="small"
-        >
-          Add Update
-        </Button>
       </Box>
 
       {error && (

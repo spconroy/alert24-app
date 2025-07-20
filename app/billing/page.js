@@ -269,7 +269,7 @@ export default function BillingPage() {
       </Typography>
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {pricingPlans.map(plan => (
-          <Grid item xs={12} md={4} key={plan.id}>
+          <Grid size={{ xs: 12, md: 4 }} key={plan.id}>
             <Card
               sx={{
                 height: '100%',

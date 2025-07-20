@@ -132,7 +132,7 @@ export default function NotificationAnalytics() {
           </Box>
 
           <Grid container spacing={3}>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <Card sx={{ bgcolor: 'primary.main', color: 'white' }}>
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
@@ -144,7 +144,7 @@ export default function NotificationAnalytics() {
               </Card>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <Card sx={{ bgcolor: 'success.main', color: 'white' }}>
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
@@ -156,7 +156,7 @@ export default function NotificationAnalytics() {
               </Card>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <Card sx={{ bgcolor: 'error.main', color: 'white' }}>
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
@@ -168,7 +168,7 @@ export default function NotificationAnalytics() {
               </Card>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <Card sx={{ bgcolor: 'warning.main', color: 'white' }}>
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
@@ -196,7 +196,7 @@ export default function NotificationAnalytics() {
       </Card>
 
       <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Card>
             <CardContent>
               <Typography variant="h6" sx={{ mb: 2 }}>Notifications by Type</Typography>
@@ -232,7 +232,7 @@ export default function NotificationAnalytics() {
           </Card>
         </Grid>
 
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Card>
             <CardContent>
               <Typography variant="h6" sx={{ mb: 2 }}>Notifications by Priority</Typography>
@@ -268,12 +268,12 @@ export default function NotificationAnalytics() {
           </Card>
         </Grid>
 
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Card>
             <CardContent>
               <Typography variant="h6" sx={{ mb: 2 }}>Retry Statistics</Typography>
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <Box sx={{ textAlign: 'center' }}>
                     <Typography variant="h4" color="primary">
                       {formatNumber(stats.retryStats.singleAttempt)}
@@ -283,7 +283,7 @@ export default function NotificationAnalytics() {
                     </Typography>
                   </Box>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <Box sx={{ textAlign: 'center' }}>
                     <Typography variant="h4" color="warning.main">
                       {formatNumber(stats.retryStats.multipleAttempts)}
@@ -293,7 +293,7 @@ export default function NotificationAnalytics() {
                     </Typography>
                   </Box>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <Box sx={{ textAlign: 'center' }}>
                     <Typography variant="h4" color="secondary">
                       {stats.retryStats.maxAttempts}
@@ -303,7 +303,7 @@ export default function NotificationAnalytics() {
                     </Typography>
                   </Box>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <Box sx={{ textAlign: 'center' }}>
                     <Typography variant="h4" color="info.main">
                       {stats.retryStats.avgAttempts.toFixed(1)}

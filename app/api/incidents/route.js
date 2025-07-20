@@ -56,9 +56,10 @@ async function sendIncidentPaging(incident, organizationId) {
           phone: assignedUser.phone
         });
       }
-    } else if (escalationPolicy.rules && escalationPolicy.rules.length > 0) {
+    } else if ((escalationPolicy.rules || escalationPolicy.escalation_steps) && (escalationPolicy.rules || escalationPolicy.escalation_steps).length > 0) {
       // Page based on escalation policy first level
-      const firstLevel = escalationPolicy.rules.find(rule => rule.level === 1) || escalationPolicy.rules[0];
+      const rules = escalationPolicy.rules || escalationPolicy.escalation_steps;
+      const firstLevel = rules.find(rule => rule.level === 1) || rules[0];
       
       if (firstLevel && firstLevel.targets) {
         for (const target of firstLevel.targets) {
@@ -88,6 +89,23 @@ async function sendIncidentPaging(incident, organizationId) {
                     email: user.email, 
                     name: user.name,
                     phone: user.phone
+                  });
+                }
+              }
+            }
+          } else if (target.type === 'team') {
+            // Get team members
+            const team = await db.getTeamGroup(target.id);
+            if (team && team.members) {
+              for (const member of team.members) {
+                if (member.is_active && member.users) {
+                  const user = member.users;
+                  targets.push({ 
+                    type: 'user', 
+                    id: user.id, 
+                    email: user.email, 
+                    name: user.name,
+                    phone: user.phone_number || user.phone
                   });
                 }
               }

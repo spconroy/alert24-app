@@ -424,7 +424,7 @@ export default function CreateIncidentPage() {
               />
 
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <FormControl fullWidth>
                     <InputLabel>Severity</InputLabel>
                     <Select
@@ -455,7 +455,7 @@ export default function CreateIncidentPage() {
                   </FormControl>
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <FormControl fullWidth>
                     <InputLabel>Status</InputLabel>
                     <Select
@@ -558,7 +558,7 @@ export default function CreateIncidentPage() {
                   
                   <Grid container spacing={2}>
                     {formData.affected_services.map(service => (
-                      <Grid item xs={12} sm={6} key={service.id}>
+                      <Grid size={{ xs: 12, sm: 6 }} key={service.id}>
                         <Card variant="outlined" sx={{ p: 2 }}>
                           <Typography variant="subtitle2" gutterBottom>
                             {service.name || service.id || 'Unnamed Service'}
@@ -750,7 +750,7 @@ export default function CreateIncidentPage() {
             </Typography>
 
             <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
                   <Typography variant="subtitle2" gutterBottom>
                     Basic Information
@@ -788,7 +788,7 @@ export default function CreateIncidentPage() {
                 </Paper>
               </Grid>
 
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
                   <Typography variant="subtitle2" gutterBottom>
                     Impact & Services
@@ -837,7 +837,7 @@ export default function CreateIncidentPage() {
                 </Paper>
               </Grid>
 
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
                   <Typography variant="subtitle2" gutterBottom>
                     Assignment & Escalation
@@ -890,7 +890,7 @@ export default function CreateIncidentPage() {
               </Grid>
 
               {success && (
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <Alert severity="success">
                     Incident created successfully! Redirecting...
                   </Alert>

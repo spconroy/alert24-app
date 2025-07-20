@@ -14,8 +14,12 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body>
+    <html lang="en" suppressHydrationWarning={true}>
+      <head>
+        <meta name="referrer" content="strict-origin-when-cross-origin" />
+        <meta httpEquiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval';" />
+      </head>
+      <body suppressHydrationWarning={true}>
         <Providers>
           <OrganizationErrorBoundary>
             <div

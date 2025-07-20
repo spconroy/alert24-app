@@ -89,6 +89,8 @@ export default function EditEscalationPolicyPage() {
     escalation_timeout_minutes: 30,
     escalation_steps: [],
     notification_config: {},
+    repeat_escalation: false,
+    max_repeat_count: 3,
   });
 
   const [loading, setLoading] = useState(false);
@@ -121,13 +123,16 @@ export default function EditEscalationPolicyPage() {
       }
 
       // Convert the policy data to form format
+      const notificationConfig = policy.notification_config || {};
       setFormData({
         name: policy.name || '',
         description: policy.description || '',
         is_active: policy.is_active !== false,
         escalation_timeout_minutes: policy.escalation_timeout_minutes || 30,
         escalation_steps: policy.escalation_steps || [],
-        notification_config: policy.notification_config || {},
+        notification_config: notificationConfig,
+        repeat_escalation: notificationConfig.repeat_escalation || false,
+        max_repeat_count: notificationConfig.max_repeat_count || 3,
       });
     } catch (err) {
       console.error('Error fetching policy:', err);
@@ -190,7 +195,15 @@ export default function EditEscalationPolicyPage() {
       const submitData = {
         ...formData,
         organization_id: selectedOrganization.id,
+        notification_config: {
+          ...formData.notification_config,
+          repeat_escalation: formData.repeat_escalation,
+          max_repeat_count: formData.max_repeat_count,
+        },
       };
+      // Remove the separate fields since they're now in notification_config
+      delete submitData.repeat_escalation;
+      delete submitData.max_repeat_count;
 
       const response = await fetch(`/api/escalation-policies?id=${params.id}`, {
         method: 'PUT',
@@ -335,16 +348,6 @@ export default function EditEscalationPolicyPage() {
               placeholder="This policy escalates critical incidents through the engineering team..."
             />
 
-            <TextField
-              fullWidth
-              type="number"
-              label="Escalation Timeout (minutes)"
-              value={formData.escalation_timeout_minutes}
-              onChange={(e) => handleInputChange('escalation_timeout_minutes', parseInt(e.target.value) || 30)}
-              error={!!formErrors.escalation_timeout_minutes}
-              helperText={formErrors.escalation_timeout_minutes || 'Time between escalation steps'}
-              inputProps={{ min: 1, max: 1440 }}
-            />
 
             <FormControlLabel
               control={
@@ -366,12 +369,32 @@ export default function EditEscalationPolicyPage() {
               onChange={handleEscalationStepsChange}
               organizationId={selectedOrganization.id}
               maxSteps={10}
+              repeatEscalation={formData.repeat_escalation}
+              maxRepeatCount={formData.max_repeat_count}
+              onRepeatConfigChange={(config) => {
+                handleInputChange('repeat_escalation', config.repeat_escalation);
+                handleInputChange('max_repeat_count', config.max_repeat_count);
+              }}
             />
             {formErrors.escalation_steps && (
               <Alert severity="error" sx={{ mt: 2 }}>
                 {formErrors.escalation_steps}
               </Alert>
             )}
+            
+            <Divider sx={{ my: 3 }} />
+            
+            <TextField
+              fullWidth
+              type="number"
+              label="Escalation Timeout (minutes)"
+              value={formData.escalation_timeout_minutes}
+              onChange={(e) => handleInputChange('escalation_timeout_minutes', parseInt(e.target.value) || 30)}
+              error={!!formErrors.escalation_timeout_minutes}
+              helperText={formErrors.escalation_timeout_minutes || 'Time between escalation steps'}
+              inputProps={{ min: 1, max: 1440 }}
+              sx={{ maxWidth: 400 }}
+            />
           </Box>
         );
 
@@ -384,11 +407,11 @@ export default function EditEscalationPolicyPage() {
               <CardContent>
                 <Typography variant="h6" gutterBottom>Basic Information</Typography>
                 <Grid container spacing={2}>
-                  <Grid item xs={12} md={6}>
+                  <Grid size={{ xs: 12, md: 6 }}>
                     <Typography variant="body2" color="text.secondary">Policy Name</Typography>
                     <Typography variant="body1">{formData.name}</Typography>
                   </Grid>
-                  <Grid item xs={12} md={6}>
+                  <Grid size={{ xs: 12, md: 6 }}>
                     <Typography variant="body2" color="text.secondary">Status</Typography>
                     <Chip 
                       label={formData.is_active ? 'Active' : 'Inactive'} 
@@ -396,12 +419,28 @@ export default function EditEscalationPolicyPage() {
                       size="small"
                     />
                   </Grid>
-                  <Grid item xs={12} md={6}>
+                  <Grid size={{ xs: 12, md: 6 }}>
                     <Typography variant="body2" color="text.secondary">Escalation Timeout</Typography>
                     <Typography variant="body1">{formData.escalation_timeout_minutes} minutes</Typography>
                   </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Typography variant="body2" color="text.secondary">Repeat Escalation</Typography>
+                    <Chip 
+                      label={formData.repeat_escalation ? 'Enabled' : 'Disabled'} 
+                      color={formData.repeat_escalation ? 'warning' : 'default'}
+                      size="small"
+                    />
+                  </Grid>
+                  {formData.repeat_escalation && (
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <Typography variant="body2" color="text.secondary">Max Repeat Count</Typography>
+                      <Typography variant="body1">
+                        {formData.max_repeat_count === 0 ? 'Infinite' : formData.max_repeat_count}
+                      </Typography>
+                    </Grid>
+                  )}
                   {formData.description && (
-                    <Grid item xs={12}>
+                    <Grid size={{ xs: 12 }}>
                       <Typography variant="body2" color="text.secondary">Description</Typography>
                       <Typography variant="body1">{formData.description}</Typography>
                     </Grid>

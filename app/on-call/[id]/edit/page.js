@@ -333,7 +333,7 @@ export default function EditOnCallSchedulePage() {
           <form onSubmit={handleSubmit}>
             <Grid container spacing={3}>
               {/* Basic Information Card */}
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Card>
                   <CardContent>
                     <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
@@ -342,7 +342,7 @@ export default function EditOnCallSchedulePage() {
                     </Typography>
                     
                     <Grid container spacing={3}>
-                      <Grid item xs={12} md={8}>
+                      <Grid size={{ xs: 12, md: 8 }}>
                         <TextField
                           fullWidth
                           label="Schedule Name"
@@ -355,7 +355,7 @@ export default function EditOnCallSchedulePage() {
                         />
                       </Grid>
 
-                      <Grid item xs={12} md={4}>
+                      <Grid size={{ xs: 12, md: 4 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', height: '56px' }}>
                           <FormControlLabel
                             control={
@@ -374,7 +374,7 @@ export default function EditOnCallSchedulePage() {
                         </Box>
                       </Grid>
 
-                      <Grid item xs={12}>
+                      <Grid size={{ xs: 12 }}>
                         <TextField
                           fullWidth
                           label="Description"
@@ -394,7 +394,7 @@ export default function EditOnCallSchedulePage() {
               </Grid>
 
               {/* Schedule Configuration Card */}
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Card>
                   <CardContent>
                     <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
@@ -403,7 +403,7 @@ export default function EditOnCallSchedulePage() {
                     </Typography>
                     
                     <Grid container spacing={3}>
-                      <Grid item xs={12} md={6}>
+                      <Grid size={{ xs: 12, md: 6 }}>
                         <FormControl fullWidth variant="outlined">
                           <InputLabel>Rotation Type</InputLabel>
                           <Select
@@ -421,7 +421,7 @@ export default function EditOnCallSchedulePage() {
                         </FormControl>
                       </Grid>
 
-                      <Grid item xs={12} md={6}>
+                      <Grid size={{ xs: 12, md: 6 }}>
                         <TextField
                           fullWidth
                           label="Rotation Interval (hours)"
@@ -440,13 +440,13 @@ export default function EditOnCallSchedulePage() {
                         />
                       </Grid>
 
-                      <Grid item xs={12}>
+                      <Grid size={{ xs: 12 }}>
                         <Typography variant="subtitle1" gutterBottom sx={{ mt: 2, mb: 2, fontWeight: 600 }}>
                           Schedule Timeline
                         </Typography>
                       </Grid>
 
-                      <Grid item xs={12} md={6}>
+                      <Grid size={{ xs: 12, md: 6 }}>
                         <DateTimePicker
                           label="Start Date & Time"
                           value={formData.start_date}
@@ -462,7 +462,7 @@ export default function EditOnCallSchedulePage() {
                         />
                       </Grid>
 
-                      <Grid item xs={12} md={6}>
+                      <Grid size={{ xs: 12, md: 6 }}>
                         <DateTimePicker
                           label="End Date & Time (Optional)"
                           value={formData.end_date}
@@ -483,7 +483,7 @@ export default function EditOnCallSchedulePage() {
               </Grid>
 
               {/* Team Members Card */}
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Card>
                   <CardContent>
                     <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
@@ -500,7 +500,7 @@ export default function EditOnCallSchedulePage() {
                     </Typography>
                     
                     <Grid container spacing={3}>
-                      <Grid item xs={12} md={8}>
+                      <Grid size={{ xs: 12, md: 8 }}>
                         <Autocomplete
                           options={organizationMembers}
                           getOptionLabel={option =>
@@ -522,7 +522,7 @@ export default function EditOnCallSchedulePage() {
                         />
                       </Grid>
 
-                      <Grid item xs={12} md={4}>
+                      <Grid size={{ xs: 12, md: 4 }}>
                         <Button
                           fullWidth
                           variant="contained"
@@ -536,7 +536,7 @@ export default function EditOnCallSchedulePage() {
                       </Grid>
 
                       {formData.participants.length > 0 && (
-                        <Grid item xs={12}>
+                        <Grid size={{ xs: 12 }}>
                           <Box sx={{ mt: 2 }}>
                             <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>
                               Rotation Order
@@ -594,7 +594,7 @@ export default function EditOnCallSchedulePage() {
                       )}
 
                       {formData.participants.length === 0 && (
-                        <Grid item xs={12}>
+                        <Grid size={{ xs: 12 }}>
                           <Paper 
                             variant="outlined" 
                             sx={{ 
@@ -620,7 +620,7 @@ export default function EditOnCallSchedulePage() {
               </Grid>
 
               {/* Actions */}
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Card>
                   <CardContent>
                     <Box display="flex" gap={2} justifyContent="space-between" alignItems="center">

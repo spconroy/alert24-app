@@ -152,7 +152,7 @@ export default function StatusPageOverallStatus({ statusPageId }) {
 
         {services.length > 0 && (
           <Grid container spacing={2}>
-            <Grid item xs={6} sm={3}>
+            <Grid size={{ xs: 6, sm: 3 }}>
               <Box textAlign="center">
                 <Typography variant="h4" color="success.main">
                   {statusCounts.operational}
@@ -162,7 +162,7 @@ export default function StatusPageOverallStatus({ statusPageId }) {
                 </Typography>
               </Box>
             </Grid>
-            <Grid item xs={6} sm={3}>
+            <Grid size={{ xs: 6, sm: 3 }}>
               <Box textAlign="center">
                 <Typography variant="h4" color="warning.main">
                   {statusCounts.degraded}
@@ -172,7 +172,7 @@ export default function StatusPageOverallStatus({ statusPageId }) {
                 </Typography>
               </Box>
             </Grid>
-            <Grid item xs={6} sm={3}>
+            <Grid size={{ xs: 6, sm: 3 }}>
               <Box textAlign="center">
                 <Typography variant="h4" color="error.main">
                   {statusCounts.down}
@@ -182,7 +182,7 @@ export default function StatusPageOverallStatus({ statusPageId }) {
                 </Typography>
               </Box>
             </Grid>
-            <Grid item xs={6} sm={3}>
+            <Grid size={{ xs: 6, sm: 3 }}>
               <Box textAlign="center">
                 <Typography variant="h4" color="info.main">
                   {statusCounts.maintenance}

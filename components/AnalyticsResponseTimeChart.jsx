@@ -206,7 +206,7 @@ export default function AnalyticsResponseTimeChart({
     <Box sx={{ p: 3 }}>
       {/* Summary Cards */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={2}>
+        <Grid size={{ xs: 12, sm: 6, md: 2 }}>
           <Card>
             <CardContent>
               <Box
@@ -252,7 +252,7 @@ export default function AnalyticsResponseTimeChart({
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={2}>
+        <Grid size={{ xs: 12, sm: 6, md: 2 }}>
           <Card>
             <CardContent>
               <Typography
@@ -269,7 +269,7 @@ export default function AnalyticsResponseTimeChart({
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={2}>
+        <Grid size={{ xs: 12, sm: 6, md: 2 }}>
           <Card>
             <CardContent>
               <Typography
@@ -286,7 +286,7 @@ export default function AnalyticsResponseTimeChart({
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={2}>
+        <Grid size={{ xs: 12, sm: 6, md: 2 }}>
           <Card>
             <CardContent>
               <Typography
@@ -303,7 +303,7 @@ export default function AnalyticsResponseTimeChart({
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={2}>
+        <Grid size={{ xs: 12, sm: 6, md: 2 }}>
           <Card>
             <CardContent>
               <Typography
@@ -320,7 +320,7 @@ export default function AnalyticsResponseTimeChart({
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={2}>
+        <Grid size={{ xs: 12, sm: 6, md: 2 }}>
           <Card>
             <CardContent>
               <Typography

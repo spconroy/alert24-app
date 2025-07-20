@@ -492,7 +492,7 @@ const ServiceList = forwardRef(function ServiceList({ statusPageId }, ref) {
                     </Typography>
                     <Grid container spacing={2}>
                       {service.monitoring_checks?.map(check => (
-                        <Grid item xs={12} sm={6} md={4} key={check.id}>
+                        <Grid size={{ xs: 12, sm: 6, md: 4 }} key={check.id}>
                           <Box
                             sx={{
                               p: 2,

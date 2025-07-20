@@ -175,7 +175,7 @@ export default function EscalationTestPage() {
 
         <Grid container spacing={3}>
           {/* Debug Information */}
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Card>
               <CardContent>
                 <Box display="flex" alignItems="center" gap={1} mb={2}>
@@ -239,7 +239,7 @@ export default function EscalationTestPage() {
           </Grid>
 
           {/* Test Configuration */}
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Card>
               <CardContent>
                 <Box display="flex" alignItems="center" gap={1} mb={2}>
@@ -248,7 +248,7 @@ export default function EscalationTestPage() {
                 </Box>
 
                 <Grid container spacing={2}>
-                  <Grid item xs={12}>
+                  <Grid size={{ xs: 12 }}>
                     <FormControl fullWidth>
                       <InputLabel>Escalation Policy</InputLabel>
                       <Select
@@ -269,7 +269,7 @@ export default function EscalationTestPage() {
                     </FormControl>
                   </Grid>
 
-                  <Grid item xs={12}>
+                  <Grid size={{ xs: 12 }}>
                     <FormControl fullWidth disabled={!selectedPolicy}>
                       <InputLabel>Escalation Step</InputLabel>
                       <Select
@@ -288,7 +288,7 @@ export default function EscalationTestPage() {
                     </FormControl>
                   </Grid>
 
-                  <Grid item xs={12}>
+                  <Grid size={{ xs: 12 }}>
                     <TextField
                       fullWidth
                       label="Test Incident Title"
@@ -297,7 +297,7 @@ export default function EscalationTestPage() {
                     />
                   </Grid>
 
-                  <Grid item xs={12}>
+                  <Grid size={{ xs: 12 }}>
                     <TextField
                       fullWidth
                       multiline
@@ -308,7 +308,7 @@ export default function EscalationTestPage() {
                     />
                   </Grid>
 
-                  <Grid item xs={12}>
+                  <Grid size={{ xs: 12 }}>
                     <FormControl fullWidth>
                       <InputLabel>Severity (affects channels)</InputLabel>
                       <Select
@@ -324,7 +324,7 @@ export default function EscalationTestPage() {
                     </FormControl>
                   </Grid>
 
-                  <Grid item xs={12}>
+                  <Grid size={{ xs: 12 }}>
                     <Button
                       fullWidth
                       variant="contained"
@@ -344,7 +344,7 @@ export default function EscalationTestPage() {
 
           {/* Test Results */}
           {testResults && (
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Card>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>

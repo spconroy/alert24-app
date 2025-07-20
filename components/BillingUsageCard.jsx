@@ -151,7 +151,7 @@ const BillingUsageCard = ({ organization, usage, subscription, onUpgrade }) => {
             const isOver = isOverLimit(item.current, item.max);
 
             return (
-              <Grid item xs={12} sm={6} key={item.key}>
+              <Grid size={{ xs: 12, sm: 6 }} key={item.key}>
                 <Box>
                   <Box
                     display="flex"

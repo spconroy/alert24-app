@@ -520,7 +520,7 @@ export default function HelpPage() {
               { title: 'Configure On-Call', path: '/on-call/new' },
               { title: 'Update Your Profile', path: '/profile' },
             ].map((link, index) => (
-              <Grid item xs={12} sm={6} md={3} key={index}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index}>
                 <Paper
                   sx={{
                     p: 2,
@@ -724,7 +724,7 @@ export default function HelpPage() {
                   </Typography>
                   <Grid container spacing={1}>
                     {section.content.keyFeatures.map((feature, index) => (
-                      <Grid item xs={12} sm={6} key={index}>
+                      <Grid size={{ xs: 12, sm: 6 }} key={index}>
                         <Chip
                           label={feature}
                           variant="outlined"
@@ -1207,7 +1207,7 @@ export default function HelpPage() {
           Can't find what you're looking for? Here are additional resources:
         </Typography>
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={4}>
+          <Grid size={{ xs: 12, sm: 4 }}>
             <Paper sx={{ p: 2, textAlign: 'center' }}>
               <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
                 📧 Email Support
@@ -1217,7 +1217,7 @@ export default function HelpPage() {
               </Typography>
             </Paper>
           </Grid>
-          <Grid item xs={12} sm={4}>
+          <Grid size={{ xs: 12, sm: 4 }}>
             <Paper sx={{ p: 2, textAlign: 'center' }}>
               <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
                 📖 Documentation
@@ -1227,7 +1227,7 @@ export default function HelpPage() {
               </Typography>
             </Paper>
           </Grid>
-          <Grid item xs={12} sm={4}>
+          <Grid size={{ xs: 12, sm: 4 }}>
             <Paper sx={{ p: 2, textAlign: 'center' }}>
               <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
                 💬 Community

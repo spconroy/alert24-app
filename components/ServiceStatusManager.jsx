@@ -282,7 +282,7 @@ export default function ServiceStatusManager({ statusPageId, onRefresh }) {
       ) : (
         <Grid container spacing={2}>
           {services.map(service => (
-            <Grid item xs={12} md={6} key={service.id}>
+            <Grid size={{ xs: 12, md: 6 }} key={service.id}>
               <Card elevation={1}>
                 <CardContent>
                   <Box

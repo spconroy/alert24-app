@@ -110,7 +110,7 @@ export default function ServiceUptimeStats({ serviceId, compact = false, isPubli
       </Typography>
 
       <Grid container spacing={2}>
-        <Grid item xs={6} sm={3}>
+        <Grid size={{ xs: 6, sm: 3 }}>
           <Box textAlign="center">
             <Typography
               variant="h4"
@@ -125,7 +125,7 @@ export default function ServiceUptimeStats({ serviceId, compact = false, isPubli
           </Box>
         </Grid>
 
-        <Grid item xs={6} sm={3}>
+        <Grid size={{ xs: 6, sm: 3 }}>
           <Box textAlign="center">
             <Typography
               variant="h4"
@@ -140,7 +140,7 @@ export default function ServiceUptimeStats({ serviceId, compact = false, isPubli
           </Box>
         </Grid>
 
-        <Grid item xs={6} sm={3}>
+        <Grid size={{ xs: 6, sm: 3 }}>
           <Box textAlign="center">
             <Typography
               variant="h4"
@@ -155,7 +155,7 @@ export default function ServiceUptimeStats({ serviceId, compact = false, isPubli
           </Box>
         </Grid>
 
-        <Grid item xs={6} sm={3}>
+        <Grid size={{ xs: 6, sm: 3 }}>
           <Box textAlign="center">
             <Typography
               variant="h4"
@@ -179,7 +179,7 @@ export default function ServiceUptimeStats({ serviceId, compact = false, isPubli
           </Typography>
           <Grid container spacing={1}>
             {Object.entries(uptimeData.incidents).map(([status, data]) => (
-              <Grid item xs={6} key={status}>
+              <Grid size={{ xs: 6 }} key={status}>
                 <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center' }}>
                   <Typography variant="h6" color="error.main">
                     {data.count}

@@ -306,9 +306,9 @@ export default function EscalationPolicyDetailPage() {
 
         <Grid container spacing={4}>
           {/* Quick Stats */}
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <Grid container spacing={3}>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <Card sx={{ bgcolor: 'primary.50', borderLeft: 4, borderColor: 'primary.main' }}>
                   <CardContent sx={{ textAlign: 'center', py: 3 }}>
                     <Typography variant="h3" color="primary.main" fontWeight="bold">
@@ -321,7 +321,7 @@ export default function EscalationPolicyDetailPage() {
                 </Card>
               </Grid>
               
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <Card sx={{ bgcolor: 'success.50', borderLeft: 4, borderColor: 'success.main' }}>
                   <CardContent sx={{ textAlign: 'center', py: 3 }}>
                     <Typography variant="h3" color="success.main" fontWeight="bold">
@@ -334,7 +334,7 @@ export default function EscalationPolicyDetailPage() {
                 </Card>
               </Grid>
               
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <Card sx={{ bgcolor: 'warning.50', borderLeft: 4, borderColor: 'warning.main' }}>
                   <CardContent sx={{ textAlign: 'center', py: 3 }}>
                     <Typography variant="h3" color="warning.main" fontWeight="bold">
@@ -347,7 +347,7 @@ export default function EscalationPolicyDetailPage() {
                 </Card>
               </Grid>
               
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <Card sx={{ bgcolor: 'info.50', borderLeft: 4, borderColor: 'info.main' }}>
                   <CardContent sx={{ textAlign: 'center', py: 3 }}>
                     <Typography variant="h3" color="info.main" fontWeight="bold">
@@ -363,7 +363,7 @@ export default function EscalationPolicyDetailPage() {
           </Grid>
 
           {/* Escalation Flow */}
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <Card sx={{ borderRadius: 3 }}>
               <CardContent sx={{ p: 4 }}>
                 <Box display="flex" alignItems="center" gap={2} mb={3}>
@@ -423,7 +423,7 @@ export default function EscalationPolicyDetailPage() {
                           <StepContent>
                             <Grid container spacing={3} sx={{ mt: 1 }}>
                               {/* Notification Channels */}
-                              <Grid item xs={12} md={6}>
+                              <Grid size={{ xs: 12, md: 6 }}>
                                 <Paper variant="outlined" sx={{ p: 3, bgcolor: 'grey.50' }}>
                                   <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                                     📬 Notification Channels
@@ -448,7 +448,7 @@ export default function EscalationPolicyDetailPage() {
                               </Grid>
                               
                               {/* Targets */}
-                              <Grid item xs={12} md={6}>
+                              <Grid size={{ xs: 12, md: 6 }}>
                                 <Paper variant="outlined" sx={{ p: 3, bgcolor: 'grey.50' }}>
                                   <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                                     🎯 Notification Targets

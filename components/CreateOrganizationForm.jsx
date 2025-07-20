@@ -96,7 +96,7 @@ export default function CreateOrganizationForm({ onBack, onSuccess }) {
 
         <form onSubmit={handleSubmit}>
           <Grid container spacing={3}>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 label="Organization Name"
@@ -109,7 +109,7 @@ export default function CreateOrganizationForm({ onBack, onSuccess }) {
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 label="Slug"
@@ -122,7 +122,7 @@ export default function CreateOrganizationForm({ onBack, onSuccess }) {
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 label="Custom Domain (Optional)"
@@ -134,7 +134,7 @@ export default function CreateOrganizationForm({ onBack, onSuccess }) {
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Box display="flex" gap={2}>
                 <Button
                   type="submit"

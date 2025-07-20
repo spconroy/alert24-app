@@ -36,6 +36,12 @@ import BusinessIcon from '@mui/icons-material/Business';
 import FlagIcon from '@mui/icons-material/Flag';
 import PriorityHighIcon from '@mui/icons-material/PriorityHigh';
 import SearchIcon from '@mui/icons-material/Search';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import EditIcon from '@mui/icons-material/Edit';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useOrganization } from '@/contexts/OrganizationContext';
 
@@ -57,6 +63,11 @@ export default function IncidentsPage() {
     offset: 0,
     hasMore: false,
   });
+  const [sorting, setSorting] = useState({
+    field: 'created_at',
+    direction: 'desc',
+  });
+  const [groupBy, setGroupBy] = useState('none');
 
   const { session, selectedOrganization } = useOrganization();
 
@@ -152,7 +163,7 @@ export default function IncidentsPage() {
       case 'high':
         return 'warning';
       case 'medium':
-        return 'info';
+        return 'primary';
       case 'low':
         return 'success';
       default:
@@ -180,6 +191,94 @@ export default function IncidentsPage() {
       ...prev,
       offset: prev.offset + prev.limit,
     }));
+  };
+
+  const handleSort = (field) => {
+    setSorting(prev => ({
+      field,
+      direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc',
+    }));
+    setPagination(prev => ({ ...prev, offset: 0 }));
+  };
+
+  const sortIncidents = (incidents) => {
+    return [...incidents].sort((a, b) => {
+      // Always prioritize open incidents over resolved ones
+      if (a.status === 'resolved' && b.status !== 'resolved') return 1;
+      if (a.status !== 'resolved' && b.status === 'resolved') return -1;
+      
+      let aValue = a[sorting.field];
+      let bValue = b[sorting.field];
+      
+      // Handle special sorting cases
+      if (sorting.field === 'severity') {
+        const severityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
+        aValue = severityOrder[aValue] || 0;
+        bValue = severityOrder[bValue] || 0;
+      } else if (sorting.field === 'status') {
+        const statusOrder = { 
+          open: 6, 
+          new: 5, 
+          investigating: 4, 
+          identified: 3, 
+          monitoring: 2, 
+          resolved: 1, 
+          postmortem: 0 
+        };
+        aValue = statusOrder[aValue] || 0;
+        bValue = statusOrder[bValue] || 0;
+      } else if (sorting.field === 'created_at') {
+        aValue = new Date(aValue).getTime();
+        bValue = new Date(bValue).getTime();
+      } else if (sorting.field === 'incident_number') {
+        aValue = parseInt(aValue) || 0;
+        bValue = parseInt(bValue) || 0;
+      }
+      
+      if (sorting.direction === 'asc') {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+  };
+
+  const groupIncidents = (incidents) => {
+    if (groupBy === 'none') {
+      return { 'All Incidents': incidents };
+    }
+    
+    const grouped = {};
+    
+    incidents.forEach(incident => {
+      let groupKey;
+      
+      if (groupBy === 'status') {
+        groupKey = incident.status.charAt(0).toUpperCase() + incident.status.slice(1);
+      } else if (groupBy === 'date') {
+        const date = new Date(incident.created_at);
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        if (date.toDateString() === today.toDateString()) {
+          groupKey = 'Today';
+        } else if (date.toDateString() === yesterday.toDateString()) {
+          groupKey = 'Yesterday';
+        } else {
+          groupKey = date.toLocaleDateString();
+        }
+      } else if (groupBy === 'severity') {
+        groupKey = incident.severity.charAt(0).toUpperCase() + incident.severity.slice(1);
+      }
+      
+      if (!grouped[groupKey]) {
+        grouped[groupKey] = [];
+      }
+      grouped[groupKey].push(incident);
+    });
+    
+    return grouped;
   };
 
   return (
@@ -257,45 +356,20 @@ export default function IncidentsPage() {
       </Box>
 
       <Box sx={{ px: 6, pb: 3 }}>
-        {/* Enhanced Filters Section */}
+        {/* Compact Filters Section */}
         <Card
           sx={{
-            mb: 4,
-            borderRadius: 3,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-            border: '1px solid rgba(0,0,0,0.05)',
-            background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
-            overflow: 'hidden',
-            position: 'relative',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '4px',
-              background:
-                'linear-gradient(90deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
-            },
+            mb: 3,
+            borderRadius: 2,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+            border: '1px solid rgba(0,0,0,0.08)',
           }}
         >
-          <CardContent sx={{ pt: 3, pb: 3 }}>
-            <Box display="flex" alignItems="center" gap={2} mb={3}>
-              <Box
-                sx={{
-                  p: 1,
-                  borderRadius: 2,
-                  backgroundColor: 'primary.main',
-                  color: 'white',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <FilterListIcon />
-              </Box>
-              <Typography variant="h5" fontWeight="600" color="text.primary">
-                Filters & Search
+          <CardContent sx={{ py: 2, px: 3 }}>
+            <Box display="flex" alignItems="center" gap={2} mb={2}>
+              <FilterListIcon fontSize="small" color="primary" />
+              <Typography variant="h6" fontWeight="500" color="text.primary">
+                Filters
               </Typography>
 
               {/* Active filter count indicator */}
@@ -318,27 +392,44 @@ export default function IncidentsPage() {
                   onDelete={clearFilters}
                 />
               )}
+              
+              {/* Active Filters Display */}
+              {Object.entries(filters).filter(([key, value]) => value).length > 0 && (
+                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                  {Object.entries(filters).filter(([key, value]) => value).map(([key, value]) => {
+                    let displayValue = value;
+                    if (key === 'organization_id') {
+                      const org = organizations.find(o => o.id === value);
+                      displayValue = org?.name || 'Unknown';
+                    }
+                    return (
+                      <Chip
+                        key={key}
+                        label={`${key.replace('_', ' ')}: ${displayValue}`}
+                        size="small"
+                        variant="outlined"
+                        onDelete={() => handleFilterChange(key, '')}
+                        sx={{
+                          textTransform: 'capitalize',
+                          fontSize: '0.75rem',
+                          height: '24px',
+                        }}
+                      />
+                    );
+                  })}
+                </Box>
+              )}
 
               <Box sx={{ ml: 'auto' }}>
                 <Button
-                  variant="outlined"
+                  variant="text"
                   size="small"
                   onClick={clearFilters}
                   disabled={Object.values(filters).every(v => !v)}
                   sx={{
-                    borderRadius: 2,
-                    fontWeight: 500,
-                    borderColor: Object.values(filters).some(v => v)
-                      ? 'primary.main'
-                      : 'divider',
-                    color: Object.values(filters).some(v => v)
-                      ? 'primary.main'
-                      : 'text.disabled',
-                    '&:hover': {
-                      backgroundColor: Object.values(filters).some(v => v)
-                        ? 'primary.50'
-                        : 'transparent',
-                    },
+                    fontSize: '0.75rem',
+                    minWidth: 'auto',
+                    px: 1,
                   }}
                 >
                   Clear All
@@ -346,225 +437,29 @@ export default function IncidentsPage() {
               </Box>
             </Box>
 
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <FormControl fullWidth size="small">
-                  <InputLabel
-                    sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
-                  >
-                    Organization
-                  </InputLabel>
-                  <Select
-                    value={filters.organization_id}
-                    label="Organization"
-                    onChange={e =>
-                      handleFilterChange('organization_id', e.target.value)
-                    }
-                    renderValue={selected => {
-                      if (!selected) return 'All Organizations';
-                      const org = organizations.find(o => o.id === selected);
-                      return (
-                        <Box
-                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                        >
-                          <BusinessIcon fontSize="small" color="action" />
-                          {org?.name || 'Unknown'}
-                        </Box>
-                      );
-                    }}
-                  >
-                    <MenuItem value="">
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                      >
-                        <BusinessIcon fontSize="small" color="action" />
-                        All Organizations
-                      </Box>
-                    </MenuItem>
-                    {organizations.map(org => (
-                      <MenuItem key={org.id} value={org.id}>
-                        <Box
-                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                        >
-                          <BusinessIcon fontSize="small" color="action" />
-                          {org.name}
-                        </Box>
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-
-              <Grid item xs={12}>
+            <Grid container spacing={1.5}>
+              <Grid size={{ xs: 12, md: 6, lg: 3 }}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Status</InputLabel>
                   <Select
                     value={filters.status}
                     label="Status"
                     onChange={e => handleFilterChange('status', e.target.value)}
-                    renderValue={selected => {
-                      if (!selected) return 'All Statuses';
-                      const statusColors = {
-                        new: 'error.main',
-                        acknowledged: 'warning.main',
-                        open: 'error.main',
-                        investigating: 'warning.main',
-                        identified: 'info.main',
-                        monitoring: 'info.main',
-                        resolved: 'success.main',
-                        postmortem: 'action.disabled',
-                      };
-                      return (
-                        <Box
-                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                        >
-                          <Box
-                            sx={{
-                              width: 8,
-                              height: 8,
-                              borderRadius: '50%',
-                              bgcolor:
-                                statusColors[selected] || 'action.disabled',
-                            }}
-                          />
-                          {selected.charAt(0).toUpperCase() + selected.slice(1)}
-                        </Box>
-                      );
-                    }}
                   >
-                    <MenuItem value="">
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                      >
-                        <FlagIcon fontSize="small" color="action" />
-                        All Statuses
-                      </Box>
-                    </MenuItem>
-                    <MenuItem value="new">
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                      >
-                        <Box
-                          sx={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: '50%',
-                            bgcolor: 'error.main',
-                          }}
-                        />
-                        New
-                      </Box>
-                    </MenuItem>
-                    <MenuItem value="acknowledged">
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                      >
-                        <Box
-                          sx={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: '50%',
-                            bgcolor: 'warning.main',
-                          }}
-                        />
-                        Acknowledged
-                      </Box>
-                    </MenuItem>
-                    <MenuItem value="open">
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                      >
-                        <Box
-                          sx={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: '50%',
-                            bgcolor: 'error.main',
-                          }}
-                        />
-                        Open
-                      </Box>
-                    </MenuItem>
-                    <MenuItem value="investigating">
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                      >
-                        <Box
-                          sx={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: '50%',
-                            bgcolor: 'warning.main',
-                          }}
-                        />
-                        Investigating
-                      </Box>
-                    </MenuItem>
-                    <MenuItem value="identified">
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                      >
-                        <Box
-                          sx={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: '50%',
-                            bgcolor: 'info.main',
-                          }}
-                        />
-                        Identified
-                      </Box>
-                    </MenuItem>
-                    <MenuItem value="monitoring">
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                      >
-                        <Box
-                          sx={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: '50%',
-                            bgcolor: 'info.main',
-                          }}
-                        />
-                        Monitoring
-                      </Box>
-                    </MenuItem>
-                    <MenuItem value="resolved">
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                      >
-                        <Box
-                          sx={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: '50%',
-                            bgcolor: 'success.main',
-                          }}
-                        />
-                        Resolved
-                      </Box>
-                    </MenuItem>
-                    <MenuItem value="postmortem">
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                      >
-                        <Box
-                          sx={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: '50%',
-                            bgcolor: 'action.disabled',
-                          }}
-                        />
-                        Postmortem
-                      </Box>
-                    </MenuItem>
+                    <MenuItem value="">All Statuses</MenuItem>
+                    <MenuItem value="new">New</MenuItem>
+                    <MenuItem value="acknowledged">Acknowledged</MenuItem>
+                    <MenuItem value="open">Open</MenuItem>
+                    <MenuItem value="investigating">Investigating</MenuItem>
+                    <MenuItem value="identified">Identified</MenuItem>
+                    <MenuItem value="monitoring">Monitoring</MenuItem>
+                    <MenuItem value="resolved">Resolved</MenuItem>
+                    <MenuItem value="postmortem">Postmortem</MenuItem>
                   </Select>
                 </FormControl>
               </Grid>
 
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12, md: 6, lg: 3 }}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Severity</InputLabel>
                   <Select
@@ -573,97 +468,47 @@ export default function IncidentsPage() {
                     onChange={e =>
                       handleFilterChange('severity', e.target.value)
                     }
-                    renderValue={selected => {
-                      if (!selected) return 'All Severities';
-                      const severityColors = {
-                        critical: 'error',
-                        high: 'warning',
-                        medium: 'info',
-                        low: 'success',
-                      };
-                      return (
-                        <Box
-                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                        >
-                          <PriorityHighIcon
-                            fontSize="small"
-                            color={severityColors[selected] || 'action'}
-                          />
-                          {selected.charAt(0).toUpperCase() + selected.slice(1)}
-                        </Box>
-                      );
-                    }}
                   >
-                    <MenuItem value="">
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                      >
-                        <PriorityHighIcon fontSize="small" color="action" />
-                        All Severities
-                      </Box>
-                    </MenuItem>
-                    <MenuItem value="critical">
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                      >
-                        <PriorityHighIcon fontSize="small" color="error" />
-                        Critical
-                      </Box>
-                    </MenuItem>
-                    <MenuItem value="high">
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                      >
-                        <PriorityHighIcon fontSize="small" color="warning" />
-                        High
-                      </Box>
-                    </MenuItem>
-                    <MenuItem value="medium">
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                      >
-                        <PriorityHighIcon fontSize="small" color="info" />
-                        Medium
-                      </Box>
-                    </MenuItem>
-                    <MenuItem value="low">
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                      >
-                        <PriorityHighIcon fontSize="small" color="success" />
-                        Low
-                      </Box>
-                    </MenuItem>
+                    <MenuItem value="">All Severities</MenuItem>
+                    <MenuItem value="critical">Critical</MenuItem>
+                    <MenuItem value="high">High</MenuItem>
+                    <MenuItem value="medium">Medium</MenuItem>
+                    <MenuItem value="low">Low</MenuItem>
                   </Select>
                 </FormControl>
               </Grid>
 
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12, md: 6, lg: 3 }}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Group By</InputLabel>
+                  <Select
+                    value={groupBy}
+                    label="Group By"
+                    onChange={e => setGroupBy(e.target.value)}
+                  >
+                    <MenuItem value="none">No Grouping</MenuItem>
+                    <MenuItem value="status">Status</MenuItem>
+                    <MenuItem value="date">Date</MenuItem>
+                    <MenuItem value="severity">Severity</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid size={{ xs: 12, md: 6, lg: 3 }}>
                 <TextField
                   fullWidth
                   size="small"
-                  label="Search incidents..."
+                  label="Search"
                   value={filters.search}
                   onChange={e => handleFilterChange('search', e.target.value)}
-                  placeholder="Search by title, description, or ID"
+                  placeholder="Search incidents..."
                   InputProps={{
                     startAdornment: (
                       <SearchIcon
                         fontSize="small"
-                        sx={{ mr: 1, color: 'action.active' }}
+                        sx={{ mr: 0.5, color: 'action.active' }}
                       />
                     ),
-                  }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      backgroundColor: 'grey.50',
-                      '&:hover': {
-                        backgroundColor: 'background.paper',
-                      },
-                      '&.Mui-focused': {
-                        backgroundColor: 'background.paper',
-                      },
-                    },
                   }}
                 />
               </Grid>
@@ -724,15 +569,33 @@ export default function IncidentsPage() {
                       fontWeight="700"
                       color="text.primary"
                     >
-                      Active Incidents
+                      {(() => {
+                        const activeIncidents = incidents.filter(i => i.status !== 'resolved' && i.status !== 'postmortem');
+                        const resolvedIncidents = incidents.filter(i => i.status === 'resolved' || i.status === 'postmortem');
+                        
+                        if (activeIncidents.length === 0 && resolvedIncidents.length > 0) {
+                          return `${resolvedIncidents.length} Resolved Incident${resolvedIncidents.length !== 1 ? 's' : ''}`;
+                        } else if (activeIncidents.length > 0 && resolvedIncidents.length === 0) {
+                          return `${activeIncidents.length} Active Incident${activeIncidents.length !== 1 ? 's' : ''}`;
+                        } else if (activeIncidents.length > 0 && resolvedIncidents.length > 0) {
+                          return `${activeIncidents.length} Active, ${resolvedIncidents.length} Resolved`;
+                        } else {
+                          return 'All Incidents';
+                        }
+                      })()}
                     </Typography>
                     <Typography
                       variant="body2"
                       color="text.secondary"
                       sx={{ mt: 0.5 }}
                     >
-                      {incidents.length} incident
-                      {incidents.length !== 1 ? 's' : ''} found
+                      {pagination.total > 0 ? (
+                        <>
+                          Showing {pagination.offset + 1}-{Math.min(pagination.offset + incidents.length, pagination.total)} of {pagination.total} incident{pagination.total !== 1 ? 's' : ''}
+                        </>
+                      ) : (
+                        `${incidents.length} incident${incidents.length !== 1 ? 's' : ''} found`
+                      )}
                     </Typography>
                   </Box>
                 </Box>
@@ -930,98 +793,249 @@ export default function IncidentsPage() {
                         },
                       }}
                     >
-                      <TableCell>📋 Title</TableCell>
+                      <TableCell
+                        sx={{ cursor: 'pointer', userSelect: 'none' }}
+                        onClick={() => handleSort('incident_number')}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          🆔
+                          {sorting.field === 'incident_number' && (
+                            sorting.direction === 'asc' ? 
+                            <ArrowUpwardIcon fontSize="small" /> : 
+                            <ArrowDownwardIcon fontSize="small" />
+                          )}
+                        </Box>
+                      </TableCell>
+                      <TableCell
+                        sx={{ cursor: 'pointer', userSelect: 'none' }}
+                        onClick={() => handleSort('title')}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          📋 Title
+                          {sorting.field === 'title' && (
+                            sorting.direction === 'asc' ? 
+                            <ArrowUpwardIcon fontSize="small" /> : 
+                            <ArrowDownwardIcon fontSize="small" />
+                          )}
+                        </Box>
+                      </TableCell>
                       <TableCell>🏢 Organization</TableCell>
-                      <TableCell>🚩 Status</TableCell>
-                      <TableCell>⚠️ Severity</TableCell>
+                      <TableCell
+                        sx={{ cursor: 'pointer', userSelect: 'none' }}
+                        onClick={() => handleSort('status')}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          🚩 Status
+                          {sorting.field === 'status' && (
+                            sorting.direction === 'asc' ? 
+                            <ArrowUpwardIcon fontSize="small" /> : 
+                            <ArrowDownwardIcon fontSize="small" />
+                          )}
+                        </Box>
+                      </TableCell>
+                      <TableCell
+                        sx={{ cursor: 'pointer', userSelect: 'none' }}
+                        onClick={() => handleSort('severity')}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          ⚠️ Severity
+                          {sorting.field === 'severity' && (
+                            sorting.direction === 'asc' ? 
+                            <ArrowUpwardIcon fontSize="small" /> : 
+                            <ArrowDownwardIcon fontSize="small" />
+                          )}
+                        </Box>
+                      </TableCell>
                       <TableCell>👤 Assigned To</TableCell>
-                      <TableCell>📅 Created</TableCell>
+                      <TableCell
+                        sx={{ cursor: 'pointer', userSelect: 'none' }}
+                        onClick={() => handleSort('created_at')}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          📅 Created
+                          {sorting.field === 'created_at' && (
+                            sorting.direction === 'asc' ? 
+                            <ArrowUpwardIcon fontSize="small" /> : 
+                            <ArrowDownwardIcon fontSize="small" />
+                          )}
+                        </Box>
+                      </TableCell>
+                      <TableCell align="right">Actions</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {incidents
-                      .sort((a, b) => {
-                        // Move resolved incidents to bottom
-                        if (a.status === 'resolved' && b.status !== 'resolved') return 1;
-                        if (a.status !== 'resolved' && b.status === 'resolved') return -1;
-                        // Keep original order for non-resolved incidents
-                        return 0;
-                      })
-                      .map((incident, index) => (
-                      <TableRow
-                        key={incident.id}
-                        hover
-                        component={Link}
-                        href={`/incidents/${incident.id}`}
-                        sx={{
-                          backgroundColor:
-                            index % 2 === 0
-                              ? 'rgba(248, 250, 252, 0.3)'
-                              : 'white',
-                          cursor: 'pointer',
-                          textDecoration: 'none',
-                          color: 'inherit',
-                          '&:hover': {
-                            backgroundColor: 'rgba(99, 102, 241, 0.08)',
-                            transform: 'translateX(4px)',
-                            boxShadow: '4px 0 12px rgba(99, 102, 241, 0.15)',
-                            transition: 'all 0.2s ease',
-                          },
-                          '& .MuiTableCell-root': {
-                            borderBottom: '1px solid rgba(224, 224, 224, 0.5)',
-                            py: 2,
-                          },
-                        }}
-                      >
-                        <TableCell>
-                          <Box>
-                            <Typography variant="subtitle2" fontWeight="medium">
-                              {incident.title}
-                            </Typography>
-                            {incident.description && (
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                                noWrap
-                              >
-                                {incident.description.length > 50
-                                  ? `${incident.description.substring(0, 50)}...`
-                                  : incident.description}
+                    {Object.entries(groupIncidents(sortIncidents(incidents))).map(([groupName, groupIncidents]) => (
+                      <React.Fragment key={groupName}>
+                        {groupBy !== 'none' && (
+                          <TableRow>
+                            <TableCell 
+                              colSpan={8} 
+                              sx={{ 
+                                backgroundColor: 'rgba(99, 102, 241, 0.08)',
+                                fontWeight: 700,
+                                fontSize: '0.875rem',
+                                py: 1.5,
+                                borderBottom: '2px solid rgba(99, 102, 241, 0.2)',
+                              }}
+                            >
+                              {groupName} ({groupIncidents.length})
+                            </TableCell>
+                          </TableRow>
+                        )}
+                        {groupIncidents.map((incident, index) => (
+                          <TableRow
+                            key={incident.id}
+                            hover
+                            component={Link}
+                            href={`/incidents/${incident.id}`}
+                            sx={{
+                              backgroundColor:
+                                index % 2 === 0
+                                  ? 'rgba(248, 250, 252, 0.3)'
+                                  : 'white',
+                              cursor: 'pointer',
+                              textDecoration: 'none',
+                              color: 'inherit',
+                              '&:hover': {
+                                backgroundColor: 'rgba(99, 102, 241, 0.08)',
+                                transform: 'translateX(4px)',
+                                boxShadow: '4px 0 12px rgba(99, 102, 241, 0.15)',
+                                transition: 'all 0.2s ease',
+                              },
+                              '& .MuiTableCell-root': {
+                                borderBottom: '1px solid rgba(224, 224, 224, 0.5)',
+                                py: 2,
+                              },
+                            }}
+                          >
+                            <TableCell>
+                              <Typography variant="body2" fontWeight="600" color="primary">
+                                {incident.incident_number || `#${incident.id?.slice(-4)}`}
                               </Typography>
-                            )}
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2">
-                            {incident.organization_name}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={incident.status}
-                            color={getIncidentStatusColor(incident.status)}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={incident.severity}
-                            color={getIncidentSeverityColor(incident.severity)}
-                            size="small"
-                            variant="outlined"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2">
-                            {incident.assigned_to_name || 'Unassigned'}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2">
-                            {new Date(incident.created_at).toLocaleDateString()}
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
+                            </TableCell>
+                            <TableCell>
+                              <Box>
+                                <Typography variant="subtitle2" fontWeight="medium">
+                                  {incident.title}
+                                </Typography>
+                                {incident.description && (
+                                  <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                    noWrap
+                                  >
+                                    {incident.description.length > 50
+                                      ? `${incident.description.substring(0, 50)}...`
+                                      : incident.description}
+                                  </Typography>
+                                )}
+                              </Box>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2">
+                                {incident.organization_name}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Chip
+                                label={incident.status}
+                                color={getIncidentStatusColor(incident.status)}
+                                size="small"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Chip
+                                label={incident.severity}
+                                color={getIncidentSeverityColor(incident.severity)}
+                                size="small"
+                                variant="outlined"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2">
+                                {incident.assigned_to_name || 'Unassigned'}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2">
+                                {new Date(incident.created_at).toLocaleDateString()}
+                              </Typography>
+                            </TableCell>
+                            <TableCell align="right">
+                              <Box 
+                                sx={{ 
+                                  display: 'flex', 
+                                  gap: 0.5, 
+                                  justifyContent: 'flex-end',
+                                  opacity: 0,
+                                  transition: 'opacity 0.2s ease',
+                                  '.MuiTableRow-hover:hover &': {
+                                    opacity: 1,
+                                  },
+                                }}
+                                onClick={(e) => e.preventDefault()}
+                              >
+                                <Tooltip title="View Details">
+                                  <IconButton
+                                    size="small"
+                                    component={Link}
+                                    href={`/incidents/${incident.id}`}
+                                    sx={{
+                                      backgroundColor: 'primary.main',
+                                      color: 'white',
+                                      '&:hover': {
+                                        backgroundColor: 'primary.dark',
+                                      },
+                                    }}
+                                  >
+                                    <VisibilityIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                                {incident.status !== 'resolved' && (
+                                  <Tooltip title="Mark Resolved">
+                                    <IconButton
+                                      size="small"
+                                      sx={{
+                                        backgroundColor: 'success.main',
+                                        color: 'white',
+                                        '&:hover': {
+                                          backgroundColor: 'success.dark',
+                                        },
+                                      }}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        // TODO: Add resolve incident logic
+                                      }}
+                                    >
+                                      <CheckCircleIcon fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                )}
+                                <Tooltip title="More Actions">
+                                  <IconButton
+                                    size="small"
+                                    sx={{
+                                      backgroundColor: 'grey.600',
+                                      color: 'white',
+                                      '&:hover': {
+                                        backgroundColor: 'grey.800',
+                                      },
+                                    }}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      // TODO: Add more actions menu
+                                    }}
+                                  >
+                                    <MoreVertIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              </Box>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </React.Fragment>
                     ))}
                   </TableBody>
                 </Table>

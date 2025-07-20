@@ -18,6 +18,11 @@ import {
   IconButton,
   Tooltip,
   Badge,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
 } from '@mui/material';
 import Link from 'next/link';
 import AddIcon from '@mui/icons-material/Add';
@@ -26,7 +31,7 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import MonitorIcon from '@mui/icons-material/Monitor';
 import PeopleIcon from '@mui/icons-material/People';
 import InfoIcon from '@mui/icons-material/Info';
-import SmsIcon from '@mui/icons-material/Sms';
+import CampaignIcon from '@mui/icons-material/Campaign';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import NoSSR from './NoSSR';
 import OnCallTextingModal from './OnCallTextingModal';
@@ -66,6 +71,12 @@ export default function IncidentDashboard() {
   const [error, setError] = useState(null);
   const [textingModalOpen, setTextingModalOpen] = useState(false);
   const [selectedOnCallPerson, setSelectedOnCallPerson] = useState(null);
+  const [pageDialogOpen, setPageDialogOpen] = useState(false);
+  const [pageForm, setPageForm] = useState({
+    message: '',
+    method: 'email',
+  });
+  const [submitting, setSubmitting] = useState(false);
   const { selectedOrganization, session } = useOrganization();
 
 
@@ -223,6 +234,68 @@ export default function IncidentDashboard() {
   const handleCloseTextingModal = () => {
     setTextingModalOpen(false);
     setSelectedOnCallPerson(null);
+  };
+
+  const handlePageUser = async () => {
+    if (!selectedOnCallPerson?.user_id || !pageForm.message.trim()) return;
+
+    setSubmitting(true);
+    try {
+      // First, fetch user details to get email/phone for notifications
+      const userResponse = await fetch(`/api/users/${selectedOnCallPerson.user_id}`);
+      if (!userResponse.ok) {
+        throw new Error('Failed to fetch user details');
+      }
+      const userData = await userResponse.json();
+      
+      // Format recipient data
+      const recipient = {};
+      if (userData.user?.email) {
+        recipient.email = userData.user.email;
+      }
+      if (userData.user?.phone) {
+        recipient.phone = userData.user.phone;
+      }
+
+      // If no contact info available, show error
+      if (!recipient.email && !recipient.phone) {
+        throw new Error('No contact information available for this user');
+      }
+
+      // Get current user's name for the message
+      const currentUserName = session?.user?.name || session?.user?.email || 'Someone';
+
+      // Send the page notification using the correct API format
+      const response = await fetch('/api/notifications/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          recipient: recipient,
+          subject: `Urgent Page from ${currentUserName}`,
+          message: pageForm.message,
+          channels: [pageForm.method],
+          type: 'manual',
+          organizationId: selectedOrganization?.id,
+        }),
+      });
+
+      if (response.ok) {
+        setPageForm({ message: '', method: 'email' });
+        setPageDialogOpen(false);
+        setSelectedOnCallPerson(null);
+        // You could add a toast notification here if you have one
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to send page');
+      }
+    } catch (err) {
+      console.error('Error sending page:', err);
+      setError(err.message || 'Failed to send page');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (loading) {
@@ -427,11 +500,7 @@ export default function IncidentDashboard() {
           <Grid container spacing={{ xs: 2, sm: 3 }}>
             {/* System Health Cards */}
             {/* Overall System Status */}
-            <Grid
-              item
-              xs={12}
-              sm={6}
-              md={3}
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}
               sx={{
                 '& .MuiCard-root': {
                   backgroundColor: 'rgba(33, 150, 243, 0.02)',
@@ -504,11 +573,7 @@ export default function IncidentDashboard() {
 
             {/* Incident Response Cards */}
             {/* Active Incidents */}
-            <Grid
-              item
-              xs={12}
-              sm={6}
-              md={3}
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}
               sx={{
                 '& .MuiCard-root': {
                   backgroundColor: 'rgba(255, 152, 0, 0.02)',
@@ -582,11 +647,7 @@ export default function IncidentDashboard() {
             </Grid>
 
             {/* Monitoring Status */}
-            <Grid
-              item
-              xs={12}
-              sm={6}
-              md={3}
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}
               sx={{
                 '& .MuiCard-root': {
                   backgroundColor: 'rgba(33, 150, 243, 0.02)',
@@ -743,11 +804,7 @@ export default function IncidentDashboard() {
             </Grid>
 
             {/* On-Call Status */}
-            <Grid
-              item
-              xs={12}
-              sm={6}
-              md={3}
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}
               sx={{
                 '& .MuiCard-root': {
                   backgroundColor: 'rgba(255, 152, 0, 0.02)',
@@ -891,7 +948,7 @@ export default function IncidentDashboard() {
         {/* Main Content Grid */}
         <Grid container spacing={{ xs: 2, sm: 3 }}>
           {/* Recent Incidents */}
-          <Grid item xs={12} md={8}>
+          <Grid size={{ xs: 12, md: 8 }}>
             <Card>
               <CardContent>
                 <Box
@@ -1156,7 +1213,7 @@ export default function IncidentDashboard() {
                                     : 'text.primary',
                               }}
                             >
-                              {incident.title}
+                              #{incident.incident_number || incident.id?.slice(-4)} - {incident.title}
                             </Typography>
                           </Box>
                           <Box display="flex" gap={0.5} alignItems="center">
@@ -1241,7 +1298,7 @@ export default function IncidentDashboard() {
           </Grid>
 
           {/* On-Call Schedule & Quick Actions */}
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             {/* Current On-Call */}
             <Card sx={{ mb: 3 }}>
               <CardContent>
@@ -1423,8 +1480,8 @@ export default function IncidentDashboard() {
                                           color: incident.severity === 'critical' ? 'error.main' : 'text.primary',
                                         }}
                                       >
-                                        {incident.title.length > 25 
-                                          ? `${incident.title.substring(0, 25)}...` 
+                                        #{incident.incident_number || incident.id?.slice(-4)} - {incident.title.length > 20 
+                                          ? `${incident.title.substring(0, 20)}...` 
                                           : incident.title}
                                       </Typography>
                                     </Box>
@@ -1473,25 +1530,45 @@ export default function IncidentDashboard() {
                           >
                             Assign Incident
                           </Button>
-                          <Tooltip title={`Call ${schedule.user_name}`}>
+                          <Tooltip title={`Page ${schedule.user_name}`}>
                             <Button
                               size="small"
                               variant="outlined"
-                              color="success"
+                              color="warning"
                               sx={{ minWidth: 'auto', px: 1 }}
+                              onClick={() => {
+                                setSelectedOnCallPerson(schedule);
+                                const currentUserName = session?.user?.name || session?.user?.email || 'Someone';
+                                
+                                // Find the most urgent incident assigned to this person
+                                const assignedIncidents = incidents.filter(
+                                  incident => 
+                                    incident.status !== 'resolved' && 
+                                    incident.assigned_to_id === schedule.user_id
+                                );
+                                
+                                let message;
+                                if (assignedIncidents.length > 0) {
+                                  // Get the most critical/recent incident
+                                  const urgentIncident = assignedIncidents.sort((a, b) => {
+                                    const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+                                    return severityOrder[a.severity] - severityOrder[b.severity];
+                                  })[0];
+                                  
+                                  const incidentId = `#${urgentIncident.incident_number || urgentIncident.id?.slice(-4)}`;
+                                  message = `URGENT: ${currentUserName} is paging you about incident ${incidentId} - ${urgentIncident.title}. Please check the incident details and respond as soon as possible.`;
+                                } else {
+                                  message = `URGENT: ${currentUserName} is paging you for immediate assistance. Please respond as soon as possible.`;
+                                }
+                                
+                                setPageForm({
+                                  message,
+                                  method: 'email'
+                                });
+                                setPageDialogOpen(true);
+                              }}
                             >
-                              📞
-                            </Button>
-                          </Tooltip>
-                          <Tooltip title={`Text ${schedule.user_name}`}>
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              color="success"
-                              sx={{ minWidth: 'auto', px: 1 }}
-                              onClick={() => handleOpenTextingModal(schedule)}
-                            >
-                              <SmsIcon fontSize="small" />
+                              <CampaignIcon fontSize="small" />
                             </Button>
                           </Tooltip>
                         </Box>
@@ -2126,6 +2203,69 @@ export default function IncidentDashboard() {
           onCallPerson={selectedOnCallPerson}
           userInfo={session?.user}
         />
+
+        {/* Page User Dialog */}
+        <Dialog
+          open={pageDialogOpen}
+          onClose={() => setPageDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <CampaignIcon color="warning" />
+              Page {selectedOnCallPerson?.user_name}
+            </Box>
+          </DialogTitle>
+          <DialogContent>
+            <Box sx={{ mt: 2 }}>
+              <TextField
+                label="Message"
+                multiline
+                rows={4}
+                fullWidth
+                value={pageForm.message}
+                onChange={e =>
+                  setPageForm(prev => ({ ...prev, message: e.target.value }))
+                }
+                placeholder="Urgent message for the on-call person..."
+                sx={{ mb: 3 }}
+              />
+
+              <FormControl fullWidth>
+                <InputLabel>Notification Method</InputLabel>
+                <Select
+                  value={pageForm.method}
+                  label="Notification Method"
+                  onChange={e =>
+                    setPageForm(prev => ({ ...prev, method: e.target.value }))
+                  }
+                >
+                  <MenuItem value="email">Email</MenuItem>
+                  <MenuItem value="sms">SMS</MenuItem>
+                  <MenuItem value="call">Phone Call</MenuItem>
+                  <MenuItem value="push">Push Notification</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setPageDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handlePageUser}
+              variant="contained"
+              color="warning"
+              disabled={submitting || !pageForm.message.trim()}
+              startIcon={
+                submitting ? <CircularProgress size={16} /> : <CampaignIcon />
+              }
+            >
+              {submitting ? 'Sending...' : 'Send Page'}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
   );
 }

@@ -112,7 +112,11 @@ export default function DebugPage() {
     console.log('getSelectedPolicySteps - Selected Policy ID:', selectedPolicy);
     console.log('getSelectedPolicySteps - Found Policy:', policy);
     console.log('getSelectedPolicySteps - Policy Rules:', policy?.rules);
-    return policy?.rules || [];
+    console.log('getSelectedPolicySteps - Policy Escalation Steps:', policy?.escalation_steps);
+    // Support both rules and escalation_steps fields for compatibility
+    const steps = policy?.rules || policy?.escalation_steps || [];
+    console.log('getSelectedPolicySteps - Final Steps:', steps);
+    return steps;
   };
 
   const runTest = async (testName, endpoint) => {
@@ -506,7 +510,10 @@ export default function DebugPage() {
                       >
                         {escalationPolicies.map((policy) => (
                           <MenuItem key={policy.id} value={policy.id}>
-                            {policy.name} ({(policy.rules && Array.isArray(policy.rules)) ? policy.rules.length : 0} steps)
+                            {policy.name} ({(() => {
+                              const steps = policy.rules || policy.escalation_steps || [];
+                              return Array.isArray(steps) ? steps.length : 0;
+                            })()} steps)
                           </MenuItem>
                         ))}
                       </TextField>

@@ -1,0 +1,169 @@
+name: Alert24 Cron Jobs
+
+on:
+  schedule:
+    # Escalation processing - every 2 minutes
+    - cron: '*/2 * * * *'
+    # Monitoring checks - every 5 minutes  
+    - cron: '*/5 * * * *'
+  
+  # Allow manual triggering for testing
+  workflow_dispatch:
+    inputs:
+      job_type:
+        description: 'Which cron job to run'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+        - both
+        - escalations
+        - monitoring
+
+env:
+  # Set your production domain here
+  ALERT24_DOMAIN: ${{ secrets.ALERT24_DOMAIN || 'your-domain.pages.dev' }}
+
+jobs:
+  escalation-processing:
+    name: Process Escalation Timeouts
+    runs-on: ubuntu-latest
+    # Run if it's the escalation cron schedule OR manual trigger with escalations/both
+    if: |
+      github.event.schedule == '*/2 * * * *' || 
+      (github.event_name == 'workflow_dispatch' && 
+       (github.event.inputs.job_type == 'escalations' || github.event.inputs.job_type == 'both'))
+    
+    steps:
+      - name: Trigger Escalation Processing
+        run: |
+          echo "🚨 Triggering escalation timeout processing..."
+          
+          response=$(curl -s -w "\n%{http_code}" \
+            -X GET \
+            -H "User-Agent: Alert24-GitHub-Actions" \
+            -H "X-Triggered-By: github-actions" \
+            "https://${{ env.ALERT24_DOMAIN }}/api/escalations/cron")
+          
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n -1)
+          
+          echo "HTTP Status: $http_code"
+          echo "Response: $body"
+          
+          if [ "$http_code" -ne 200 ]; then
+            echo "❌ Escalation cron failed with status $http_code"
+            echo "Response body: $body"
+            exit 1
+          else
+            echo "✅ Escalation cron completed successfully"
+            
+            # Parse and display summary if available
+            if echo "$body" | jq -e '.summary' > /dev/null 2>&1; then
+              found=$(echo "$body" | jq -r '.summary.found // 0')
+              processed=$(echo "$body" | jq -r '.summary.processed // 0') 
+              errors=$(echo "$body" | jq -r '.summary.errors // 0')
+              duration=$(echo "$body" | jq -r '.summary.duration // "unknown"')
+              
+              echo "📊 Summary: Found $found timeouts, processed $processed, errors $errors, duration $duration"
+            fi
+          fi
+
+  monitoring-checks:
+    name: Run Monitoring Checks
+    runs-on: ubuntu-latest
+    # Run if it's the monitoring cron schedule OR manual trigger with monitoring/both
+    if: |
+      github.event.schedule == '*/5 * * * *' || 
+      (github.event_name == 'workflow_dispatch' && 
+       (github.event.inputs.job_type == 'monitoring' || github.event.inputs.job_type == 'both'))
+    
+    steps:
+      - name: Trigger Monitoring Checks
+        run: |
+          echo "🔍 Triggering monitoring checks..."
+          
+          response=$(curl -s -w "\n%{http_code}" \
+            -X GET \
+            -H "User-Agent: Alert24-GitHub-Actions" \
+            -H "X-Triggered-By: github-actions" \
+            "https://${{ env.ALERT24_DOMAIN }}/api/monitoring/cron")
+          
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n -1)
+          
+          echo "HTTP Status: $http_code"
+          echo "Response: $body"
+          
+          if [ "$http_code" -ne 200 ]; then
+            echo "❌ Monitoring cron failed with status $http_code"
+            echo "Response body: $body"
+            exit 1
+          else
+            echo "✅ Monitoring cron completed successfully"
+            
+            # Parse and display summary if available
+            if echo "$body" | jq -e '.summary' > /dev/null 2>&1; then
+              total_checks=$(echo "$body" | jq -r '.summary.total_checks // 0')
+              executed=$(echo "$body" | jq -r '.summary.executed // 0')
+              passed=$(echo "$body" | jq -r '.summary.passed // 0') 
+              failed=$(echo "$body" | jq -r '.summary.failed // 0')
+              duration=$(echo "$body" | jq -r '.summary.duration // "unknown"')
+              
+              echo "📊 Summary: $executed/$total_checks checks run, $passed passed, $failed failed, duration $duration"
+            fi
+          fi
+
+  health-check:
+    name: Verify Application Health
+    runs-on: ubuntu-latest
+    # Run health check before other jobs (only on scheduled runs)
+    if: github.event_name == 'schedule'
+    
+    steps:
+      - name: Check Application Health
+        run: |
+          echo "🏥 Checking application health..."
+          
+          response=$(curl -s -w "\n%{http_code}" \
+            -X GET \
+            -H "User-Agent: Alert24-GitHub-Actions" \
+            "https://${{ env.ALERT24_DOMAIN }}/api/health")
+          
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n -1)
+          
+          if [ "$http_code" -ne 200 ]; then
+            echo "❌ Health check failed with status $http_code"
+            echo "⚠️  Application may be down - cron jobs may fail"
+            # Don't exit 1 here as we still want to try the cron jobs
+          else
+            echo "✅ Application is healthy"
+            
+            if echo "$body" | jq -e '.status' > /dev/null 2>&1; then
+              status=$(echo "$body" | jq -r '.status')
+              timestamp=$(echo "$body" | jq -r '.timestamp')
+              echo "Status: $status at $timestamp"
+            fi
+          fi
+
+  notify-on-failure:
+    name: Notify on Cron Failure
+    runs-on: ubuntu-latest
+    needs: [escalation-processing, monitoring-checks]
+    if: always() && (needs.escalation-processing.result == 'failure' || needs.monitoring-checks.result == 'failure')
+    
+    steps:
+      - name: Send Failure Notification
+        run: |
+          echo "🚨 ALERT: One or more cron jobs failed!"
+          echo "Escalation job status: ${{ needs.escalation-processing.result }}"
+          echo "Monitoring job status: ${{ needs.monitoring-checks.result }}"
+          
+          # You can add webhook notifications here if needed
+          # Example: Send to Slack, Discord, or email service
+          
+          # For now, just ensure the workflow fails so it shows up in GitHub
+          if [ "${{ needs.escalation-processing.result }}" == "failure" ] || [ "${{ needs.monitoring-checks.result }}" == "failure" ]; then
+            exit 1
+          fi

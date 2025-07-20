@@ -266,7 +266,7 @@ export default function AnalyticsOverviewCards({
 
   return (
     <Grid container spacing={3} sx={{ p: 3 }}>
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
         <MetricCard
           title="Overall Uptime"
           value={metrics.overallUptime.value}
@@ -280,7 +280,7 @@ export default function AnalyticsOverviewCards({
         />
       </Grid>
 
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
         <MetricCard
           title="Avg Response Time"
           value={metrics.avgResponseTime.value}
@@ -293,7 +293,7 @@ export default function AnalyticsOverviewCards({
         />
       </Grid>
 
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
         <MetricCard
           title="Total Incidents"
           value={metrics.totalIncidents.value}
@@ -307,7 +307,7 @@ export default function AnalyticsOverviewCards({
         />
       </Grid>
 
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
         <MetricCard
           title="Health Score"
           value={metrics.healthScore.value}
@@ -320,7 +320,7 @@ export default function AnalyticsOverviewCards({
         />
       </Grid>
 
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
         <MetricCard
           title="MTTR"
           value={metrics.mttr.value}
@@ -334,7 +334,7 @@ export default function AnalyticsOverviewCards({
         />
       </Grid>
 
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
         <MetricCard
           title="MTTA"
           value={metrics.mtta.value}
@@ -348,7 +348,7 @@ export default function AnalyticsOverviewCards({
         />
       </Grid>
 
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
         <MetricCard
           title="Checks Performed"
           value={metrics.checksPerformed.value}
@@ -360,7 +360,7 @@ export default function AnalyticsOverviewCards({
         />
       </Grid>
 
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
         <MetricCard
           title="Failure Rate"
           value={metrics.failureRate.value}

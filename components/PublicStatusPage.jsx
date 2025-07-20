@@ -243,7 +243,7 @@ export default function PublicStatusPage({
                 {/* SLA Section */}
                 <Grid container spacing={3} alignItems="center">
                   {/* Timeline Visualization */}
-                  <Grid item xs={12} md={8}>
+                  <Grid size={{ xs: 12, md: 8 }}>
                     <Typography
                       variant="subtitle2"
                       color="text.secondary"
@@ -255,7 +255,7 @@ export default function PublicStatusPage({
                   </Grid>
 
                   {/* Uptime Stats */}
-                  <Grid item xs={12} md={4}>
+                  <Grid size={{ xs: 12, md: 4 }}>
                     <ServiceUptimeStats serviceId={service.id} compact={true} isPublic={true} days={7} />
                   </Grid>
                 </Grid>

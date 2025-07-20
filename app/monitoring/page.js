@@ -446,8 +446,14 @@ export default function MonitoringPage() {
   const handleEditCheck = () => {
     if (!selectedCheck) return;
     handleMenuClose();
-    // Navigate to the edit page for the selected check
-    router.push(`/monitoring/edit/${selectedCheck.id}`);
+    
+    // Route status page checks to dedicated edit form
+    if (selectedCheck.check_type === 'status_page') {
+      router.push(`/monitoring/edit-status-page/${selectedCheck.id}`);
+    } else {
+      // Navigate to the regular edit page for non-status-page checks
+      router.push(`/monitoring/edit/${selectedCheck.id}`);
+    }
   };
 
   const openDeleteDialog = () => {
@@ -678,7 +684,7 @@ export default function MonitoringPage() {
           <>
             {/* Stats Cards */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
-              <Grid item xs={12} md={2.4}>
+              <Grid size={{ xs: 12 }} md={2.4}>
                 <Card>
                   <CardContent>
                     <Typography
@@ -694,7 +700,7 @@ export default function MonitoringPage() {
                   </CardContent>
                 </Card>
               </Grid>
-              <Grid item xs={12} md={2.4}>
+              <Grid size={{ xs: 12 }} md={2.4}>
                 <Card>
                   <CardContent>
                     <Typography
@@ -710,7 +716,7 @@ export default function MonitoringPage() {
                   </CardContent>
                 </Card>
               </Grid>
-              <Grid item xs={12} md={2.4}>
+              <Grid size={{ xs: 12 }} md={2.4}>
                 <Card>
                   <CardContent>
                     <Typography
@@ -726,7 +732,7 @@ export default function MonitoringPage() {
                   </CardContent>
                 </Card>
               </Grid>
-              <Grid item xs={12} md={2.4}>
+              <Grid size={{ xs: 12 }} md={2.4}>
                 <Card>
                   <CardContent>
                     <Typography
@@ -742,7 +748,7 @@ export default function MonitoringPage() {
                   </CardContent>
                 </Card>
               </Grid>
-              <Grid item xs={12} md={2.4}>
+              <Grid size={{ xs: 12 }} md={2.4}>
                 <Card
                   component={Link}
                   href="/incidents"

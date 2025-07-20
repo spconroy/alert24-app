@@ -215,20 +215,20 @@ export default function AnalyticsHealthScore({
   return (
     <Box sx={{ p: 3 }}>
       <Grid container spacing={3}>
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <HealthScoreGauge
             score={data.overallScore}
             title="Overall Health Score"
           />
         </Grid>
 
-        <Grid item xs={12} md={8}>
+        <Grid size={{ xs: 12, md: 8 }}>
           <HealthFactors factors={data.factors} />
         </Grid>
 
         {/* Recommendations */}
         {data.recommendations.length > 0 && (
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>

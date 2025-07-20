@@ -186,7 +186,7 @@ export default function StatusPageOverview() {
             const overallStatus = getOverallStatus(statusPage.service_summary);
 
             return (
-              <Grid item xs={12} md={6} lg={4} key={statusPage.id}>
+              <Grid size={{ xs: 12, md: 6 }} lg={4} key={statusPage.id}>
                 <Card
                   sx={{
                     height: '100%',

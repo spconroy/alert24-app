@@ -47,7 +47,7 @@ export const GET = async (request) => {
           name: p.name,
           is_default: p.is_default,
           is_active: p.is_active,
-          rules: p.rules,
+          rules: p.escalation_steps,
         })),
       },
       recentIncidents: recentIncidents.map(i => ({

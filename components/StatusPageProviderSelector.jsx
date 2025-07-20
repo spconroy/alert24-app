@@ -272,7 +272,7 @@ const StatusPageProviderSelector = ({
 
           <Grid container spacing={1}>
             {regions.map(region => (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={region}>
+              <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={region}>
                 <FormControlLabel
                   control={
                     <Checkbox

@@ -63,7 +63,9 @@ export default function EscalationPolicyForm({
 
 
   useEffect(() => {
+    console.log('🔄 EscalationPolicyForm useEffect triggered', { escalationPolicy, open });
     if (escalationPolicy) {
+      console.log('📝 Setting form data for EDIT mode', escalationPolicy);
       setFormData({
         name: escalationPolicy.name || '',
         description: escalationPolicy.description || '',
@@ -74,6 +76,7 @@ export default function EscalationPolicyForm({
         rules: escalationPolicy.rules || [],
       });
     } else {
+      console.log('🆕 Setting form data for NEW mode');
       // Reset form for new policy
       setFormData({
         name: '',
@@ -203,30 +206,82 @@ export default function EscalationPolicyForm({
   };
 
 
-  return (
-    <Dialog 
-      open={open} 
-      onClose={onClose} 
-      maxWidth="md" 
-      fullWidth
-      disableEnforceFocus
-      disableAutoFocus
-      disableRestoreFocus
-    >
-      <DialogTitle>
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Typography variant="h6">
-            {escalationPolicy
-              ? 'Edit Escalation Policy'
-              : 'Create Escalation Policy'}
-          </Typography>
-          <IconButton onClick={onClose} size="small">
-            <CloseIcon />
-          </IconButton>
-        </Box>
-      </DialogTitle>
+  if (!open) return null;
 
-      <DialogContent>
+  console.log('🎨 Rendering EscalationPolicyForm', { 
+    escalationPolicy: !!escalationPolicy, 
+    rulesCount: formData.rules.length,
+    open,
+    saving 
+  });
+
+  return (
+    <div 
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1300
+      }}
+      onClick={() => console.log('Backdrop clicked')}
+    >
+      <div 
+        style={{
+          backgroundColor: 'white',
+          borderRadius: '8px',
+          padding: '24px',
+          maxWidth: '800px',
+          width: '90%',
+          maxHeight: '90%',
+          overflow: 'auto',
+          pointerEvents: 'auto'
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          console.log('Modal content clicked');
+        }}
+      >
+        <div>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+            <Typography variant="h6">
+              {escalationPolicy
+                ? 'Edit Escalation Policy'
+                : 'Create Escalation Policy'}
+            </Typography>
+            <button 
+              onClick={() => {
+                console.log('Close button clicked');
+                onClose();
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                fontSize: '24px',
+                cursor: 'pointer',
+                padding: '8px'
+              }}
+            >
+              ✕
+            </button>
+          </Box>
+
+          <div 
+            onClick={() => console.log('YELLOW DIV clicked!')}
+            style={{ 
+              padding: '10px', 
+              backgroundColor: 'yellow', 
+              marginBottom: '10px',
+              cursor: 'pointer'
+            }}
+          >
+            CLICK THIS YELLOW BOX - TESTING CLICKS
+          </div>
         <Box sx={{ mt: 2 }}>
           {error && (
             <Alert severity="error" sx={{ mb: 3 }}>
@@ -471,26 +526,47 @@ export default function EscalationPolicyForm({
               )}
             </CardContent>
           </Card>
-        </Box>
-      </DialogContent>
+          </Box>
 
-      <DialogActions>
-        <Button onClick={onClose} disabled={saving}>
-          Cancel
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          disabled={saving}
-          startIcon={saving ? <CircularProgress size={16} /> : <SaveIcon />}
-        >
-          {saving
-            ? 'Saving...'
-            : escalationPolicy
-              ? 'Update Policy'
-              : 'Create Policy'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
+            <button 
+              onClick={() => {
+                console.log('Cancel button clicked');
+                onClose();
+              }}
+              style={{
+                padding: '8px 16px',
+                border: '1px solid #ccc',
+                background: 'white',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                console.log('Submit button clicked');
+                handleSubmit();
+              }}
+              style={{
+                padding: '8px 16px',
+                background: '#1976d2',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              {saving
+                ? 'Saving...'
+                : escalationPolicy
+                  ? 'Update Policy'
+                  : 'Create Policy'}
+            </button>
+          </Box>
+        </div>
+      </div>
+    </div>
   );
 }

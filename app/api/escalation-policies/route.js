@@ -81,6 +81,8 @@ export async function POST(req) {
       rules = [],
       notification_config = {},
       is_active = true,
+      repeat_escalation = false,
+      max_repeat_count = 3,
     } = body;
 
     // Use rules field (new) if provided, otherwise fall back to escalation_steps (legacy)
@@ -118,8 +120,12 @@ export async function POST(req) {
       description,
       organization_id,
       escalation_timeout_minutes,
-      rules: policyRules,
-      notification_config,
+      escalation_steps: policyRules,
+      notification_config: {
+        ...notification_config,
+        repeat_escalation,
+        max_repeat_count,
+      },
       is_active,
       created_by: user.id,
     };

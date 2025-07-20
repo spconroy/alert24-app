@@ -235,6 +235,20 @@ export async function POST(req) {
       is_active = true,
       monitoring_locations = [],
       target_port,
+      // Incident creation fields
+      auto_create_incidents = false,
+      incident_severity = 'medium',
+      incident_threshold_minutes = 5,
+      incident_title_template,
+      incident_description_template,
+      auto_resolve_incidents = true,
+      assigned_on_call_schedule_id,
+      assigned_escalation_policy_id,
+      // Service association fields
+      linked_service_id,
+      update_service_status = false,
+      service_failure_status = 'down',
+      service_recovery_status = 'operational',
     } = body;
 
     // Validation
@@ -287,6 +301,20 @@ export async function POST(req) {
       status_page_config: body.status_page_config || null,
       // Link to service if provided
       linked_service_id: body.linked_service_id || null,
+      // Incident creation settings
+      auto_create_incidents: auto_create_incidents || false,
+      incident_severity: incident_severity || 'medium',
+      incident_threshold_minutes: incident_threshold_minutes || 5,
+      incident_title_template: incident_title_template || null,
+      incident_description_template: incident_description_template || null,
+      auto_resolve_incidents: auto_resolve_incidents !== undefined ? auto_resolve_incidents : true,
+      assigned_on_call_schedule_id: assigned_on_call_schedule_id || null,
+      assigned_escalation_policy_id: assigned_escalation_policy_id || null,
+      // Service association settings
+      linked_service_id: linked_service_id || null,
+      update_service_status: update_service_status || false,
+      service_failure_status: service_failure_status || 'down',
+      service_recovery_status: service_recovery_status || 'operational',
       // Set required fields for RLS
       created_by: user.id,
     };
