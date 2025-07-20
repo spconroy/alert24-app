@@ -3,6 +3,8 @@ import { SessionManager } from '@/lib/session-manager';
 import { createClient } from '@supabase/supabase-js';
 import WebhookService from '../../../../lib/webhook-service';
 
+export const runtime = 'edge';
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
