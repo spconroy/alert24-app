@@ -204,7 +204,15 @@ export default function EscalationPolicyForm({
 
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog 
+      open={open} 
+      onClose={onClose} 
+      maxWidth="md" 
+      fullWidth
+      disableEnforceFocus
+      disableAutoFocus
+      disableRestoreFocus
+    >
       <DialogTitle>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Typography variant="h6">
@@ -307,6 +315,16 @@ export default function EscalationPolicyForm({
             </CardContent>
           </Card>
 
+          {/* Test button */}
+          <Button 
+            onClick={() => console.log('TEST BUTTON CLICKED')}
+            variant="contained"
+            color="primary"
+            sx={{ mb: 2 }}
+          >
+            TEST BUTTON - CLICK ME
+          </Button>
+
           {/* Escalation Rules */}
           <Card>
             <CardContent>
@@ -319,9 +337,17 @@ export default function EscalationPolicyForm({
                 <Typography variant="h6">Escalation Rules</Typography>
                 <Button
                   startIcon={<AddIcon />}
-                  onClick={addEscalationRule}
+                  onClick={(e) => {
+                    console.log('Add Level button clicked');
+                    addEscalationRule();
+                  }}
                   variant="outlined"
                   size="small"
+                  sx={{ 
+                    pointerEvents: 'auto',
+                    zIndex: 1000,
+                    position: 'relative'
+                  }}
                 >
                   Add Level
                 </Button>
@@ -335,24 +361,34 @@ export default function EscalationPolicyForm({
                 </Box>
               ) : (
                 formData.rules.map((rule, ruleIndex) => (
-                  <Card key={ruleIndex} variant="outlined" sx={{ mb: 2 }}>
+                  <Card key={`rule-${rule.level}-${ruleIndex}`} variant="outlined" sx={{ mb: 2 }}>
                     <CardContent>
-                      <Box
-                        display="flex"
-                        justifyContent="space-between"
-                        alignItems="center"
-                        mb={2}
-                      >
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                         <Typography variant="subtitle1" fontWeight="bold">
                           Level {rule.level}
                         </Typography>
-                        <IconButton
-                          onClick={() => removeEscalationRule(ruleIndex)}
-                          size="small"
-                          color="error"
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('NATIVE DELETE BUTTON CLICKED for rule', ruleIndex);
+                            removeEscalationRule(ruleIndex);
+                          }}
+                          style={{ 
+                            minWidth: 40, 
+                            minHeight: 40,
+                            pointerEvents: 'auto',
+                            zIndex: 1000,
+                            position: 'relative',
+                            background: 'red',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                          }}
                         >
-                          <DeleteIcon />
-                        </IconButton>
+                          DELETE
+                        </button>
                       </Box>
 
                       <TextField

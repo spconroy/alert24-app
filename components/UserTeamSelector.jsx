@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Box,
   TextField,
@@ -32,7 +32,8 @@ export default function UserTeamSelector({
   showTeams = true,
   showUsers = true,
   showOnCallSchedules = false,
-  placeholder = 'Search for users or teams...'
+  placeholder = 'Search for users or teams...',
+  disabled = false
 }) {
   const [options, setOptions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -43,14 +44,15 @@ export default function UserTeamSelector({
     if (organizationId) {
       fetchOptions();
     }
-  }, [organizationId, filterType]);
+  }, [organizationId]); // Remove filterType dependency to prevent excessive re-fetching
 
-  const fetchOptions = async () => {
+  const fetchOptions = useCallback(async () => {
     setLoading(true);
     try {
       const promises = [];
       
-      if ((filterType === 'all' || filterType === 'users') && showUsers) {
+      // Always fetch all data types, filter in memory instead
+      if (showUsers) {
         promises.push(
           fetch(`/api/organizations/${organizationId}/members`)
             .then(res => res.json())
@@ -69,7 +71,7 @@ export default function UserTeamSelector({
         );
       }
 
-      if ((filterType === 'all' || filterType === 'teams') && showTeams) {
+      if (showTeams) {
         promises.push(
           fetch(`/api/teams?organizationId=${organizationId}`)
             .then(res => res.json())
@@ -87,7 +89,7 @@ export default function UserTeamSelector({
         );
       }
 
-      if ((filterType === 'all' || filterType === 'schedules') && showOnCallSchedules) {
+      if (showOnCallSchedules) {
         promises.push(
           fetch(`/api/on-call-schedules?organization_id=${organizationId}`)
             .then(res => res.json())
@@ -116,16 +118,32 @@ export default function UserTeamSelector({
     } finally {
       setLoading(false);
     }
-  };
+  }, [organizationId, showUsers, showTeams, showOnCallSchedules]);
 
-  const filteredOptions = options.filter(option => {
-    if (!searchTerm) return true;
-    return (
-      option.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (option.email && option.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (option.description && option.description.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-  });
+  const filteredOptions = useMemo(() => {
+    let filtered = options;
+    
+    // Filter by type first
+    if (filterType !== 'all') {
+      filtered = filtered.filter(option => {
+        if (filterType === 'users') return option.type === 'user';
+        if (filterType === 'teams') return option.type === 'team';
+        if (filterType === 'schedules') return option.type === 'schedule';
+        return true;
+      });
+    }
+    
+    // Then filter by search term
+    if (searchTerm) {
+      filtered = filtered.filter(option => 
+        option.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (option.email && option.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (option.description && option.description.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+    
+    return filtered;
+  }, [options, filterType, searchTerm]);
 
   const handleChange = (event, newValue) => {
     onChange(newValue);
@@ -285,6 +303,7 @@ export default function UserTeamSelector({
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
               label="Filter"
+              disabled={disabled}
             >
               <MenuItem value="all">All</MenuItem>
               {showUsers && <MenuItem value="users">Users Only</MenuItem>}
@@ -304,6 +323,7 @@ export default function UserTeamSelector({
         renderOption={renderOption}
         renderTags={multiple ? renderTags : undefined}
         loading={loading}
+        disabled={disabled}
         filterOptions={(x) => x} // We handle filtering manually
         onInputChange={(event, newInputValue) => {
           setSearchTerm(newInputValue);
@@ -313,6 +333,7 @@ export default function UserTeamSelector({
             {...params}
             label={label}
             placeholder={placeholder}
+            disabled={disabled}
             helperText={
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
                 <PersonIcon sx={{ fontSize: 14 }} />

@@ -74,6 +74,7 @@ export default function IncidentDetailPage() {
   const [statusForm, setStatusForm] = useState({
     status: '',
     resolution_notes: '',
+    is_public_note: false,
     update_service_status: false,
     service_status_updates: {},
   });
@@ -151,6 +152,8 @@ export default function IncidentDetailPage() {
         setStatusForm(prev => ({
           ...prev,
           status: data.incident.status,
+          resolution_notes: '',
+          is_public_note: false,
         }));
       } else if (response.status === 404) {
         setError('Incident not found');
@@ -275,10 +278,12 @@ export default function IncidentDetailPage() {
     try {
       const updateData = {
         status: statusForm.status,
-        ...(statusForm.status === 'resolved' &&
-          statusForm.resolution_notes && {
-            resolution_notes: statusForm.resolution_notes,
-          }),
+        ...(statusForm.status === 'resolved' && {
+          resolved_at: new Date().toISOString(),
+        }),
+        ...(statusForm.status === 'acknowledged' && {
+          acknowledged_at: new Date().toISOString(),
+        }),
       };
 
       const response = await fetch(`/api/incidents/${incidentId}`, {
@@ -290,6 +295,25 @@ export default function IncidentDetailPage() {
       });
 
       if (response.ok) {
+        // If there are resolution notes, create an incident update
+        if (statusForm.status === 'resolved' && statusForm.resolution_notes) {
+          const updateResponse = await fetch(`/api/incidents/${incidentId}/updates`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              message: statusForm.resolution_notes,
+              update_type: 'status_change',
+              visible_to_public: statusForm.is_public_note,
+            }),
+          });
+          
+          if (!updateResponse.ok) {
+            console.warn('Failed to create resolution update, but incident status was updated successfully');
+          }
+        }
+
         // Update service statuses if requested
         if (statusForm.update_service_status && Object.keys(statusForm.service_status_updates).length > 0) {
           await updateServiceStatuses();
@@ -589,6 +613,7 @@ export default function IncidentDetailPage() {
                       setStatusForm({
                         status: 'acknowledged',
                         resolution_notes: '',
+                        is_public_note: false,
                       });
                       setStatusUpdateDialogOpen(true);
                     }}
@@ -605,6 +630,7 @@ export default function IncidentDetailPage() {
                       setStatusForm({
                         status: 'resolved',
                         resolution_notes: '',
+                        is_public_note: false,
                       });
                       setStatusUpdateDialogOpen(true);
                     }}
@@ -758,6 +784,23 @@ export default function IncidentDetailPage() {
                     }))
                   }
                   placeholder="Describe how the incident was resolved..."
+                  sx={{ mb: 2 }}
+                />
+
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={statusForm.is_public_note}
+                      onChange={e =>
+                        setStatusForm(prev => ({
+                          ...prev,
+                          is_public_note: e.target.checked,
+                        }))
+                      }
+                      color="primary"
+                    />
+                  }
+                  label="Make resolution notes public"
                   sx={{ mb: 3 }}
                 />
 

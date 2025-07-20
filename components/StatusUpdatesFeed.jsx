@@ -369,22 +369,12 @@ export default function StatusUpdatesFeed({
                     </Typography>
                   }
                 >
-                  <Box display="flex" justifyContent="space-between" alignItems="center">
-                    <Typography variant="caption" color="text.secondary">
-                      Posted {new Date(update.created_at).toLocaleString()}
-                      {update.type === 'incident_update' && update.posted_by_user && (
-                        ` by ${update.posted_by_user.name || update.posted_by_user.email}`
-                      )}
-                    </Typography>
-                    {update.type === 'incident_update' && (
-                      <Chip 
-                        label="Public Update" 
-                        size="small" 
-                        color="success" 
-                        variant="outlined"
-                      />
+                  <Typography variant="caption" color="text.secondary">
+                    Posted {new Date(update.created_at).toLocaleString()}
+                    {update.type === 'incident_update' && update.posted_by_user && (
+                      ` by ${update.posted_by_user.name || update.posted_by_user.email}`
                     )}
-                  </Box>
+                  </Typography>
                 </NoSSR>
               </CardContent>
             </Card>
