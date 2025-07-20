@@ -294,7 +294,7 @@ export default function TeamsPage() {
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                       {team.members.slice(0, 3).map(member => (
                         <Chip
-                          key={member.user_id}
+                          key={member.users?.id || member.user_id}
                           avatar={
                             <Avatar sx={{ width: 24, height: 24 }}>
                               {member.users?.name?.charAt(0)}

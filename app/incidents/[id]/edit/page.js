@@ -450,7 +450,7 @@ export default function EditIncidentPage() {
                       >
                         <MenuItem value="">Unassigned</MenuItem>
                         {organizationMembers.map(member => (
-                          <MenuItem key={member.id} value={member.user_id}>
+                          <MenuItem key={member.id} value={member.users?.id || member.user_id}>
                             {member.users?.name || member.name} ({member.users?.email || member.email})
                           </MenuItem>
                         ))}

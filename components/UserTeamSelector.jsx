@@ -54,8 +54,8 @@ export default function UserTeamSelector({
         promises.push(
           fetch(`/api/organizations/${organizationId}/members`)
             .then(res => res.json())
-            .then(members => 
-              members.map(member => ({
+            .then(response => 
+              (response.members || []).map(member => ({
                 id: member.users.id,
                 type: 'user',
                 label: member.users.name,
