@@ -30,6 +30,12 @@ import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
+import TextField from '@mui/material/TextField';
+import InputAdornment from '@mui/material/InputAdornment';
+import Alert from '@mui/material/Alert';
+import Skeleton from '@mui/material/Skeleton';
+import Chip from '@mui/material/Chip';
+import Stack from '@mui/material/Stack';
 
 // Material UI Icons
 import StarIcon from '@mui/icons-material/Star';
@@ -51,6 +57,11 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import BusinessIcon from '@mui/icons-material/Business';
 import LogoutIcon from '@mui/icons-material/Logout';
 import PersonIcon from '@mui/icons-material/Person';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import SearchIcon from '@mui/icons-material/Search';
+import ClearIcon from '@mui/icons-material/Clear';
+import AlertIcon from '@mui/icons-material/Warning';
+import RetryIcon from '@mui/icons-material/Refresh';
 
 export default function NavBar() {
   const pathname = usePathname();
@@ -63,12 +74,20 @@ export default function NavBar() {
     loading, 
     organizationsLoading,
     error,
+    networkError,
+    retryCount,
+    lastSuccessfulFetch,
     switchOrganization,
     retryFetch 
   } = useOrganization();
 
   const [defaultOrganizationId, setDefaultOrganizationId] = useState(null);
   const [settingDefault, setSettingDefault] = useState(false);
+  const [orgSearchQuery, setOrgSearchQuery] = useState('');
+  const [orgSwitchingLoading, setOrgSwitchingLoading] = useState(false);
+  const [orgSwitchError, setOrgSwitchError] = useState(null);
+  const [touchStartY, setTouchStartY] = useState(0);
+  const [isPullToRefresh, setIsPullToRefresh] = useState(false);
 
   // Menu states
   const [incidentMenuAnchor, setIncidentMenuAnchor] = useState(null);
@@ -121,8 +140,22 @@ export default function NavBar() {
     }
   };
 
-  const handleOrganizationChange = organizationId => {
-    switchOrganization(organizationId);
+  const handleOrganizationChange = async organizationId => {
+    if (orgSwitchingLoading) return;
+    
+    setOrgSwitchingLoading(true);
+    setOrgSwitchError(null);
+    
+    try {
+      await switchOrganization(organizationId);
+      // Force a page refresh to ensure all components update with new organization context
+      window.location.reload();
+    } catch (error) {
+      console.error('Error switching organization:', error);
+      setOrgSwitchError('Failed to switch organization. Please try again.');
+    } finally {
+      setOrgSwitchingLoading(false);
+    }
   };
 
   const handleSignIn = () => {
@@ -156,6 +189,34 @@ export default function NavBar() {
   const toggleMobileDrawer = () => {
     setMobileDrawerOpen(!mobileDrawerOpen);
   };
+  
+  // Handle pull-to-refresh on mobile
+  const handleTouchStart = (e) => {
+    if (!isMobile) return;
+    setTouchStartY(e.touches[0].clientY);
+  };
+  
+  const handleTouchMove = (e) => {
+    if (!isMobile || !mobileDrawerOpen) return;
+    
+    const touchY = e.touches[0].clientY;
+    const pullDistance = touchY - touchStartY;
+    
+    // If pulling down more than 100px and not loading
+    if (pullDistance > 100 && !organizationsLoading && !orgSwitchingLoading) {
+      setIsPullToRefresh(true);
+    }
+  };
+  
+  const handleTouchEnd = () => {
+    if (!isMobile) return;
+    
+    if (isPullToRefresh) {
+      retryFetch();
+      setOrgSwitchError(null);
+      setIsPullToRefresh(false);
+    }
+  };
 
   // Navigation items for mobile drawer
   const navigationItems = [
@@ -182,15 +243,39 @@ export default function NavBar() {
             Alert24
           </Typography>
           {error ? (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Tooltip title={`Error: ${error}. Click to retry.`}>
+            <Stack direction="row" spacing={1} alignItems="center">
+              {networkError && (
+                <Tooltip title="Network error - check your connection">
+                  <AlertIcon color="warning" fontSize="small" />
+                </Tooltip>
+              )}
+              <Tooltip 
+                title={
+                  <Box>
+                    <Typography variant="body2">Error: {error}</Typography>
+                    {retryCount > 0 && (
+                      <Typography variant="caption">
+                        Retry attempt: {retryCount}/3
+                      </Typography>
+                    )}
+                    <Typography variant="caption" display="block">
+                      Click to retry manually
+                    </Typography>
+                  </Box>
+                }
+              >
                 <IconButton color="inherit" onClick={retryFetch} size="small">
-                  <RefreshIcon />
+                  <RetryIcon />
                 </IconButton>
               </Tooltip>
-            </Box>
+            </Stack>
           ) : (
-            <CircularProgress size={20} color="inherit" />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <CircularProgress size={20} color="inherit" />
+              <Typography variant="caption" color="inherit">
+                Loading...
+              </Typography>
+            </Box>
           )}
         </Toolbar>
       </AppBar>
@@ -209,8 +294,34 @@ export default function NavBar() {
           boxSizing: 'border-box',
         },
       }}
+      PaperProps={{
+        onTouchStart: handleTouchStart,
+        onTouchMove: handleTouchMove,
+        onTouchEnd: handleTouchEnd,
+      }}
     >
       <Box sx={{ p: 2 }}>
+        {/* Pull to Refresh Indicator */}
+        {isPullToRefresh && (
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              py: 1,
+              mb: 1,
+              backgroundColor: 'primary.light',
+              borderRadius: 1,
+              color: 'white'
+            }}
+          >
+            <RefreshIcon sx={{ mr: 1 }} />
+            <Typography variant="caption">
+              Release to refresh organizations
+            </Typography>
+          </Box>
+        )}
+        
         <Typography variant="h6" sx={{ mb: 2 }}>
           Alert24
         </Typography>
@@ -287,26 +398,206 @@ export default function NavBar() {
 
         {/* Organization Selector in Drawer */}
         {organizations.length > 0 && (
-          <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel>Organization</InputLabel>
-            <Select
-              value={selectedOrganization?.id || ''}
-              onChange={e => handleOrganizationChange(e.target.value)}
-              label="Organization"
-              size="small"
-            >
-              {organizations.map(org => (
-                <MenuItem key={org.id} value={org.id}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {defaultOrganizationId === org.id && (
-                      <StarIcon sx={{ fontSize: 16, color: '#FFD700' }} />
-                    )}
-                    {org.name}
-                  </Box>
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <Box sx={{ mb: 2 }}>
+            <FormControl fullWidth>
+              <InputLabel>Organization</InputLabel>
+              <Select
+                value={selectedOrganization?.id || ''}
+                onChange={e => handleOrganizationChange(e.target.value)}
+                label="Organization"
+                size="small"
+                disabled={orgSwitchingLoading}
+                MenuProps={{
+                  PaperProps: {
+                    sx: {
+                      maxHeight: '70vh',
+                      '& .MuiMenuItem-root': {
+                        minHeight: 48, // Minimum touch target size
+                        py: 1,
+                      }
+                    }
+                  },
+                  anchorOrigin: {
+                    vertical: 'bottom',
+                    horizontal: 'left',
+                  },
+                  transformOrigin: {
+                    vertical: 'top',
+                    horizontal: 'left',
+                  },
+                }}
+                startAdornment={orgSwitchingLoading && (
+                  <InputAdornment position="start">
+                    <CircularProgress size={16} />
+                  </InputAdornment>
+                )}
+              >
+                {(() => {
+                  // Sort organizations: default first, then alphabetically
+                  const sortedOrgs = [...organizations].sort((a, b) => {
+                    if (defaultOrganizationId === a.id && defaultOrganizationId !== b.id) return -1;
+                    if (defaultOrganizationId === b.id && defaultOrganizationId !== a.id) return 1;
+                    return a.name.localeCompare(b.name);
+                  });
+                  
+                  return sortedOrgs.map(org => {
+                    const isDefault = defaultOrganizationId === org.id;
+                    const isSelected = selectedOrganization?.id === org.id;
+                    
+                    return (
+                      <MenuItem key={org.id} value={org.id}>
+                        <Box sx={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'space-between',
+                          width: '100%',
+                          gap: 1
+                        }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, minWidth: 0 }}>
+                            <BusinessIcon 
+                              fontSize="small" 
+                              color={isSelected ? 'primary' : 'action'}
+                            />
+                            
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                              <Typography 
+                                variant="body2" 
+                                sx={{ 
+                                  fontWeight: isSelected ? 600 : 400,
+                                  color: isSelected ? 'primary.main' : 'text.primary',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap'
+                                }}
+                              >
+                                {org.name}
+                              </Typography>
+                              
+                              {org.domain && (
+                                <Typography 
+                                  variant="caption" 
+                                  color="text.secondary"
+                                  sx={{
+                                    display: 'block',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                >
+                                  {org.domain}
+                                </Typography>
+                              )}
+                            </Box>
+                          </Box>
+                          
+                          {isDefault && (
+                            <Chip 
+                              label="Default" 
+                              size="small"
+                              icon={<StarIcon />}
+                              sx={{ 
+                                fontSize: '0.75rem',
+                                height: 18,
+                                backgroundColor: '#FFD700',
+                                color: 'text.primary',
+                                '& .MuiChip-icon': {
+                                  fontSize: '0.75rem',
+                                  color: 'inherit'
+                                }
+                              }}
+                            />
+                          )}
+                          
+                          {isSelected && (
+                            <CheckCircleIcon 
+                              fontSize="small" 
+                              color="primary" 
+                            />
+                          )}
+                        </Box>
+                      </MenuItem>
+                    );
+                  });
+                })()}
+              </Select>
+            </FormControl>
+            
+            {/* Error Display for Mobile */}
+            {orgSwitchError && (
+              <Alert 
+                severity="error" 
+                sx={{ mt: 1, fontSize: '0.875rem' }}
+                action={
+                  <IconButton
+                    size="small"
+                    onClick={() => setOrgSwitchError(null)}
+                  >
+                    <ClearIcon fontSize="small" />
+                  </IconButton>
+                }
+              >
+                {orgSwitchError}
+              </Alert>
+            )}
+            
+            {/* Organization Count and Status */}
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.5 }}>
+              <Typography 
+                variant="caption" 
+                color="text.secondary"
+              >
+                {organizations.length} organization{organizations.length !== 1 ? 's' : ''} available
+              </Typography>
+              
+              {networkError && (
+                <Tooltip title="Network issues detected">
+                  <AlertIcon fontSize="small" color="warning" />
+                </Tooltip>
+              )}
+              
+              {organizationsLoading && (
+                <CircularProgress size={12} />
+              )}
+            </Stack>
+            
+            {/* Quick Actions for Mobile */}
+            <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<RefreshIcon />}
+                onClick={() => {
+                  retryFetch();
+                  setOrgSwitchError(null);
+                }}
+                disabled={organizationsLoading || orgSwitchingLoading}
+                sx={{
+                  fontSize: '0.75rem',
+                  minHeight: 32,
+                  px: 1
+                }}
+              >
+                Refresh
+              </Button>
+              
+              {selectedOrganization && (
+                <Button
+                  size="small"
+                  variant="text"
+                  component={Link}
+                  href="/organizations"
+                  onClick={toggleMobileDrawer}
+                  sx={{
+                    fontSize: '0.75rem',
+                    minHeight: 32,
+                    px: 1
+                  }}
+                >
+                  Manage
+                </Button>
+              )}
+            </Box>
+          </Box>
         )}
       </Box>
 
@@ -420,24 +711,53 @@ export default function NavBar() {
                 >
                   {/* Organization Selector - Compact */}
                   {organizations.length > 0 && (
-                    <Tooltip title="Switch Organization">
+                    <Tooltip 
+                      title={
+                        <Box>
+                          <Typography variant="body2">
+                            {selectedOrganization ? `Current: ${selectedOrganization.name}` : 'Switch Organization'}
+                          </Typography>
+                          {error && networkError && (
+                            <Typography variant="caption" color="warning.main" display="block">
+                              Network issues detected
+                            </Typography>
+                          )}
+                          {lastSuccessfulFetch && (
+                            <Typography variant="caption" color="text.secondary" display="block">
+                              Last updated: {new Date(lastSuccessfulFetch).toLocaleTimeString()}
+                            </Typography>
+                          )}
+                        </Box>
+                      }
+                    >
                       <Button
                         onClick={handleOrgMenuOpen}
                         color="inherit"
-                        startIcon={<BusinessIcon fontSize="small" />}
-                        endIcon={<KeyboardArrowDownIcon fontSize="small" />}
+                        startIcon={
+                          orgSwitchingLoading ? (
+                            <CircularProgress size={16} color="inherit" />
+                          ) : (
+                            <BusinessIcon fontSize="small" />
+                          )
+                        }
+                        endIcon={!orgSwitchingLoading && <KeyboardArrowDownIcon fontSize="small" />}
+                        disabled={orgSwitchingLoading || organizationsLoading}
                         sx={{
                           textTransform: 'none',
-                          maxWidth: 160,
-                          opacity: 0.8,
+                          maxWidth: 180,
+                          opacity: orgSwitchingLoading ? 0.6 : 0.8,
                           fontSize: '0.85rem',
                           fontWeight: 400,
                           padding: '4px 8px',
                           '& .MuiButton-startIcon': { mr: 0.5 },
                           '&:hover': {
-                            opacity: 1,
-                            backgroundColor: 'rgba(255,255,255,0.08)',
+                            opacity: orgSwitchingLoading ? 0.6 : 1,
+                            backgroundColor: orgSwitchingLoading ? 'transparent' : 'rgba(255,255,255,0.08)',
                           },
+                          '&.Mui-disabled': {
+                            color: 'inherit',
+                            opacity: 0.6
+                          }
                         }}
                       >
                         <Box
@@ -446,9 +766,21 @@ export default function NavBar() {
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
                             fontWeight: 400,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.5
                           }}
                         >
-                          {selectedOrganization?.name || 'Select Org'}
+                          {orgSwitchingLoading ? (
+                            'Switching...'
+                          ) : (
+                            <>
+                              {selectedOrganization?.name || 'Select Org'}
+                              {error && networkError && (
+                                <AlertIcon fontSize="small" color="warning" sx={{ ml: 0.5 }} />
+                              )}
+                            </>
+                          )}
                         </Box>
                       </Button>
                     </Tooltip>
@@ -640,53 +972,260 @@ export default function NavBar() {
               <Menu
                 anchorEl={orgMenuAnchor}
                 open={Boolean(orgMenuAnchor)}
-                onClose={handleMenuClose}
-                PaperProps={{ sx: { minWidth: 220 } }}
+                onClose={() => {
+                  handleMenuClose();
+                  setOrgSearchQuery('');
+                  setOrgSwitchError(null);
+                }}
+                PaperProps={{ 
+                  sx: { 
+                    minWidth: 320,
+                    maxWidth: 400,
+                    maxHeight: 500,
+                    '& .MuiList-root': {
+                      padding: 0
+                    }
+                  } 
+                }}
               >
-                {organizations.map(org => (
-                  <MenuItem
-                    key={org.id}
-                    onClick={() => {
-                      handleOrganizationChange(org.id);
-                      handleMenuClose();
-                    }}
-                    selected={selectedOrganization?.id === org.id}
-                  >
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        width: '100%',
-                      }}
-                    >
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                      >
-                        <BusinessIcon fontSize="small" />
-                        {org.name}
-                      </Box>
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            checked={defaultOrganizationId === org.id}
-                            onChange={e => {
-                              e.stopPropagation();
-                              handleSetDefault(org.id, e.target.checked);
-                            }}
-                            icon={<StarBorderIcon />}
-                            checkedIcon={<StarIcon sx={{ color: '#FFD700' }} />}
+                {/* Search Header */}
+                <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    placeholder="Search organizations..."
+                    value={orgSearchQuery}
+                    onChange={(e) => setOrgSearchQuery(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon fontSize="small" />
+                        </InputAdornment>
+                      ),
+                      endAdornment: orgSearchQuery && (
+                        <InputAdornment position="end">
+                          <IconButton
                             size="small"
-                            disabled={settingDefault}
-                          />
-                        }
-                        label=""
-                        sx={{ margin: 0 }}
-                        onClick={e => e.stopPropagation()}
-                      />
+                            onClick={() => setOrgSearchQuery('')}
+                          >
+                            <ClearIcon fontSize="small" />
+                          </IconButton>
+                        </InputAdornment>
+                      )
+                    }}
+                  />
+                  
+                  {/* Error Display */}
+                  {orgSwitchError && (
+                    <Alert 
+                      severity="error" 
+                      sx={{ mt: 1, fontSize: '0.875rem' }}
+                      action={
+                        <IconButton
+                          size="small"
+                          onClick={() => setOrgSwitchError(null)}
+                        >
+                          <ClearIcon fontSize="small" />
+                        </IconButton>
+                      }
+                    >
+                      {orgSwitchError}
+                    </Alert>
+                  )}
+                  
+                  {/* Loading State */}
+                  {organizationsLoading && (
+                    <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CircularProgress size={16} />
+                      <Typography variant="caption" color="text.secondary">
+                        Loading organizations...
+                      </Typography>
                     </Box>
-                  </MenuItem>
-                ))}
+                  )}
+                </Box>
+
+                {/* Organization List */}
+                <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
+                  {(() => {
+                    // Filter organizations based on search query
+                    const filteredOrgs = organizations.filter(org =>
+                      org.name.toLowerCase().includes(orgSearchQuery.toLowerCase()) ||
+                      (org.domain && org.domain.toLowerCase().includes(orgSearchQuery.toLowerCase()))
+                    );
+                    
+                    // Sort organizations: default first, then alphabetically
+                    const sortedOrgs = [...filteredOrgs].sort((a, b) => {
+                      if (defaultOrganizationId === a.id && defaultOrganizationId !== b.id) return -1;
+                      if (defaultOrganizationId === b.id && defaultOrganizationId !== a.id) return 1;
+                      return a.name.localeCompare(b.name);
+                    });
+                    
+                    if (organizationsLoading) {
+                      return Array.from({ length: 3 }).map((_, index) => (
+                        <MenuItem key={`skeleton-${index}`} disabled>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                            <Skeleton variant="circular" width={20} height={20} />
+                            <Skeleton variant="text" width={120} />
+                            <Box sx={{ flexGrow: 1 }} />
+                            <Skeleton variant="circular" width={20} height={20} />
+                          </Box>
+                        </MenuItem>
+                      ));
+                    }
+                    
+                    if (sortedOrgs.length === 0) {
+                      return (
+                        <MenuItem disabled>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 1 }}>
+                            <SearchIcon fontSize="small" color="disabled" />
+                            <Typography variant="body2" color="text.secondary">
+                              {orgSearchQuery ? 'No organizations match your search' : 'No organizations available'}
+                            </Typography>
+                          </Box>
+                        </MenuItem>
+                      );
+                    }
+                    
+                    return sortedOrgs.map(org => {
+                      const isSelected = selectedOrganization?.id === org.id;
+                      const isDefault = defaultOrganizationId === org.id;
+                      
+                      return (
+                        <MenuItem
+                          key={org.id}
+                          onClick={() => {
+                            if (!orgSwitchingLoading && org.id !== selectedOrganization?.id) {
+                              handleOrganizationChange(org.id);
+                            }
+                          }}
+                          selected={isSelected}
+                          disabled={orgSwitchingLoading}
+                          sx={{
+                            minHeight: 56,
+                            backgroundColor: isSelected ? 'action.selected' : 'transparent',
+                            '&:hover': {
+                              backgroundColor: orgSwitchingLoading ? 'transparent' : 'action.hover'
+                            }
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              width: '100%',
+                              gap: 1
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1, minWidth: 0 }}>
+                              <BusinessIcon 
+                                fontSize="small" 
+                                color={isSelected ? 'primary' : 'action'}
+                              />
+                              
+                              <Box sx={{ flex: 1, minWidth: 0 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  <Typography 
+                                    variant="body2" 
+                                    sx={{ 
+                                      fontWeight: isSelected ? 600 : 400,
+                                      color: isSelected ? 'primary.main' : 'text.primary',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap'
+                                    }}
+                                  >
+                                    {org.name}
+                                  </Typography>
+                                  
+                                  {isSelected && (
+                                    <CheckCircleIcon 
+                                      fontSize="small" 
+                                      color="primary" 
+                                      sx={{ flexShrink: 0 }}
+                                    />
+                                  )}
+                                </Box>
+                                
+                                {org.domain && (
+                                  <Typography 
+                                    variant="caption" 
+                                    color="text.secondary"
+                                    sx={{
+                                      display: 'block',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap'
+                                    }}
+                                  >
+                                    {org.domain}
+                                  </Typography>
+                                )}
+                              </Box>
+                            </Box>
+                            
+                            {/* Default Organization Star and Loading */}
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              {orgSwitchingLoading && isSelected && (
+                                <CircularProgress size={16} />
+                              )}
+                              
+                              {isDefault && (
+                                <Chip 
+                                  label="Default" 
+                                  size="small"
+                                  icon={<StarIcon />}
+                                  sx={{ 
+                                    fontSize: '0.75rem',
+                                    height: 20,
+                                    backgroundColor: '#FFD700',
+                                    color: 'text.primary',
+                                    '& .MuiChip-icon': {
+                                      fontSize: '0.875rem',
+                                      color: 'inherit'
+                                    }
+                                  }}
+                                />
+                              )}
+                              
+                              <FormControlLabel
+                                control={
+                                  <Checkbox
+                                    checked={isDefault}
+                                    onChange={e => {
+                                      e.stopPropagation();
+                                      handleSetDefault(org.id, e.target.checked);
+                                    }}
+                                    icon={<StarBorderIcon />}
+                                    checkedIcon={<StarIcon sx={{ color: '#FFD700' }} />}
+                                    size="small"
+                                    disabled={settingDefault || orgSwitchingLoading}
+                                  />
+                                }
+                                label=""
+                                sx={{ margin: 0 }}
+                                onClick={e => e.stopPropagation()}
+                              />
+                            </Box>
+                          </Box>
+                        </MenuItem>
+                      );
+                    });
+                  })()}
+                </Box>
+                
+                {/* Footer */}
+                {organizations.length > 0 && (
+                  <Box sx={{ p: 1.5, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'grey.50' }}>
+                    <Typography variant="caption" color="text.secondary" align="center" display="block">
+                      {organizations.length} organization{organizations.length !== 1 ? 's' : ''} available
+                      {orgSearchQuery && ` • Showing ${organizations.filter(org =>
+                        org.name.toLowerCase().includes(orgSearchQuery.toLowerCase()) ||
+                        (org.domain && org.domain.toLowerCase().includes(orgSearchQuery.toLowerCase()))
+                      ).length} results`}
+                    </Typography>
+                  </Box>
+                )}
               </Menu>
 
               {/* Incidents Menu */}

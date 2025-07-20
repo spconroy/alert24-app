@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { SessionManager } from '@/lib/session-manager';
-
 import { SupabaseClient } from '@/lib/db-supabase';
 import { emailService } from '@/lib/email-service';
+import { rbac } from '@/lib/rbac-middleware';
+import { auditLogger, ACTIVITY_TYPES } from '@/lib/audit-logger';
 
 const db = new SupabaseClient();
 

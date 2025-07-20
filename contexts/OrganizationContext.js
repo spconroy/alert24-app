@@ -83,6 +83,10 @@ export function OrganizationProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [organizationsLoading, setOrganizationsLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [networkError, setNetworkError] = useState(false);
+  const [lastSuccessfulFetch, setLastSuccessfulFetch] = useState(null);
 
   // Fetch organizations when user is authenticated
   useEffect(() => {
@@ -90,6 +94,8 @@ export function OrganizationProvider({ children }) {
       if (status === 'authenticated' && session?.user?.email) {
         try {
           setError(null);
+          setNetworkError(false);
+          setOrganizationsLoading(true);
           console.log('🔍 Fetching organizations for:', session.user.email);
 
           // Fetch both organizations and default organization in parallel
@@ -117,6 +123,9 @@ export function OrganizationProvider({ children }) {
 
             console.log('📊 Organizations processed:', orgs.length, orgs);
             setOrganizations(orgs);
+            setLastSuccessfulFetch(Date.now());
+            setRetryCount(0); // Reset retry count on successful fetch
+            cacheOrganizations(orgs); // Cache the organizations data
 
             // Determine which organization to select
             let selectedOrg = null;
@@ -172,24 +181,56 @@ export function OrganizationProvider({ children }) {
           }
         } catch (error) {
           console.error('Error fetching organizations:', error);
+          
+          // Determine if this is a network error
+          const isNetworkError = error.name === 'TypeError' || 
+                                error.message.includes('fetch') || 
+                                error.message.includes('network');
+          
+          setNetworkError(isNetworkError);
           setError(error.message || 'Failed to load organizations');
           
-          // Retry logic with exponential backoff
-          if (retryCount < 3) {
-            const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
-            console.log(`⏰ Retrying in ${delay}ms (attempt ${retryCount + 1}/3)`);
-            setTimeout(() => {
-              setRetryCount(prev => prev + 1);
-            }, delay);
+          // Try to use cached data if network error
+          if (isNetworkError) {
+            const cachedOrgs = getCachedOrganizations();
+            if (cachedOrgs && cachedOrgs.length > 0) {
+              console.log('📦 Using cached organizations data');
+              setOrganizations(cachedOrgs);
+              
+              // Still try to select an organization from cache
+              let selectedOrg = null;
+              const storedId = getStoredOrganizationId();
+              if (storedId) {
+                selectedOrg = cachedOrgs.find(org => org.id === storedId);
+              }
+              if (!selectedOrg && cachedOrgs.length > 0) {
+                selectedOrg = cachedOrgs[0];
+                setStoredOrganizationId(selectedOrg.id);
+              }
+              setSelectedOrganization(selectedOrg);
+            }
+            
+            // Only retry on network errors, not on authentication/authorization errors
+            if (retryCount < 3) {
+              const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+              console.log(`⏰ Retrying in ${delay}ms (attempt ${retryCount + 1}/3)`);
+              setTimeout(() => {
+                setRetryCount(prev => prev + 1);
+              }, delay);
+            }
+          } else {
+            console.log('🚫 Not retrying - authentication/authorization error');
           }
         } finally {
           setOrganizationsLoading(false);
+          setIsInitialized(true);
         }
       } else if (status === 'unauthenticated') {
         console.log('🚪 User not authenticated - clearing organizations');
         setOrganizations([]);
         setSelectedOrganization(null);
         setStoredOrganizationId(null);
+        setOrganizationsLoading(false);
         setIsInitialized(true);
       }
 
@@ -204,34 +245,56 @@ export function OrganizationProvider({ children }) {
 
   const switchOrganization = async organizationId => {
     const org = organizations.find(o => o.id === organizationId);
-    if (org) {
-      console.log('🔄 Switching to organization:', org.name);
-      setSelectedOrganization(org);
-      setStoredOrganizationId(organizationId);
+    if (!org) {
+      throw new Error('Organization not found');
+    }
 
+    console.log('🔄 Switching to organization:', org.name);
+    
+    // Optimistically update the UI first
+    const previousOrg = selectedOrganization;
+    setSelectedOrganization(org);
+    setStoredOrganizationId(organizationId);
+
+    try {
       // Update the user's default organization in the database
-      try {
-        await fetch('/api/user/default-organization', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ organizationId }),
-        });
-        console.log('✅ Default organization updated in database');
-      } catch (error) {
-        console.warn(
-          '⚠️ Failed to update default organization in database:',
-          error
-        );
-        // Don't throw error - localStorage update still works
+      const response = await fetch('/api/user/default-organization', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ organizationId }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to update default organization: ${response.statusText}`);
       }
+
+      console.log('✅ Default organization updated in database');
+      
+      // Dispatch a custom event to notify other components of the organization change
+      window.dispatchEvent(new CustomEvent('organizationChanged', {
+        detail: { 
+          newOrganization: org,
+          previousOrganization: previousOrg
+        }
+      }));
+      
+    } catch (error) {
+      console.error('❌ Failed to update default organization in database:', error);
+      
+      // Revert UI changes on database failure
+      setSelectedOrganization(previousOrg);
+      setStoredOrganizationId(previousOrg?.id || null);
+      
+      throw error; // Re-throw to let NavBar handle the error
     }
   };
 
   const refreshOrganizations = async () => {
     if (session?.user?.email) {
       setLoading(true);
+      setOrganizationsLoading(true);
       try {
         // Fetch both organizations and default organization
         const [orgsResponse, defaultOrgResponse] = await Promise.all([
@@ -286,15 +349,48 @@ export function OrganizationProvider({ children }) {
         console.error('Error refreshing organizations:', error);
       } finally {
         setLoading(false);
+        setOrganizationsLoading(false);
       }
     }
   };
 
   const retryFetch = () => {
+    console.log('🔄 Manual retry triggered');
     setRetryCount(0);
     setError(null);
+    setNetworkError(false);
     setLoading(true);
+    setOrganizationsLoading(true);
     setIsInitialized(false);
+  };
+  
+  // Function to check if we should use cached data during offline scenarios
+  const getCachedOrganizations = () => {
+    try {
+      const cached = localStorage.getItem('cachedOrganizations');
+      if (cached) {
+        const { data, timestamp } = JSON.parse(cached);
+        // Use cached data if it's less than 1 hour old
+        if (Date.now() - timestamp < 60 * 60 * 1000) {
+          return data;
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to read cached organizations:', error);
+    }
+    return null;
+  };
+  
+  // Function to cache organizations data
+  const cacheOrganizations = (orgs) => {
+    try {
+      localStorage.setItem('cachedOrganizations', JSON.stringify({
+        data: orgs,
+        timestamp: Date.now()
+      }));
+    } catch (error) {
+      console.warn('Failed to cache organizations:', error);
+    }
   };
 
   // Calculate overall loading state
@@ -308,10 +404,14 @@ export function OrganizationProvider({ children }) {
     loading: isLoading,
     organizationsLoading,
     error,
+    networkError,
     isInitialized,
+    lastSuccessfulFetch,
+    retryCount,
     switchOrganization,
     refreshOrganizations,
     retryFetch,
+    getCachedOrganizations,
   };
 
   return (
