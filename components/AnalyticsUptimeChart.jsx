@@ -247,7 +247,7 @@ export default function AnalyticsUptimeChart({
   });
 
   useEffect(() => {
-    if (organizationId && services.length > 0) {
+    if (organizationId) {
       loadUptimeData();
     }
   }, [organizationId, dateRange, services]);

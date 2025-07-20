@@ -57,9 +57,6 @@ export async function GET(req, { params }) {
       created_by_email: incident.created_by_user?.email,
       assigned_to_name: incident.assigned_to_user?.name,
       assigned_to_email: incident.assigned_to_user?.email,
-      escalation_policy_name: incident.escalation_policies?.name,
-      escalation_timeout_minutes:
-        incident.escalation_policies?.escalation_timeout_minutes,
     };
 
     return NextResponse.json({
@@ -118,9 +115,10 @@ export async function PUT(req, { params }) {
       );
     }
 
-    // Update incident
+    // Update incident - filter out fields that don't exist in the database
+    const { resolution_notes, escalation_policy_id, ...validFields } = body;
     const updatedIncident = await db.updateIncident(id, {
-      ...body,
+      ...validFields,
       updated_at: new Date().toISOString(),
     });
 

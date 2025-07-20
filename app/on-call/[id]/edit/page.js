@@ -560,11 +560,11 @@ export default function EditOnCallSchedulePage() {
                                         sx={{ minWidth: '32px' }}
                                       />
                                       <Avatar sx={{ width: 40, height: 40 }}>
-                                        {(participant.name || participant.email).charAt(0).toUpperCase()}
+                                        {(participant.name || participant.email || '?').charAt(0).toUpperCase()}
                                       </Avatar>
                                       <Box>
                                         <Typography variant="body1" fontWeight="medium">
-                                          {participant.name || participant.email}
+                                          {participant.name || participant.email || 'Unknown User'}
                                         </Typography>
                                         <Typography variant="body2" color="text.secondary">
                                           {participant.email}

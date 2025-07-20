@@ -153,7 +153,7 @@ export default function AnalyticsResponseTimeChart({
   });
 
   useEffect(() => {
-    if (organizationId && services.length > 0) {
+    if (organizationId) {
       loadResponseTimeData();
     }
   }, [organizationId, dateRange, services]);

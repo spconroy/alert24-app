@@ -265,7 +265,7 @@ export default function EditIncidentPage() {
           <CircularProgress />
         </Box>
       ) : error && !originalIncident ? (
-        <Box sx={{ p: 3 }}>
+        <Container maxWidth="lg" sx={{ py: 3 }}>
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
           </Alert>
@@ -277,15 +277,15 @@ export default function EditIncidentPage() {
           >
             Back to Incidents
           </Button>
-        </Box>
+        </Container>
       ) : success ? (
-        <Box sx={{ p: 3 }}>
+        <Container maxWidth="lg" sx={{ py: 3 }}>
           <Alert severity="success" sx={{ mb: 2 }}>
             Incident updated successfully! Redirecting to incident details...
           </Alert>
-        </Box>
+        </Container>
       ) : (
-        <Box sx={{ p: 3 }}>
+        <Container maxWidth="lg" sx={{ py: 3 }}>
           {/* Header */}
           <Box display="flex" alignItems="center" gap={2} mb={4}>
             <Button
@@ -487,7 +487,7 @@ export default function EditIncidentPage() {
                     <Autocomplete
                       multiple
                       options={services}
-                      getOptionLabel={option => option.name || option}
+                      getOptionLabel={option => option.name || option.id || 'Unnamed Service'}
                       value={formData.affected_services}
                       onChange={(e, newValue) =>
                         handleInputChange('affected_services', newValue)
@@ -503,7 +503,7 @@ export default function EditIncidentPage() {
                         value.map((option, index) => (
                           <Chip
                             variant="outlined"
-                            label={option.name || option}
+                            label={option.name || option.id || 'Unnamed Service'}
                             {...getTagProps({ index })}
                             key={index}
                           />
@@ -590,7 +590,7 @@ export default function EditIncidentPage() {
               </form>
             </CardContent>
           </Card>
-        </Box>
+        </Container>
       )}
     </ProtectedRoute>
   );

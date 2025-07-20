@@ -1,29 +1,49 @@
 'use client';
 
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { ThemeProvider as MuiThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { OrganizationProvider } from '@/contexts/OrganizationContext';
+import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#1976d2',
+function AppTheme({ children }) {
+  const { darkMode } = useTheme();
+  
+  const theme = createTheme({
+    palette: {
+      mode: darkMode ? 'dark' : 'light',
+      primary: {
+        main: darkMode ? '#90caf9' : '#1976d2',
+      },
+      secondary: {
+        main: '#dc004e',
+      },
+      ...(darkMode && {
+        background: {
+          default: '#121212',
+          paper: '#1e1e1e',
+        },
+      }),
     },
-    secondary: {
-      main: '#dc004e',
-    },
-  },
-});
+  });
+
+  return (
+    <MuiThemeProvider theme={theme}>
+      <CssBaseline />
+      {children}
+    </MuiThemeProvider>
+  );
+}
 
 export default function Providers({ children }) {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <LocalizationProvider dateAdapter={AdapterDayjs}>
-        <OrganizationProvider>{children}</OrganizationProvider>
-      </LocalizationProvider>
+    <ThemeProvider>
+      <AppTheme>
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <OrganizationProvider>{children}</OrganizationProvider>
+        </LocalizationProvider>
+      </AppTheme>
     </ThemeProvider>
   );
 }

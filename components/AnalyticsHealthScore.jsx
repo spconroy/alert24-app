@@ -169,7 +169,7 @@ export default function AnalyticsHealthScore({
   });
 
   useEffect(() => {
-    if (organizationId && services.length > 0) {
+    if (organizationId) {
       loadHealthScoreData();
     }
   }, [organizationId, dateRange, services]);

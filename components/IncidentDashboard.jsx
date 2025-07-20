@@ -1,6 +1,5 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
 import {
   Box,
   Typography,
@@ -27,8 +26,6 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import MonitorIcon from '@mui/icons-material/Monitor';
 import PeopleIcon from '@mui/icons-material/People';
 import InfoIcon from '@mui/icons-material/Info';
-import Brightness4Icon from '@mui/icons-material/Brightness4';
-import Brightness7Icon from '@mui/icons-material/Brightness7';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import NoSSR from './NoSSR';
 
@@ -54,6 +51,7 @@ const animations = `
 
 export default function IncidentDashboard() {
   const [incidents, setIncidents] = useState([]);
+  const [incidentFilter, setIncidentFilter] = useState('all'); // 'all', 'active', 'resolved'
   const [monitoringStats, setMonitoringStats] = useState({
     total: 0,
     up: 0,
@@ -63,23 +61,8 @@ export default function IncidentDashboard() {
   const [onCallInfo, setOnCallInfo] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [darkMode, setDarkMode] = useState(() => {
-    // Check localStorage for saved preference, default to false
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('darkMode') === 'true';
-    }
-    return false;
-  });
   const { selectedOrganization, session } = useOrganization();
 
-  // Toggle dark mode and save preference
-  const toggleDarkMode = () => {
-    const newDarkMode = !darkMode;
-    setDarkMode(newDarkMode);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('darkMode', newDarkMode.toString());
-    }
-  };
 
   useEffect(() => {
     if (session) {
@@ -243,6 +226,20 @@ export default function IncidentDashboard() {
   const overallStatus = getOverallSystemStatus();
   const activeIncidents = incidents.filter(i => i.status !== 'resolved');
 
+  // Filter incidents based on selected filter
+  const getFilteredIncidents = () => {
+    switch (incidentFilter) {
+      case 'active':
+        return activeIncidents;
+      case 'resolved':
+        return incidents.filter(i => i.status === 'resolved');
+      default:
+        return incidents;
+    }
+  };
+
+  const filteredIncidents = getFilteredIncidents();
+
   // Extract currently on-call people from schedule data
   const currentlyOnCall = onCallInfo
     .filter(schedule => schedule.is_active && schedule.current_on_call_member)
@@ -253,32 +250,8 @@ export default function IncidentDashboard() {
       is_currently_on_call: true,
     }));
 
-  // Create theme based on dark mode
-  const theme = createTheme({
-    palette: {
-      mode: darkMode ? 'dark' : 'light',
-      ...(darkMode
-        ? {
-            // Dark mode colors
-            primary: {
-              main: '#90caf9',
-            },
-            background: {
-              default: '#121212',
-              paper: '#1e1e1e',
-            },
-          }
-        : {
-            // Light mode colors (default Material UI)
-            primary: {
-              main: '#1976d2',
-            },
-          }),
-    },
-  });
 
   return (
-    <ThemeProvider theme={theme}>
       <Box>
         {/* Add animation styles */}
         <style>{animations}</style>
@@ -327,13 +300,6 @@ export default function IncidentDashboard() {
             <Tooltip title="Refresh dashboard data - Updates all metrics, incidents, and monitoring status">
               <IconButton onClick={fetchDashboardData} color="primary">
                 <RefreshIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip
-              title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              <IconButton onClick={toggleDarkMode} color="primary">
-                {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
               </IconButton>
             </Tooltip>
 
@@ -433,20 +399,6 @@ export default function IncidentDashboard() {
               gap: { xs: 1, sm: 0 },
             }}
           >
-            <Typography
-              variant="h6"
-              color="text.secondary"
-              sx={{ fontWeight: 500, fontSize: { xs: '1rem', sm: '1.25rem' } }}
-            >
-              🔧 System Health
-            </Typography>
-            <Typography
-              variant="h6"
-              color="text.secondary"
-              sx={{ fontWeight: 500, fontSize: { xs: '1rem', sm: '1.25rem' } }}
-            >
-              🚨 Incident Response
-            </Typography>
           </Box>
 
           <Grid container spacing={{ xs: 2, sm: 3 }}>
@@ -1006,13 +958,14 @@ export default function IncidentDashboard() {
                           <Button
                             size="small"
                             variant="text"
+                            onClick={() => setIncidentFilter('all')}
                             sx={{
                               minWidth: 'auto',
                               borderBottom: 2,
-                              borderColor: 'primary.main',
+                              borderColor: incidentFilter === 'all' ? 'primary.main' : 'transparent',
                               borderRadius: 0,
-                              color: 'primary.main',
-                              fontWeight: 600,
+                              color: incidentFilter === 'all' ? 'primary.main' : 'text.secondary',
+                              fontWeight: incidentFilter === 'all' ? 600 : 400,
                               fontSize: { xs: '0.75rem', sm: '0.875rem' },
                               whiteSpace: 'nowrap',
                             }}
@@ -1027,9 +980,14 @@ export default function IncidentDashboard() {
                           <Button
                             size="small"
                             variant="text"
-                            color="inherit"
+                            onClick={() => setIncidentFilter('active')}
                             sx={{
                               minWidth: 'auto',
+                              borderBottom: 2,
+                              borderColor: incidentFilter === 'active' ? 'primary.main' : 'transparent',
+                              borderRadius: 0,
+                              color: incidentFilter === 'active' ? 'primary.main' : 'text.secondary',
+                              fontWeight: incidentFilter === 'active' ? 600 : 400,
                               fontSize: { xs: '0.75rem', sm: '0.875rem' },
                               whiteSpace: 'nowrap',
                             }}
@@ -1044,9 +1002,14 @@ export default function IncidentDashboard() {
                           <Button
                             size="small"
                             variant="text"
-                            color="inherit"
+                            onClick={() => setIncidentFilter('resolved')}
                             sx={{
                               minWidth: 'auto',
+                              borderBottom: 2,
+                              borderColor: incidentFilter === 'resolved' ? 'primary.main' : 'transparent',
+                              borderRadius: 0,
+                              color: incidentFilter === 'resolved' ? 'primary.main' : 'text.secondary',
+                              fontWeight: incidentFilter === 'resolved' ? 600 : 400,
                               fontSize: { xs: '0.75rem', sm: '0.875rem' },
                               whiteSpace: 'nowrap',
                             }}
@@ -1111,7 +1074,20 @@ export default function IncidentDashboard() {
                   </Box>
                 ) : (
                   <Box>
-                    {incidents.slice(0, 5).map((incident, index) => (
+                    {filteredIncidents
+                      .sort((a, b) => {
+                        // Sort open incidents first, then by creation date (newest first)
+                        const aIsOpen = a.status !== 'resolved';
+                        const bIsOpen = b.status !== 'resolved';
+                        
+                        if (aIsOpen && !bIsOpen) return -1; // a comes first (open)
+                        if (!aIsOpen && bIsOpen) return 1;  // b comes first (open)
+                        
+                        // If both have same status, sort by creation date (newest first)
+                        return new Date(b.created_at) - new Date(a.created_at);
+                      })
+                      .slice(0, 5)
+                      .map((incident, index) => (
                       <Box
                         key={incident.id}
                         sx={{
@@ -1259,7 +1235,7 @@ export default function IncidentDashboard() {
                     ))}
 
                     {/* Show more link if there are more incidents */}
-                    {incidents.length > 5 && (
+                    {filteredIncidents.length > 5 && (
                       <Box sx={{ textAlign: 'center', mt: 2 }}>
                         <Button
                           component={Link}
@@ -1268,7 +1244,7 @@ export default function IncidentDashboard() {
                           size="small"
                           sx={{ color: 'text.secondary' }}
                         >
-                          +{incidents.length - 5} more incidents
+                          +{filteredIncidents.length - 5} more incidents
                         </Button>
                       </Box>
                     )}
@@ -1407,6 +1383,98 @@ export default function IncidentDashboard() {
                           </Typography>
                         </Box>
 
+                        {/* Assigned Active Incidents */}
+                        {(() => {
+                          const assignedIncidents = incidents.filter(
+                            incident => 
+                              incident.status !== 'resolved' && 
+                              incident.assigned_to_id === schedule.user_id
+                          );
+                          
+                          return assignedIncidents.length > 0 ? (
+                            <Box sx={{ mb: 1 }}>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ fontWeight: 500, display: 'block', mb: 0.5 }}
+                              >
+                                Active Incidents ({assignedIncidents.length})
+                              </Typography>
+                              <Box sx={{ maxHeight: 120, overflowY: 'auto' }}>
+                                {assignedIncidents.slice(0, 3).map((incident) => (
+                                  <Box
+                                    key={incident.id}
+                                    sx={{
+                                      p: 1,
+                                      mb: 0.5,
+                                      backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                                      borderRadius: 1,
+                                      border: '1px solid',
+                                      borderColor: incident.severity === 'critical' ? 'error.300' : 'warning.300',
+                                    }}
+                                  >
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                                      <Box
+                                        sx={{
+                                          width: 6,
+                                          height: 6,
+                                          borderRadius: '50%',
+                                          backgroundColor:
+                                            incident.severity === 'critical'
+                                              ? '#f44336'
+                                              : incident.severity === 'high'
+                                                ? '#ff9800'
+                                                : incident.severity === 'medium'
+                                                  ? '#ffeb3b'
+                                                  : '#4caf50',
+                                        }}
+                                      />
+                                      <Typography
+                                        variant="caption"
+                                        sx={{
+                                          fontWeight: 600,
+                                          fontSize: '0.7rem',
+                                          color: incident.severity === 'critical' ? 'error.main' : 'text.primary',
+                                        }}
+                                      >
+                                        {incident.title.length > 25 
+                                          ? `${incident.title.substring(0, 25)}...` 
+                                          : incident.title}
+                                      </Typography>
+                                    </Box>
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
+                                      sx={{ fontSize: '0.65rem' }}
+                                    >
+                                      {incident.severity.toUpperCase()} • {incident.status.toUpperCase()}
+                                    </Typography>
+                                  </Box>
+                                ))}
+                                {assignedIncidents.length > 3 && (
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    sx={{ fontSize: '0.65rem', fontStyle: 'italic' }}
+                                  >
+                                    +{assignedIncidents.length - 3} more incidents
+                                  </Typography>
+                                )}
+                              </Box>
+                            </Box>
+                          ) : (
+                            <Box sx={{ mb: 1 }}>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ fontSize: '0.7rem', fontStyle: 'italic' }}
+                              >
+                                ✅ No active incidents assigned
+                              </Typography>
+                            </Box>
+                          );
+                        })()}
+
                         {/* Contact actions */}
                         <Box sx={{ display: 'flex', gap: 1 }}>
                           <Button
@@ -1499,11 +1567,9 @@ export default function IncidentDashboard() {
                   {/* Setup progress indicator */}
                   <Tooltip title="Platform setup completion: Add monitoring and on-call schedules to reach 100%. Complete setup ensures effective incident management.">
                     <Chip
-                      label={`${Math.round((((monitoringStats.total > 0 ? 1 : 0) + (currentlyOnCall.length > 0 ? 1 : 0)) / 2) * 100)}%`}
+                      label={`${((monitoringStats.total > 0 ? 1 : 0) + (currentlyOnCall.length > 0 ? 1 : 0)) * 50}%`}
                       color={
-                        (monitoringStats.total > 0 ? 1 : 0) +
-                          (currentlyOnCall.length > 0 ? 1 : 0) ===
-                        2
+                        (monitoringStats.total > 0 && currentlyOnCall.length > 0)
                           ? 'success'
                           : 'primary'
                       }
@@ -2051,6 +2117,5 @@ export default function IncidentDashboard() {
           </Grid>
         </Grid>
       </Box>
-    </ThemeProvider>
   );
 }

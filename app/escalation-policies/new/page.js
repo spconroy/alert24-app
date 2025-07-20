@@ -47,6 +47,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import UserTeamSelector from '@/components/UserTeamSelector';
+import EscalationStepsOrchestrator from '@/components/EscalationStepsOrchestrator';
 
 const steps = [
   {
@@ -55,8 +56,8 @@ const steps = [
     icon: <InfoIcon />,
   },
   {
-    label: 'Escalation Rules',
-    description: 'Define notification levels',
+    label: 'Escalation Steps',
+    description: 'Configure escalation flow',
     icon: <NotificationsIcon />,
   },
   {
@@ -82,16 +83,8 @@ export default function CreateEscalationPolicyPage() {
     name: '',
     description: '',
     is_active: true,
-    escalation_delay_minutes: 15,
-    max_escalation_level: 3,
-    escalation_rules: [
-      {
-        level: 1,
-        delay_minutes: 0,
-        notification_channels: ['email'],
-        targets: [],
-      },
-    ],
+    escalation_timeout_minutes: 30,
+    escalation_steps: [],
   });
 
   const [loading, setLoading] = useState(false);
@@ -115,26 +108,24 @@ export default function CreateEscalationPolicyPage() {
         if (!formData.name.trim()) {
           errors.name = 'Policy name is required';
         }
-        if (formData.escalation_delay_minutes < 1) {
-          errors.escalation_delay_minutes = 'Delay must be at least 1 minute';
-        }
-        if (formData.max_escalation_level < 1 || formData.max_escalation_level > 10) {
-          errors.max_escalation_level = 'Max level must be between 1 and 10';
+        if (formData.escalation_timeout_minutes < 1) {
+          errors.escalation_timeout_minutes = 'Timeout must be at least 1 minute';
         }
         break;
 
-      case 1: // Escalation Rules
-        formData.escalation_rules.forEach((rule, index) => {
-          if (!rule.targets || rule.targets.length === 0) {
-            errors[`rule_${index}_targets`] = `Level ${rule.level} must have at least one target`;
+      case 1: // Escalation Steps
+        if (!formData.escalation_steps || formData.escalation_steps.length === 0) {
+          errors.escalation_steps = 'At least one escalation step is required';
+        } else {
+          // Validation is handled by the EscalationStepsOrchestrator component
+          const hasInvalidSteps = formData.escalation_steps.some(step => 
+            !step.targets || step.targets.length === 0 || 
+            !step.notification_channels || step.notification_channels.length === 0
+          );
+          if (hasInvalidSteps) {
+            errors.escalation_steps = 'All escalation steps must have targets and notification channels';
           }
-          if (rule.notification_channels.length === 0) {
-            errors[`rule_${index}_channels`] = `Level ${rule.level} must have at least one notification channel`;
-          }
-          if (rule.delay_minutes < 0) {
-            errors[`rule_${index}_delay`] = 'Delay cannot be negative';
-          }
-        });
+        }
         break;
     }
 
@@ -203,45 +194,17 @@ export default function CreateEscalationPolicyPage() {
     }
   };
 
-  const addEscalationRule = () => {
-    const newLevel = formData.escalation_rules.length + 1;
-    const newRule = {
-      level: newLevel,
-      delay_minutes: newLevel === 1 ? 0 : (newLevel - 1) * formData.escalation_delay_minutes,
-      notification_channels: ['email'],
-      targets: [],
-    };
-
+  const handleEscalationStepsChange = (steps) => {
     setFormData(prev => ({
       ...prev,
-      escalation_rules: [...prev.escalation_rules, newRule],
-    }));
-  };
-
-  const updateEscalationRule = (ruleIndex, field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      escalation_rules: prev.escalation_rules.map((rule, index) =>
-        index === ruleIndex ? { ...rule, [field]: value } : rule
-      ),
+      escalation_steps: steps,
     }));
 
-    const errorKey = `rule_${ruleIndex}_${field.replace('notification_channels', 'channels').replace('targets', 'targets')}`;
-    if (formErrors[errorKey]) {
+    // Clear validation errors when steps change
+    if (formErrors.escalation_steps) {
       setFormErrors(prev => ({
         ...prev,
-        [errorKey]: '',
-      }));
-    }
-  };
-
-  const removeEscalationRule = (ruleIndex) => {
-    if (formData.escalation_rules.length > 1) {
-      setFormData(prev => ({
-        ...prev,
-        escalation_rules: prev.escalation_rules
-          .filter((_, index) => index !== ruleIndex)
-          .map((rule, index) => ({ ...rule, level: index + 1 })),
+        escalation_steps: '',
       }));
     }
   };
@@ -299,32 +262,17 @@ export default function CreateEscalationPolicyPage() {
               placeholder="This policy escalates critical incidents through the engineering team..."
             />
 
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  type="number"
-                  label="Default Escalation Delay (minutes)"
-                  value={formData.escalation_delay_minutes}
-                  onChange={(e) => handleInputChange('escalation_delay_minutes', parseInt(e.target.value) || 15)}
-                  error={!!formErrors.escalation_delay_minutes}
-                  helperText={formErrors.escalation_delay_minutes || 'Time between escalation levels'}
-                  inputProps={{ min: 1, max: 1440 }}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  type="number"
-                  label="Maximum Escalation Level"
-                  value={formData.max_escalation_level}
-                  onChange={(e) => handleInputChange('max_escalation_level', parseInt(e.target.value) || 3)}
-                  error={!!formErrors.max_escalation_level}
-                  helperText={formErrors.max_escalation_level || 'Maximum number of escalation levels'}
-                  inputProps={{ min: 1, max: 10 }}
-                />
-              </Grid>
-            </Grid>
+            <TextField
+              fullWidth
+              type="number"
+              label="Default Escalation Timeout (minutes)"
+              value={formData.escalation_timeout_minutes}
+              onChange={(e) => handleInputChange('escalation_timeout_minutes', parseInt(e.target.value) || 30)}
+              error={!!formErrors.escalation_timeout_minutes}
+              helperText={formErrors.escalation_timeout_minutes || 'Maximum time to wait for acknowledgment before repeating escalation'}
+              inputProps={{ min: 1, max: 1440 }}
+              sx={{ maxWidth: 400 }}
+            />
 
             <FormControlLabel
               control={
@@ -340,129 +288,19 @@ export default function CreateEscalationPolicyPage() {
 
       case 1:
         return (
-          <Stack spacing={3}>
-            <Box display="flex" justifyContent="space-between" alignItems="center">
-              <Typography variant="h6">
-                Escalation Rules ({formData.escalation_rules.length})
-              </Typography>
-              <Button
-                startIcon={<AddIcon />}
-                onClick={addEscalationRule}
-                variant="outlined"
-                disabled={formData.escalation_rules.length >= formData.max_escalation_level}
-              >
-                Add Level
-              </Button>
-            </Box>
-
-            {formData.escalation_rules.map((rule, index) => (
-              <Card key={index} variant="outlined">
-                <CardContent>
-                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                    <Typography variant="h6" color="primary">
-                      Level {rule.level}
-                    </Typography>
-                    {formData.escalation_rules.length > 1 && (
-                      <IconButton
-                        onClick={() => removeEscalationRule(index)}
-                        color="error"
-                        size="small"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    )}
-                  </Box>
-
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} md={4}>
-                      <TextField
-                        fullWidth
-                        type="number"
-                        label="Delay (minutes)"
-                        value={rule.delay_minutes}
-                        onChange={(e) => updateEscalationRule(index, 'delay_minutes', parseInt(e.target.value) || 0)}
-                        error={!!formErrors[`rule_${index}_delay`]}
-                        helperText={formErrors[`rule_${index}_delay`] || (index === 0 ? 'Immediate notification' : 'Time to wait before this level')}
-                        inputProps={{ min: 0, max: 1440 }}
-                      />
-                    </Grid>
-
-                    <Grid item xs={12} md={8}>
-                      <FormControl 
-                        fullWidth 
-                        error={!!formErrors[`rule_${index}_channels`]}
-                      >
-                        <InputLabel>Notification Channels *</InputLabel>
-                        <Select
-                          multiple
-                          value={rule.notification_channels}
-                          onChange={(e) => updateEscalationRule(index, 'notification_channels', e.target.value)}
-                          label="Notification Channels *"
-                          renderValue={(selected) => (
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                              {selected.map((value) => (
-                                <Chip 
-                                  key={value} 
-                                  label={notificationChannels.find(c => c.value === value)?.label || value}
-                                  size="small" 
-                                />
-                              ))}
-                            </Box>
-                          )}
-                        >
-                          {notificationChannels.map((channel) => (
-                            <MenuItem key={channel.value} value={channel.value}>
-                              <Box>
-                                <Typography variant="body2">{channel.label}</Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  {channel.description}
-                                </Typography>
-                              </Box>
-                            </MenuItem>
-                          ))}
-                        </Select>
-                        {formErrors[`rule_${index}_channels`] && (
-                          <FormHelperText>{formErrors[`rule_${index}_channels`]}</FormHelperText>
-                        )}
-                      </FormControl>
-                    </Grid>
-
-                    <Grid item xs={12}>
-                      <Typography variant="subtitle2" gutterBottom>
-                        Escalation Targets *
-                      </Typography>
-                      <UserTeamSelector
-                        organizationId={selectedOrganization.id}
-                        value={rule.targets || []}
-                        onChange={(newTargets) => updateEscalationRule(index, 'targets', newTargets)}
-                        label="Select users, teams, or on-call schedules"
-                        placeholder="Search for users, teams, or on-call schedules..."
-                        multiple={true}
-                        showTeams={true}
-                        showUsers={true}
-                        showOnCallSchedules={true}
-                      />
-                      {formErrors[`rule_${index}_targets`] && (
-                        <FormHelperText error sx={{ mt: 1 }}>
-                          {formErrors[`rule_${index}_targets`]}
-                        </FormHelperText>
-                      )}
-                    </Grid>
-                  </Grid>
-
-                  {/* Rule Summary */}
-                  <Paper sx={{ p: 2, mt: 2, bgcolor: 'grey.50' }}>
-                    <Typography variant="body2" color="text.secondary">
-                      <strong>Summary:</strong> {rule.delay_minutes === 0 ? 'Immediately' : `After ${rule.delay_minutes} minutes`}, 
-                      notify {rule.targets?.length || 0} target{(rule.targets?.length || 0) !== 1 ? 's' : ''} via{' '}
-                      {rule.notification_channels.length === 0 ? 'no channels selected' : 
-                       rule.notification_channels.map(ch => notificationChannels.find(c => c.value === ch)?.label || ch).join(', ')}
-                    </Typography>
-                  </Paper>
-                </CardContent>
-              </Card>
-            ))}
-          </Stack>
+          <Box>
+            <EscalationStepsOrchestrator
+              initialSteps={formData.escalation_steps}
+              onChange={handleEscalationStepsChange}
+              organizationId={selectedOrganization.id}
+              maxSteps={10}
+            />
+            {formErrors.escalation_steps && (
+              <Alert severity="error" sx={{ mt: 2 }}>
+                {formErrors.escalation_steps}
+              </Alert>
+            )}
+          </Box>
         );
 
       case 2:
@@ -498,32 +336,38 @@ export default function CreateEscalationPolicyPage() {
 
             <Card variant="outlined">
               <CardContent>
-                <Typography variant="h6" gutterBottom>Escalation Rules</Typography>
-                <List>
-                  {formData.escalation_rules.map((rule, index) => (
-                    <ListItem key={index}>
-                      <ListItemAvatar>
-                        <Avatar sx={{ bgcolor: 'primary.main' }}>
-                          {rule.level}
-                        </Avatar>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={`Level ${rule.level} - ${rule.delay_minutes === 0 ? 'Immediate' : `${rule.delay_minutes} minutes`}`}
-                        secondary={
-                          <Box>
-                            <Typography variant="body2" component="span">
-                              Channels: {rule.notification_channels.join(', ')}
-                            </Typography>
-                            <br />
-                            <Typography variant="body2" component="span">
-                              Targets: {rule.targets?.length || 0} selected
-                            </Typography>
-                          </Box>
-                        }
-                      />
-                    </ListItem>
-                  ))}
-                </List>
+                <Typography variant="h6" gutterBottom>Escalation Steps</Typography>
+                {formData.escalation_steps && formData.escalation_steps.length > 0 ? (
+                  <List>
+                    {formData.escalation_steps.map((step, index) => (
+                      <ListItem key={step.id || index}>
+                        <ListItemAvatar>
+                          <Avatar sx={{ bgcolor: 'primary.main' }}>
+                            {step.level}
+                          </Avatar>
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={`Step ${step.level} - ${step.delay_minutes === 0 ? 'Immediate' : `${step.delay_minutes} minutes delay`}`}
+                          secondary={
+                            <Box>
+                              <Typography variant="body2" component="span">
+                                Channels: {step.notification_channels?.join(', ') || 'None'}
+                              </Typography>
+                              <br />
+                              <Typography variant="body2" component="span">
+                                Targets: {step.targets?.length || 0} selected
+                              </Typography>
+                            </Box>
+                          }
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    No escalation steps configured
+                  </Typography>
+                )}
               </CardContent>
             </Card>
           </Stack>

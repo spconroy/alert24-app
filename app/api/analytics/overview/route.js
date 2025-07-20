@@ -69,7 +69,7 @@ export async function POST(request) {
     }
 
     // Get monitoring checks for the selected services
-    const { data: monitoringChecks, error: checksError } = await db.supabase
+    const { data: monitoringChecks, error: checksError } = await db.client
       .from('service_monitoring_checks')
       .select('monitoring_check_id')
       .in('service_id', services);
@@ -161,7 +161,7 @@ async function calculateMetrics(
   organizationId
 ) {
   // Get monitoring statistics for uptime and performance
-  const { data: stats, error: statsError } = await supabase
+  const { data: stats, error: statsError } = await db.client
     .from('monitoring_statistics')
     .select('*')
     .in('monitoring_check_id', checkIds)
@@ -173,7 +173,7 @@ async function calculateMetrics(
   }
 
   // Get check results for detailed analysis
-  const { data: checkResults, error: resultsError } = await supabase
+  const { data: checkResults, error: resultsError } = await db.client
     .from('check_results')
     .select('*')
     .in('monitoring_check_id', checkIds)
@@ -185,7 +185,7 @@ async function calculateMetrics(
   }
 
   // Get incidents for MTTR/MTTA calculation
-  const { data: incidents, error: incidentsError } = await supabase
+  const { data: incidents, error: incidentsError } = await db.client
     .from('incidents')
     .select('*')
     .eq('organization_id', organizationId)

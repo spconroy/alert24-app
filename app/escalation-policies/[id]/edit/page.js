@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -47,6 +47,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import UserTeamSelector from '@/components/UserTeamSelector';
+import EscalationStepsOrchestrator from '@/components/EscalationStepsOrchestrator';
 
 const steps = [
   {
@@ -55,8 +56,8 @@ const steps = [
     icon: <InfoIcon />,
   },
   {
-    label: 'Escalation Rules',
-    description: 'Define notification levels',
+    label: 'Escalation Steps',
+    description: 'Configure escalation flow',
     icon: <NotificationsIcon />,
   },
   {
@@ -147,13 +148,18 @@ export default function EditEscalationPolicyPage() {
         }
         break;
 
-      case 1: // Escalation Rules
-        if (formData.escalation_steps && formData.escalation_steps.length > 0) {
-          formData.escalation_steps.forEach((step, index) => {
-            if (!step.targets || step.targets.length === 0) {
-              errors[`step_${index}_targets`] = `Step ${index + 1} must have at least one target`;
-            }
-          });
+      case 1: // Escalation Steps
+        if (!formData.escalation_steps || formData.escalation_steps.length === 0) {
+          errors.escalation_steps = 'At least one escalation step is required';
+        } else {
+          // Validation is handled by the EscalationStepsOrchestrator component
+          const hasInvalidSteps = formData.escalation_steps.some(step => 
+            !step.targets || step.targets.length === 0 || 
+            !step.notification_channels || step.notification_channels.length === 0
+          );
+          if (hasInvalidSteps) {
+            errors.escalation_steps = 'All escalation steps must have targets and notification channels';
+          }
         }
         break;
     }
@@ -222,6 +228,25 @@ export default function EditEscalationPolicyPage() {
       }));
     }
   };
+
+  const handleEscalationStepsChange = useCallback((steps) => {
+    setFormData(prev => {
+      // Prevent infinite loops by checking if steps actually changed
+      if (JSON.stringify(prev.escalation_steps) === JSON.stringify(steps)) {
+        return prev;
+      }
+      return {
+        ...prev,
+        escalation_steps: steps,
+      };
+    });
+
+    // Clear validation errors when steps change
+    setFormErrors(prev => ({
+      ...prev,
+      escalation_steps: '',
+    }));
+  }, []);
 
   // Show loading while fetching policy
   if (loadingPolicy) {
@@ -333,35 +358,19 @@ export default function EditEscalationPolicyPage() {
 
       case 1:
         return (
-          <Stack spacing={3}>
-            <Typography variant="h6">
-              Escalation Steps
-            </Typography>
-            
-            <Alert severity="info">
-              <Typography variant="body2">
-                Escalation steps configuration will be enhanced in a future update. 
-                For now, you can modify the basic policy settings.
-              </Typography>
-            </Alert>
-
-            <TextField
-              fullWidth
-              multiline
-              rows={4}
-              label="Escalation Steps (JSON)"
-              value={JSON.stringify(formData.escalation_steps, null, 2)}
-              onChange={(e) => {
-                try {
-                  const parsed = JSON.parse(e.target.value);
-                  handleInputChange('escalation_steps', parsed);
-                } catch (err) {
-                  // Invalid JSON, don't update
-                }
-              }}
-              helperText="Raw JSON configuration for escalation steps"
+          <Box>
+            <EscalationStepsOrchestrator
+              initialSteps={formData.escalation_steps}
+              onChange={handleEscalationStepsChange}
+              organizationId={selectedOrganization.id}
+              maxSteps={10}
             />
-          </Stack>
+            {formErrors.escalation_steps && (
+              <Alert severity="error" sx={{ mt: 2 }}>
+                {formErrors.escalation_steps}
+              </Alert>
+            )}
+          </Box>
         );
 
       case 2:
@@ -402,9 +411,37 @@ export default function EditEscalationPolicyPage() {
             <Card variant="outlined">
               <CardContent>
                 <Typography variant="h6" gutterBottom>Escalation Steps</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {formData.escalation_steps?.length || 0} step(s) configured
-                </Typography>
+                {formData.escalation_steps && formData.escalation_steps.length > 0 ? (
+                  <List>
+                    {formData.escalation_steps.map((step, index) => (
+                      <ListItem key={step.id || index}>
+                        <ListItemAvatar>
+                          <Avatar sx={{ bgcolor: 'primary.main' }}>
+                            {step.level}
+                          </Avatar>
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={`Step ${step.level} - ${step.delay_minutes === 0 ? 'Immediate' : `${step.delay_minutes} minutes delay`}`}
+                          secondary={
+                            <Box>
+                              <Typography variant="body2" component="span">
+                                Channels: {step.notification_channels?.join(', ') || 'None'}
+                              </Typography>
+                              <br />
+                              <Typography variant="body2" component="span">
+                                Targets: {step.targets?.length || 0} selected
+                              </Typography>
+                            </Box>
+                          }
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    No escalation steps configured
+                  </Typography>
+                )}
               </CardContent>
             </Card>
           </Stack>

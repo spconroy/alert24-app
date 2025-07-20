@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useOrganization, useSession } from '@/contexts/OrganizationContext';
+import { useTheme as useCustomTheme } from '@/contexts/ThemeContext';
 
 // Material UI Components
 import AppBar from '@mui/material/AppBar';
@@ -62,12 +63,15 @@ import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import AlertIcon from '@mui/icons-material/Warning';
 import RetryIcon from '@mui/icons-material/Refresh';
+import Brightness4Icon from '@mui/icons-material/Brightness4';
+import Brightness7Icon from '@mui/icons-material/Brightness7';
 
 export default function NavBar() {
   const pathname = usePathname();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { data: session, status } = useSession();
+  const { darkMode, toggleDarkMode } = useCustomTheme();
   const {
     selectedOrganization,
     organizations,
@@ -680,6 +684,19 @@ export default function NavBar() {
             <ListItemText primary="Billing" />
           </ListItemButton>
         </ListItem>
+        <ListItem disablePadding>
+          <ListItemButton
+            onClick={() => {
+              toggleDarkMode();
+              toggleMobileDrawer();
+            }}
+          >
+            <ListItemIcon>
+              {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
+            </ListItemIcon>
+            <ListItemText primary={darkMode ? 'Light Mode' : 'Dark Mode'} />
+          </ListItemButton>
+        </ListItem>
         {(process.env.NODE_ENV === 'development' ||
           session?.user?.email?.endsWith('@inventivehq.com')) && (
           <ListItem disablePadding>
@@ -729,105 +746,6 @@ export default function NavBar() {
                 <Box
                   sx={{ display: 'flex', alignItems: 'center', gap: 1, mr: 3 }}
                 >
-                  {/* Organization Selector - Compact */}
-                  {organizations.length > 0 && (
-                    <Tooltip
-                      title={
-                        <Box>
-                          <Typography variant="body2">
-                            {selectedOrganization
-                              ? `Current: ${selectedOrganization.name}`
-                              : 'Switch Organization'}
-                          </Typography>
-                          {error && networkError && (
-                            <Typography
-                              variant="caption"
-                              color="warning.main"
-                              display="block"
-                            >
-                              Network issues detected
-                            </Typography>
-                          )}
-                          {lastSuccessfulFetch && (
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                              display="block"
-                            >
-                              Last updated:{' '}
-                              {new Date(
-                                lastSuccessfulFetch
-                              ).toLocaleTimeString()}
-                            </Typography>
-                          )}
-                        </Box>
-                      }
-                    >
-                      <Button
-                        onClick={handleOrgMenuOpen}
-                        color="inherit"
-                        startIcon={
-                          orgSwitchingLoading ? (
-                            <CircularProgress size={16} color="inherit" />
-                          ) : (
-                            <BusinessIcon fontSize="small" />
-                          )
-                        }
-                        endIcon={
-                          !orgSwitchingLoading && (
-                            <KeyboardArrowDownIcon fontSize="small" />
-                          )
-                        }
-                        disabled={orgSwitchingLoading || organizationsLoading}
-                        sx={{
-                          textTransform: 'none',
-                          maxWidth: 180,
-                          opacity: orgSwitchingLoading ? 0.6 : 0.8,
-                          fontSize: '0.85rem',
-                          fontWeight: 400,
-                          padding: '4px 8px',
-                          '& .MuiButton-startIcon': { mr: 0.5 },
-                          '&:hover': {
-                            opacity: orgSwitchingLoading ? 0.6 : 1,
-                            backgroundColor: orgSwitchingLoading
-                              ? 'transparent'
-                              : 'rgba(255,255,255,0.08)',
-                          },
-                          '&.Mui-disabled': {
-                            color: 'inherit',
-                            opacity: 0.6,
-                          },
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            fontWeight: 400,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 0.5,
-                          }}
-                        >
-                          {orgSwitchingLoading ? (
-                            'Switching...'
-                          ) : (
-                            <>
-                              {selectedOrganization?.name || 'Select Org'}
-                              {error && networkError && (
-                                <AlertIcon
-                                  fontSize="small"
-                                  color="warning"
-                                  sx={{ ml: 0.5 }}
-                                />
-                              )}
-                            </>
-                          )}
-                        </Box>
-                      </Button>
-                    </Tooltip>
-                  )}
 
                   {/* Primary Navigation */}
                   <Button
@@ -901,6 +819,105 @@ export default function NavBar() {
 
               {/* User Section */}
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {/* Organization Selector - Compact */}
+                {!isMobile && organizations.length > 0 && (
+                  <Tooltip
+                    title={
+                      <Box>
+                        <Typography variant="body2">
+                          {selectedOrganization
+                            ? `Current: ${selectedOrganization.name}`
+                            : 'Switch Organization'}
+                        </Typography>
+                        {error && networkError && (
+                          <Typography
+                            variant="caption"
+                            color="warning.main"
+                            display="block"
+                          >
+                            Network issues detected
+                          </Typography>
+                        )}
+                        {lastSuccessfulFetch && (
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            display="block"
+                          >
+                            Last updated:{' '}
+                            {new Date(
+                              lastSuccessfulFetch
+                            ).toLocaleTimeString()}
+                          </Typography>
+                        )}
+                      </Box>
+                    }
+                  >
+                    <Button
+                      onClick={handleOrgMenuOpen}
+                      color="inherit"
+                      startIcon={
+                        orgSwitchingLoading ? (
+                          <CircularProgress size={16} color="inherit" />
+                        ) : (
+                          <BusinessIcon fontSize="small" />
+                        )
+                      }
+                      endIcon={
+                        !orgSwitchingLoading && (
+                          <KeyboardArrowDownIcon fontSize="small" />
+                        )
+                      }
+                      disabled={orgSwitchingLoading || organizationsLoading}
+                      sx={{
+                        textTransform: 'none',
+                        maxWidth: 180,
+                        opacity: orgSwitchingLoading ? 0.6 : 0.8,
+                        fontSize: '0.85rem',
+                        fontWeight: 400,
+                        padding: '4px 8px',
+                        '& .MuiButton-startIcon': { mr: 0.5 },
+                        '&:hover': {
+                          opacity: orgSwitchingLoading ? 0.6 : 1,
+                          backgroundColor: orgSwitchingLoading
+                            ? 'transparent'
+                            : 'rgba(255,255,255,0.08)',
+                        },
+                        '&.Mui-disabled': {
+                          color: 'inherit',
+                          opacity: 0.6,
+                        },
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          fontWeight: 400,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 0.5,
+                        }}
+                      >
+                        {orgSwitchingLoading ? (
+                          'Switching...'
+                        ) : (
+                          <>
+                            {selectedOrganization?.name || 'Select Org'}
+                            {error && networkError && (
+                              <AlertIcon
+                                fontSize="small"
+                                color="warning"
+                                sx={{ ml: 0.5 }}
+                              />
+                            )}
+                          </>
+                        )}
+                      </Box>
+                    </Button>
+                  </Tooltip>
+                )}
                 {/* Mobile Menu Button */}
                 {isMobile && (
                   <IconButton color="inherit" onClick={toggleMobileDrawer}>
@@ -1503,6 +1520,17 @@ export default function NavBar() {
                     <PaymentIcon fontSize="small" />
                   </ListItemIcon>
                   <ListItemText>Billing</ListItemText>
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    toggleDarkMode();
+                    handleMenuClose();
+                  }}
+                >
+                  <ListItemIcon>
+                    {darkMode ? <Brightness7Icon fontSize="small" /> : <Brightness4Icon fontSize="small" />}
+                  </ListItemIcon>
+                  <ListItemText>{darkMode ? 'Light Mode' : 'Dark Mode'}</ListItemText>
                 </MenuItem>
                 {(process.env.NODE_ENV === 'development' ||
                   session?.user?.email?.endsWith('@inventivehq.com')) && (

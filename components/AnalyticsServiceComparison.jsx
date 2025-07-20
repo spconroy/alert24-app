@@ -28,7 +28,7 @@ export default function AnalyticsServiceComparison({
   const [data, setData] = useState([]);
 
   useEffect(() => {
-    if (organizationId && services.length > 0) {
+    if (organizationId) {
       loadComparisonData();
     }
   }, [organizationId, dateRange, services]);

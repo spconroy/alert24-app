@@ -487,7 +487,7 @@ export default function CreateIncidentPage() {
               <Autocomplete
                 multiple
                 options={services}
-                getOptionLabel={option => option.name || option}
+                getOptionLabel={option => option.name || option.id || 'Unnamed Service'}
                 value={formData.affected_services}
                 onChange={(e, newValue) =>
                   handleInputChange('affected_services', newValue)
@@ -503,7 +503,7 @@ export default function CreateIncidentPage() {
                   value.map((option, index) => (
                     <Chip
                       variant="outlined"
-                      label={option.name || option}
+                      label={option.name || option.id || 'Unnamed Service'}
                       {...getTagProps({ index })}
                       key={index}
                     />

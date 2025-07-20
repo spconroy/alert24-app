@@ -356,7 +356,10 @@ export default function OnCallPage() {
                               </TableCell>
                               <TableCell>
                                 <Box display="flex" alignItems="center" gap={1}>
-                                  <Avatar sx={{ width: 32, height: 32 }}>
+                                  <Avatar 
+                                    src={schedule.current_on_call_member?.avatar_url}
+                                    sx={{ width: 32, height: 32 }}
+                                  >
                                     {getCurrentOnCallName(schedule).charAt(0)}
                                   </Avatar>
                                   <Box>

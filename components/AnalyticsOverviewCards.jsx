@@ -151,7 +151,7 @@ export default function AnalyticsOverviewCards({
   });
 
   useEffect(() => {
-    if (organizationId && services.length > 0) {
+    if (organizationId) {
       loadMetrics();
     }
   }, [organizationId, dateRange, services]);

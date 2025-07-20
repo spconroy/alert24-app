@@ -82,7 +82,12 @@ export default function AnalyticsDashboard({ organizationId }) {
         // Handle the API response structure correctly
         const servicesArray = data.services || data || [];
         setServices(servicesArray);
-        setSelectedServices(servicesArray.slice(0, 5).map(s => s.id)); // Select first 5 by default
+        // If no services, set empty array which will show "All services" analytics
+        setSelectedServices(servicesArray.length > 0 ? servicesArray.slice(0, 5).map(s => s.id) : []);
+      } else {
+        // Handle non-200 responses
+        setServices([]);
+        setSelectedServices([]);
       }
     } catch (error) {
       console.error('Error loading services:', error);
@@ -160,6 +165,19 @@ export default function AnalyticsDashboard({ organizationId }) {
 
   return (
     <Box>
+      {/* Show info message when no services are configured */}
+      {!loading && Array.isArray(services) && services.length === 0 && (
+        <Paper sx={{ p: 3, mb: 3, bgcolor: 'info.light', color: 'info.contrastText' }}>
+          <Typography variant="body1" gutterBottom>
+            <strong>No Services Configured</strong>
+          </Typography>
+          <Typography variant="body2">
+            Analytics data is currently showing default values because no monitoring services have been configured for this organization. 
+            Set up your first service to see real monitoring data and trends.
+          </Typography>
+        </Paper>
+      )}
+
       {/* Controls */}
       <Paper sx={{ p: 2, mb: 3 }}>
         <Grid container spacing={2} alignItems="center">
@@ -188,32 +206,51 @@ export default function AnalyticsDashboard({ organizationId }) {
                 value={selectedServices}
                 onChange={e => setSelectedServices(e.target.value)}
                 label="Services"
+                disabled={!Array.isArray(services) || services.length === 0}
                 renderValue={selected => (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {Array.isArray(selected) &&
-                      selected.slice(0, 2).map(value => {
-                        const service = Array.isArray(services)
-                          ? services.find(s => s?.id === value)
-                          : null;
-                        return (
-                          <Chip
-                            key={value || Math.random()}
-                            label={service?.name || value || 'Unknown Service'}
-                            size="small"
-                          />
-                        );
-                      })}
-                    {Array.isArray(selected) && selected.length > 2 && (
+                    {!Array.isArray(services) || services.length === 0 ? (
                       <Chip
-                        label={`+${selected.length - 2} more`}
+                        label="No services configured"
                         size="small"
                         variant="outlined"
+                        color="default"
                       />
+                    ) : Array.isArray(selected) && selected.length === 0 ? (
+                      <Chip
+                        label="All services"
+                        size="small"
+                        variant="outlined"
+                        color="primary"
+                      />
+                    ) : (
+                      <>
+                        {Array.isArray(selected) &&
+                          selected.slice(0, 2).map(value => {
+                            const service = Array.isArray(services)
+                              ? services.find(s => s?.id === value)
+                              : null;
+                            return (
+                              <Chip
+                                key={value || Math.random()}
+                                label={service?.name || value || 'Unknown Service'}
+                                size="small"
+                              />
+                            );
+                          })}
+                        {Array.isArray(selected) && selected.length > 2 && (
+                          <Chip
+                            label={`+${selected.length - 2} more`}
+                            size="small"
+                            variant="outlined"
+                          />
+                        )}
+                      </>
                     )}
                   </Box>
                 )}
               >
-                {Array.isArray(services) &&
+                {Array.isArray(services) && services.length > 0 ? (
                   services.map(service => (
                     <MenuItem
                       key={service?.id || Math.random()}
@@ -223,7 +260,12 @@ export default function AnalyticsDashboard({ organizationId }) {
                         primary={service?.name || 'Unnamed Service'}
                       />
                     </MenuItem>
-                  ))}
+                  ))
+                ) : (
+                  <MenuItem disabled>
+                    <ListItemText primary="No services available" />
+                  </MenuItem>
+                )}
               </Select>
             </FormControl>
           </Grid>

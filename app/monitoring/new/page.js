@@ -22,6 +22,9 @@ import {
   AccordionSummary,
   AccordionDetails,
   Chip,
+  Paper,
+  Stack,
+  Container,
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -300,14 +303,14 @@ export default function CreateMonitoringCheckPage() {
   return (
     <ProtectedRoute>
       {success ? (
-        <Box sx={{ p: 3 }}>
+        <Container maxWidth="lg" sx={{ py: 3 }}>
           <Alert severity="success" sx={{ mb: 2 }}>
             Monitoring check created successfully! Redirecting to monitoring
             dashboard...
           </Alert>
-        </Box>
+        </Container>
       ) : (
-        <Box sx={{ p: 3 }}>
+        <Container maxWidth="lg" sx={{ py: 3 }}>
           {/* Header */}
           <Box display="flex" alignItems="center" gap={2} mb={4}>
             <Button
@@ -793,7 +796,7 @@ export default function CreateMonitoringCheckPage() {
               )}
             </CardContent>
           </Card>
-        </Box>
+        </Container>
       )}
     </ProtectedRoute>
   );

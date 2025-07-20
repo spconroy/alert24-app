@@ -258,7 +258,7 @@ export default function IncidentsPage() {
         </Box>
       </Box>
 
-      <Box sx={{ px: 3, pb: 3 }}>
+      <Box sx={{ px: 6, pb: 3 }}>
         {/* Enhanced Filters Section */}
         <Card
           sx={{
@@ -349,7 +349,7 @@ export default function IncidentsPage() {
             </Box>
 
             <Grid container spacing={2}>
-              <Grid item xs={12} md={3}>
+              <Grid item xs={12}>
                 <FormControl fullWidth size="small">
                   <InputLabel
                     sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
@@ -397,7 +397,7 @@ export default function IncidentsPage() {
                 </FormControl>
               </Grid>
 
-              <Grid item xs={12} md={3}>
+              <Grid item xs={12}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Status</InputLabel>
                   <Select
@@ -502,7 +502,7 @@ export default function IncidentsPage() {
                 </FormControl>
               </Grid>
 
-              <Grid item xs={12} md={3}>
+              <Grid item xs={12}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Severity</InputLabel>
                   <Select
@@ -576,7 +576,7 @@ export default function IncidentsPage() {
                 </FormControl>
               </Grid>
 
-              <Grid item xs={12} md={3}>
+              <Grid item xs={12}>
                 <TextField
                   fullWidth
                   size="small"
