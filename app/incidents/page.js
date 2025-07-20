@@ -405,10 +405,14 @@ export default function IncidentsPage() {
                     renderValue={selected => {
                       if (!selected) return 'All Statuses';
                       const statusColors = {
+                        new: 'error.main',
+                        acknowledged: 'warning.main',
                         open: 'error.main',
                         investigating: 'warning.main',
+                        identified: 'info.main',
                         monitoring: 'info.main',
                         resolved: 'success.main',
+                        postmortem: 'action.disabled',
                       };
                       return (
                         <Box
@@ -434,6 +438,36 @@ export default function IncidentsPage() {
                       >
                         <FlagIcon fontSize="small" color="action" />
                         All Statuses
+                      </Box>
+                    </MenuItem>
+                    <MenuItem value="new">
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
+                        <Box
+                          sx={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: '50%',
+                            bgcolor: 'error.main',
+                          }}
+                        />
+                        New
+                      </Box>
+                    </MenuItem>
+                    <MenuItem value="acknowledged">
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
+                        <Box
+                          sx={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: '50%',
+                            bgcolor: 'warning.main',
+                          }}
+                        />
+                        Acknowledged
                       </Box>
                     </MenuItem>
                     <MenuItem value="open">
@@ -466,6 +500,21 @@ export default function IncidentsPage() {
                         Investigating
                       </Box>
                     </MenuItem>
+                    <MenuItem value="identified">
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
+                        <Box
+                          sx={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: '50%',
+                            bgcolor: 'info.main',
+                          }}
+                        />
+                        Identified
+                      </Box>
+                    </MenuItem>
                     <MenuItem value="monitoring">
                       <Box
                         sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
@@ -494,6 +543,21 @@ export default function IncidentsPage() {
                           }}
                         />
                         Resolved
+                      </Box>
+                    </MenuItem>
+                    <MenuItem value="postmortem">
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
+                        <Box
+                          sx={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: '50%',
+                            bgcolor: 'action.disabled',
+                          }}
+                        />
+                        Postmortem
                       </Box>
                     </MenuItem>
                   </Select>
@@ -675,16 +739,20 @@ export default function IncidentsPage() {
 
                 {/* Quick Status Stats */}
                 <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                  {['open', 'investigating', 'monitoring', 'resolved'].map(
+                  {['new', 'acknowledged', 'open', 'investigating', 'identified', 'monitoring', 'resolved', 'postmortem'].map(
                     status => {
                       const count = incidents.filter(
                         i => i.status === status
                       ).length;
                       const colors = {
+                        new: 'error',
+                        acknowledged: 'warning',
                         open: 'error',
                         investigating: 'warning',
+                        identified: 'info',
                         monitoring: 'info',
                         resolved: 'success',
+                        postmortem: 'default',
                       };
                       return count > 0 ? (
                         <Chip

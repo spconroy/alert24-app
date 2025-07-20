@@ -169,14 +169,22 @@ export default function IncidentDashboard() {
 
   const getIncidentStatusColor = status => {
     switch (status) {
+      case 'new':
+        return 'error';
+      case 'acknowledged':
+        return 'warning';
       case 'open':
         return 'error';
       case 'investigating':
         return 'warning';
+      case 'identified':
+        return 'info';
       case 'monitoring':
         return 'info';
       case 'resolved':
         return 'success';
+      case 'postmortem':
+        return 'default';
       default:
         return 'default';
     }

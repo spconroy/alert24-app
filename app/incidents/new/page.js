@@ -72,11 +72,14 @@ const severityColors = {
 };
 
 const statusColors = {
+  new: 'error',
+  acknowledged: 'warning',
   open: 'error',
   investigating: 'warning',
   identified: 'info',
   monitoring: 'primary',
   resolved: 'success',
+  postmortem: 'default',
 };
 
 export default function CreateIncidentPage() {
@@ -89,7 +92,7 @@ export default function CreateIncidentPage() {
     title: '',
     description: '',
     severity: 'medium',
-    status: 'open',
+    status: 'new',
     affected_services: [],
     service_status_updates: {},
     impact_description: '',

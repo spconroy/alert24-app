@@ -89,7 +89,7 @@ export const GET = withErrorHandler(async request => {
   if (status) {
     Validator.enum(
       status,
-      ['open', 'investigating', 'identified', 'monitoring', 'resolved'],
+      ['new', 'acknowledged', 'open', 'investigating', 'identified', 'monitoring', 'resolved', 'postmortem'],
       'status'
     );
   }
@@ -127,7 +127,7 @@ export const POST = withErrorHandler(async request => {
     title,
     description,
     severity = 'medium',
-    status = 'investigating',
+    status = 'new',
     affectedServices,
     serviceStatusUpdates,
     impactDescription,
@@ -145,7 +145,7 @@ export const POST = withErrorHandler(async request => {
   );
   Validator.enum(
     status,
-    ['open', 'investigating', 'identified', 'monitoring', 'resolved'],
+    ['new', 'acknowledged', 'open', 'investigating', 'identified', 'monitoring', 'resolved', 'postmortem'],
     'status'
   );
   Validator.enum(source, ['manual', 'monitoring', 'api'], 'source');
@@ -235,7 +235,7 @@ export const PUT = withErrorHandler(async request => {
   if (status) {
     Validator.enum(
       status,
-      ['open', 'investigating', 'identified', 'monitoring', 'resolved'],
+      ['new', 'acknowledged', 'open', 'investigating', 'identified', 'monitoring', 'resolved', 'postmortem'],
       'status'
     );
   }

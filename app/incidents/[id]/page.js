@@ -566,11 +566,11 @@ export default function IncidentDetailPage() {
                       sx={{ p: 1, borderRadius: 1, bgcolor: 'grey.50' }}
                     >
                       <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {service.name}
+                        {typeof service.name === 'string' ? service.name : service.id || 'Unknown Service'}
                       </Typography>
                       <Chip
-                        label={service.status.charAt(0).toUpperCase() + service.status.slice(1)}
-                        color={getServiceStatusColor(service.status)}
+                        label={(service.status || 'Unknown').charAt(0).toUpperCase() + (service.status || 'Unknown').slice(1)}
+                        color={getServiceStatusColor(service.status || 'operational')}
                         size="small"
                         variant={service.isUnknown ? "outlined" : "filled"}
                       />
