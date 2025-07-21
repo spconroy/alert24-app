@@ -376,6 +376,12 @@ export default function DebugPage() {
       icon: <HealthIcon />,
     },
     {
+      name: 'Edge Runtime DB Test',
+      description: 'Test database connectivity in Cloudflare edge runtime',
+      endpoint: '/api/test-edge-db',
+      icon: <StorageIcon />,
+    },
+    {
       name: 'Escalation Policy Test',
       description: 'Test escalation policy configuration and notifications',
       endpoint: '/api/debug/incident-paging',
@@ -440,6 +446,15 @@ export default function DebugPage() {
                 startIcon={<SecurityIcon />}
               >
                 Auth Debug
+              </Button>
+              <Button
+                variant="outlined"
+                href="/api/test-edge-db"
+                target="_blank"
+                rel="noopener noreferrer"
+                startIcon={<StorageIcon />}
+              >
+                Edge Runtime DB
               </Button>
             </Box>
           </CardContent>
