@@ -3,7 +3,7 @@ import { SupabaseClient } from '@/lib/db-supabase';
 
 const db = new SupabaseClient();
 
-export const runtime = 'nodejs';
+export const runtime = 'edge';
 
 // Get real timeline data from service_status_history - PUBLIC VERSION
 async function getTimelineData(serviceId, days) {

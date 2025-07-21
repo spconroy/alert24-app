@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
 import { createClient } from '@supabase/supabase-js';
 
-export const runtime = 'nodejs';
+export const runtime = 'edge';
 
 export async function POST() {
   try {
@@ -19,9 +17,22 @@ export async function POST() {
       }
     );
 
-    // Read the migration SQL file
-    const migrationPath = path.join(process.cwd(), 'docs', 'migrations', 'add_incident_number.sql');
-    const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
+    // Inline migration SQL since fs is not available in edge runtime
+    const migrationSQL = `
+      -- Add incident_number column to incidents table if it doesn't exist
+      ALTER TABLE incidents ADD COLUMN IF NOT EXISTS incident_number INTEGER;
+      
+      -- Create a sequence for incident numbers if it doesn't exist
+      CREATE SEQUENCE IF NOT EXISTS incident_number_seq START 1;
+      
+      -- Update existing incidents without incident numbers
+      UPDATE incidents 
+      SET incident_number = nextval('incident_number_seq') 
+      WHERE incident_number IS NULL;
+      
+      -- Set default for future incidents
+      ALTER TABLE incidents ALTER COLUMN incident_number SET DEFAULT nextval('incident_number_seq');
+    `;
 
     // Split SQL into individual statements and execute
     const statements = migrationSQL
