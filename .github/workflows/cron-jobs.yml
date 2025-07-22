@@ -22,7 +22,7 @@ on:
 
 env:
   # Set your production domain here
-  ALERT24_DOMAIN: ${{ secrets.ALERT24_DOMAIN || 'your-domain.pages.dev' }}
+  ALERT24_DOMAIN: ${{ secrets.ALERT24_DOMAIN || 'app.alert24.net' }}
 
 jobs:
   escalation-processing:
