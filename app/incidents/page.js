@@ -50,6 +50,7 @@ export default function IncidentsPage() {
   const [organizations, setOrganizations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
   const [filters, setFilters] = useState({
     organization_id: '',
     status: '',
@@ -191,6 +192,56 @@ export default function IncidentsPage() {
       ...prev,
       offset: prev.offset + prev.limit,
     }));
+  };
+
+  const handleResolveIncident = async (incidentId) => {
+    console.log('Starting incident resolution for:', incidentId);
+    
+    try {
+      const response = await fetch(`/api/incidents/${incidentId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: 'resolved',
+          resolved_at: new Date().toISOString(),
+        }),
+      });
+
+      console.log('Resolve incident response status:', response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Failed to resolve incident:', errorData);
+        setError(errorData.error || 'Failed to resolve incident');
+        return;
+      }
+
+      const data = await response.json();
+      console.log('Incident resolved successfully:', data);
+
+      // Update the local state to reflect the change
+      setIncidents(prev => 
+        prev.map(inc => 
+          inc.id === incidentId 
+            ? { ...inc, status: 'resolved', resolved_at: new Date().toISOString() }
+            : inc
+        )
+      );
+
+      // Show success message
+      setSuccess(`Incident #${incidentId.slice(-4)} resolved successfully`);
+      setTimeout(() => setSuccess(null), 5000); // Auto-hide after 5 seconds
+      
+    } catch (err) {
+      console.error('Error resolving incident:', err);
+      console.error('Error details:', {
+        message: err.message,
+        stack: err.stack,
+      });
+      setError('Failed to resolve incident. Please try again.');
+    }
   };
 
   const handleSort = (field) => {
@@ -518,8 +569,15 @@ export default function IncidentsPage() {
 
         {/* Error Alert */}
         {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
             {error}
+          </Alert>
+        )}
+
+        {/* Success Alert */}
+        {success && (
+          <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess(null)}>
+            {success}
           </Alert>
         )}
 
@@ -1002,10 +1060,10 @@ export default function IncidentsPage() {
                                           backgroundColor: 'success.dark',
                                         },
                                       }}
-                                      onClick={(e) => {
+                                      onClick={async (e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
-                                        // TODO: Add resolve incident logic
+                                        await handleResolveIncident(incident.id);
                                       }}
                                     >
                                       <CheckCircleIcon fontSize="small" />
