@@ -127,24 +127,43 @@ const MonitoringServiceAssociation = ({ organizationId }) => {
 
   // Remove association
   const handleRemoveAssociation = async monitoringCheckId => {
+    console.log('Starting association removal for monitoring check:', monitoringCheckId);
+    console.log('Organization ID:', organizationId);
+    
     try {
-      const response = await fetch(
-        `/api/monitoring/associate?monitoring_check_id=${monitoringCheckId}&organization_id=${organizationId}`,
-        {
-          method: 'DELETE',
-        }
-      );
+      const url = `/api/monitoring/associate?monitoring_check_id=${monitoringCheckId}&organization_id=${organizationId}`;
+      console.log('DELETE request URL:', url);
+      
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('DELETE response status:', response.status);
+      console.log('DELETE response ok:', response.ok);
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('DELETE error response:', errorData);
         throw new Error(errorData.error || 'Failed to remove association');
       }
 
       const data = await response.json();
-      setSuccess(data.message);
-      fetchData(); // Refresh data
+      console.log('DELETE success response:', data);
+      setSuccess(data.message || 'Association removed successfully');
+      
+      // Add a small delay before refreshing to ensure the delete has propagated
+      setTimeout(() => {
+        fetchData(); // Refresh data
+      }, 500);
     } catch (err) {
       console.error('Error removing association:', err);
+      console.error('Error details:', {
+        message: err.message,
+        stack: err.stack,
+      });
       setError(err.message);
     }
   };

@@ -72,16 +72,28 @@ export async function GET(req, { params }) {
 
 export async function PATCH(req, { params }) {
   try {
+    console.log('🔧 PATCH /api/monitoring/[id] - Starting request');
+    
     const sessionManager = new SessionManager();
     const session = await sessionManager.getSessionFromRequest(req);
+    console.log('🔐 Session check:', { hasSession: !!session, hasEmail: !!session?.user?.email });
+    
     if (!session || !session.user?.email) {
+      console.log('❌ Unauthorized - no session or email');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { id: checkId } = params;
     const body = await req.json();
+    
+    console.log('📝 Request details:', { 
+      checkId, 
+      bodyKeys: Object.keys(body),
+      userEmail: session.user.email 
+    });
 
     if (!checkId) {
+      console.log('❌ Missing check ID');
       return NextResponse.json(
         { error: 'Monitoring check ID is required' },
         { status: 400 }
@@ -89,14 +101,26 @@ export async function PATCH(req, { params }) {
     }
 
     // Get user
+    console.log('👤 Fetching user by email:', session.user.email);
     const user = await db.getUserByEmail(session.user.email);
+    console.log('👤 User lookup result:', { hasUser: !!user, userId: user?.id });
+    
     if (!user) {
+      console.log('❌ User not found');
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Validate that user has access to this monitoring check
+    console.log('🔍 Fetching monitoring check:', checkId);
     const existingCheck = await db.getMonitoringCheckById(checkId);
+    console.log('🔍 Monitoring check lookup result:', { 
+      hasCheck: !!existingCheck, 
+      checkName: existingCheck?.name,
+      orgId: existingCheck?.organization_id 
+    });
+    
     if (!existingCheck) {
+      console.log('❌ Monitoring check not found');
       return NextResponse.json(
         { error: 'Monitoring check not found' },
         { status: 404 }
@@ -104,14 +128,18 @@ export async function PATCH(req, { params }) {
     }
 
     // Check organization membership
+    console.log('🏢 Checking organization membership:', { orgId: existingCheck.organization_id, userId: user.id });
     const membership = await db.getOrganizationMember(
       existingCheck.organization_id,
       user.id
     );
+    console.log('🏢 Membership result:', { hasMembership: !!membership, role: membership?.role });
+    
     if (
       !membership ||
       !['owner', 'admin', 'responder'].includes(membership.role)
     ) {
+      console.log('❌ Access denied - insufficient permissions');
       return NextResponse.json(
         { error: 'Access denied - insufficient permissions' },
         { status: 403 }
@@ -123,9 +151,17 @@ export async function PATCH(req, { params }) {
       body.status &&
       ['disabled', 'paused', 'inactive'].includes(body.status) &&
       existingCheck.status === 'active';
+      
+    console.log('🔄 Update details:', { 
+      isBeingDisabled, 
+      newStatus: body.status, 
+      currentStatus: existingCheck.status 
+    });
 
     // Update monitoring check
+    console.log('💾 Updating monitoring check in database...');
     const updatedCheck = await db.updateMonitoringCheck(checkId, body);
+    console.log('💾 Database update result:', { hasUpdatedCheck: !!updatedCheck });
 
     // Handle service recovery if check is being disabled
     if (isBeingDisabled) {
@@ -145,12 +181,18 @@ export async function PATCH(req, { params }) {
       message: 'Monitoring check updated successfully',
     });
   } catch (error) {
-    console.error('Error updating monitoring check:', error);
+    console.error('❌ Error updating monitoring check:', error);
+    console.error('❌ Error stack:', error.stack);
+    console.error('❌ Error name:', error.name);
+    console.error('❌ Error cause:', error.cause);
+    
     return NextResponse.json(
       {
         success: false,
         error: 'Failed to update monitoring check',
         details: error.message,
+        errorName: error.name,
+        stack: error.stack,
       },
       { status: 500 }
     );

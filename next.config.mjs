@@ -14,6 +14,20 @@ const nextConfig = {
   experimental: {
     serverComponentsExternalPackages: ['pg', 'stripe'],
   },
+  // Content Security Policy to allow Cloudflare Insights
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: "script-src 'self' 'unsafe-inline' 'unsafe-eval' static.cloudflareinsights.com *.cloudflare.com; object-src 'none';",
+          },
+        ],
+      },
+    ];
+  },
   // Ensure compatibility with Cloudflare
   webpack: (config, { isServer }) => {
     if (isServer) {

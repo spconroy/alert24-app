@@ -208,6 +208,18 @@ export const POST = withErrorHandler(async request => {
         .insert(associationData);
 
       if (insertError) throw insertError;
+
+      // Also update the linked_service_id in the monitoring check itself
+      const { error: updateError } = await db.client
+        .from('monitoring_checks')
+        .update({ 
+          linked_service_id: serviceId,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', monitoringCheckId)
+        .eq('organization_id', organizationId);
+
+      if (updateError) throw updateError;
     } else {
       // Remove association
       const { error: deleteError } = await db.client
@@ -216,6 +228,18 @@ export const POST = withErrorHandler(async request => {
         .eq('monitoring_check_id', monitoringCheckId);
 
       if (deleteError) throw deleteError;
+
+      // Also clear the linked_service_id from the monitoring check itself
+      const { error: updateError } = await db.client
+        .from('monitoring_checks')
+        .update({ 
+          linked_service_id: null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', monitoringCheckId)
+        .eq('organization_id', organizationId);
+
+      if (updateError) throw updateError;
     }
 
     const associationAction = serviceId
@@ -266,13 +290,35 @@ export const DELETE = withErrorHandler(async request => {
   ]);
 
   try {
+    console.log(`Removing association for monitoring check ${monitoringCheckId}`);
+    
     // Remove association from junction table
     const { error: deleteError } = await db.client
       .from('service_monitoring_checks')
       .delete()
       .eq('monitoring_check_id', monitoringCheckId);
 
-    if (deleteError) throw deleteError;
+    if (deleteError) {
+      console.error('Error deleting from service_monitoring_checks:', deleteError);
+      throw deleteError;
+    }
+
+    // Also clear the linked_service_id from the monitoring check itself
+    const { error: updateError } = await db.client
+      .from('monitoring_checks')
+      .update({ 
+        linked_service_id: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', monitoringCheckId)
+      .eq('organization_id', organizationId);
+
+    if (updateError) {
+      console.error('Error updating monitoring_checks:', updateError);
+      throw updateError;
+    }
+
+    console.log(`Successfully removed association for monitoring check ${monitoringCheckId}`);
 
     return ApiResponse.success(
       { monitoring_check_id: monitoringCheckId },

@@ -817,31 +817,6 @@
         "dependencies": ["HIGH-003"]
       },
       {
-        "id": "LOW-003",
-        "title": "Upgrade to NextAuth v5 for Full Edge Runtime Compatibility",
-        "description": "Upgrade from NextAuth v4 to v5 to enable full Edge Runtime compatibility with Cloudflare Pages",
-        "priority": "Lower",
-        "status": "pending",
-        "estimatedHours": 12,
-        "category": "Infrastructure",
-        "impact": "Reduced performance, build compatibility issues with Edge Runtime",
-        "files": [
-          "app/api/auth/[...nextauth]/route.js",
-          "lib/auth-config.js",
-          "package.json"
-        ],
-        "acceptance_criteria": [
-          "NextAuth v5 is installed and configured",
-          "All authentication flows work with new version",
-          "Edge Runtime can be enabled on auth routes",
-          "Build performance is improved",
-          "Session handling works correctly",
-          "Migration doesn't break existing user sessions"
-        ],
-        "technical_notes": "Follow NextAuth v5 migration guide, test thoroughly before deployment",
-        "dependencies": []
-      },
-      {
         "id": "LOW-004",
         "title": "Migrate to Proper Check Results Table Usage",
         "description": "Replace monitoring check workaround using services table with proper check_results table implementation",
@@ -869,17 +844,17 @@
     ]
   },
   "status": {
-    "totalTasks": 15,
+    "totalTasks": 14,
     "completed": 8,
     "inProgress": 1,
-    "pending": 6,
+    "pending": 5,
     "critical": 2,
     "high": 3,
     "medium": 5,
-    "lower": 4,
-    "estimatedTotalHours": 172,
+    "lower": 3,
+    "estimatedTotalHours": 160,
     "completedHours": 116,
-    "remainingHours": 56,
+    "remainingHours": 44,
     "completionPercentage": 53,
     "completedTasks": [
       "MED-003: User Profile Management",
