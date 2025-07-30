@@ -42,6 +42,8 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useOrganization } from '@/contexts/OrganizationContext';
 
@@ -78,6 +80,25 @@ export default function IncidentsPage() {
       fetchOrganizations();
     }
   }, [session, selectedOrganization, filters, pagination.offset]);
+
+  // Auto-refresh every 30 seconds to update paging status
+  useEffect(() => {
+    if (session && selectedOrganization?.id) {
+      const interval = setInterval(() => {
+        // Only refresh if there are active incidents with high/critical severity
+        const hasActiveHighSeverityIncidents = incidents.some(inc => 
+          ['new', 'open'].includes(inc.status) && 
+          ['critical', 'high'].includes(inc.severity)
+        );
+        
+        if (hasActiveHighSeverityIncidents) {
+          fetchIncidents();
+        }
+      }, 30000); // 30 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [session, selectedOrganization, incidents]);
 
   const fetchOrganizations = async () => {
     try {
@@ -185,6 +206,63 @@ export default function IncidentsPage() {
       default:
         return 'default';
     }
+  };
+
+  const getPagingStatus = (incident) => {
+    // Check if incident should be paging based on severity and status
+    const isPagingEligible = ['critical', 'high'].includes(incident.severity) && 
+                            ['new', 'open'].includes(incident.status) &&
+                            incident.assigned_to;
+    
+    if (!isPagingEligible) return null;
+
+    // Calculate time since incident creation
+    const createdAt = new Date(incident.created_at);
+    const now = new Date();
+    const minutesSinceCreation = Math.floor((now - createdAt) / (1000 * 60));
+
+    // Paging intervals: 0 (immediate), 15, 30, 60 minutes
+    const pagingIntervals = [0, 15, 30, 60];
+    
+    // Determine which page number we're on and time to next page
+    let currentPageNumber = 1;
+    let timeToNextPage = 15 - minutesSinceCreation;
+    let escalationLevel = 1;
+    
+    if (minutesSinceCreation >= 60) {
+      // After 60 minutes, continue paging every 60 minutes
+      currentPageNumber = 4 + Math.floor((minutesSinceCreation - 60) / 60);
+      timeToNextPage = 60 - ((minutesSinceCreation - 60) % 60);
+      escalationLevel = 4; // Max escalation
+    } else if (minutesSinceCreation >= 30) {
+      currentPageNumber = 3;
+      timeToNextPage = 60 - minutesSinceCreation;
+      escalationLevel = 3;
+    } else if (minutesSinceCreation >= 15) {
+      currentPageNumber = 2;
+      timeToNextPage = 30 - minutesSinceCreation;
+      escalationLevel = 2;
+    }
+
+    // Calculate time since last page
+    let timeSinceLastPage = minutesSinceCreation;
+    if (minutesSinceCreation >= 60) {
+      timeSinceLastPage = (minutesSinceCreation - 60) % 60;
+    } else if (minutesSinceCreation >= 30) {
+      timeSinceLastPage = minutesSinceCreation - 30;
+    } else if (minutesSinceCreation >= 15) {
+      timeSinceLastPage = minutesSinceCreation - 15;
+    }
+
+    return {
+      status: timeSinceLastPage < 5 ? 'paging-active' : 'paging',
+      message: `Page #${currentPageNumber}${escalationLevel > 1 ? ` (L${escalationLevel})` : ''}`,
+      level: escalationLevel,
+      pageNumber: currentPageNumber,
+      timeRemaining: timeToNextPage,
+      timeSinceLastPage: timeSinceLastPage,
+      totalMinutes: minutesSinceCreation
+    };
   };
 
   const handleLoadMore = () => {
@@ -1010,9 +1088,68 @@ export default function IncidentsPage() {
                               />
                             </TableCell>
                             <TableCell>
-                              <Typography variant="body2">
-                                {incident.assigned_to_name || 'Unassigned'}
-                              </Typography>
+                              <Box>
+                                <Typography variant="body2">
+                                  {incident.assigned_to_name || 'Unassigned'}
+                                </Typography>
+                                {(() => {
+                                  const pagingStatus = getPagingStatus(incident);
+                                  if (!pagingStatus) return null;
+                                  
+                                  return (
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                                      <Tooltip 
+                                        title={
+                                          <>
+                                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                              {pagingStatus.message}
+                                            </Typography>
+                                            <Typography variant="caption" display="block">
+                                              {pagingStatus.timeSinceLastPage < 5 ? 
+                                                `Paging now! (sent ${pagingStatus.timeSinceLastPage}m ago)` : 
+                                                `Last page sent ${pagingStatus.timeSinceLastPage}m ago`}
+                                            </Typography>
+                                            <Typography variant="caption" display="block">
+                                              Next page in {pagingStatus.timeRemaining} minute{pagingStatus.timeRemaining !== 1 ? 's' : ''}
+                                            </Typography>
+                                            <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+                                              Total time: {pagingStatus.totalMinutes}m since incident created
+                                            </Typography>
+                                          </>
+                                        }
+                                      >
+                                        <Chip
+                                          icon={<NotificationsActiveIcon />}
+                                          label={pagingStatus.message}
+                                          size="small"
+                                          color={pagingStatus.status === 'paging-active' ? 'error' : 'warning'}
+                                          sx={{
+                                            height: '20px',
+                                            fontSize: '0.7rem',
+                                            '& .MuiChip-icon': {
+                                              fontSize: '0.9rem',
+                                              animation: pagingStatus.status === 'paging-active' ? 'pulse 0.8s infinite' : 'pulse 2s infinite',
+                                            },
+                                            '@keyframes pulse': {
+                                              '0%': { opacity: 1 },
+                                              '50%': { opacity: 0.3 },
+                                              '100%': { opacity: 1 },
+                                            },
+                                          }}
+                                        />
+                                      </Tooltip>
+                                      <Tooltip title={`Next page in ${pagingStatus.timeRemaining} minute${pagingStatus.timeRemaining !== 1 ? 's' : ''}`}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+                                          <AccessTimeIcon sx={{ fontSize: '0.9rem', color: 'text.secondary' }} />
+                                          <Typography variant="caption" color="text.secondary">
+                                            {pagingStatus.timeRemaining}m
+                                          </Typography>
+                                        </Box>
+                                      </Tooltip>
+                                    </Box>
+                                  );
+                                })()}
+                              </Box>
                             </TableCell>
                             <TableCell>
                               <Typography variant="body2">
