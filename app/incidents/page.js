@@ -210,9 +210,10 @@ export default function IncidentsPage() {
 
   const getPagingStatus = (incident) => {
     // Check if incident should be paging based on severity and status
+    // Paging happens for high/critical incidents in new/open status
+    // regardless of assignment - the escalation policy determines who gets paged
     const isPagingEligible = ['critical', 'high'].includes(incident.severity) && 
-                            ['new', 'open'].includes(incident.status) &&
-                            incident.assigned_to;
+                            ['new', 'open'].includes(incident.status);
     
     if (!isPagingEligible) return null;
 
